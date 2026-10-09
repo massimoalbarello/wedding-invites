@@ -9,6 +9,7 @@ export const invitationKeys = {
 const UNAUTHORIZED = 401;
 const FORBIDDEN = 403;
 const NOT_FOUND = 404;
+const CONFLICT = 409;
 export class InvitationAccessError extends Error {}
 export function invitationEntryOptions(token: string) {
   return queryOptions({
@@ -38,6 +39,9 @@ export function invitationContentOptions(token: string) {
           result.error.status === NOT_FOUND
         ) {
           return null;
+        }
+        if (result.error.status === CONFLICT) {
+          return { notReady: true } as const;
         }
         throw new Error('Your invitation could not be loaded. Please try again.');
       }

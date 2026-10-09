@@ -1,6 +1,7 @@
 import { virtualPasskeyBrowser } from '@repo/browser-testing/browser';
 import { startIsolatedApp } from './isolated-app';
 import { seedGuests } from './seed-guests';
+import { seedWedding } from './seed-wedding';
 
 const app = await startIsolatedApp();
 let browser: Awaited<ReturnType<typeof virtualPasskeyBrowser>> | undefined;
@@ -13,6 +14,7 @@ try {
   if (Bun.argv.includes('--seed')) {
     await browser.page.getByRole('button', { name: 'Create dashboard with a passkey' }).click();
     await browser.page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+    await seedWedding({ page: browser.page, origin: app.origin });
     await seedGuests({ page: browser.page, origin: app.origin });
     await browser.page.reload();
     await browser.page.getByText('Alex Rivera', { exact: true }).waitFor();

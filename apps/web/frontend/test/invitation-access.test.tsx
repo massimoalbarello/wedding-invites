@@ -18,8 +18,8 @@ afterEach(() => {
 test('background revocation removes protected invitation content and its RSVP form from view and cache', async () => {
   const content: Invitation = {
     name: 'Alex Morgan',
-    coupleNames: 'Massimo & Liza',
-    date: '2027-06-29',
+    coupleNames: 'Avery & Jordan',
+    date: '2030-09-21',
     status: 'pending',
     maxGuests: 1,
     companions: [],
@@ -47,7 +47,7 @@ test('background revocation removes protected invitation content and its RSVP fo
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  await screen.findByRole('heading', { name: 'Massimo & Liza' });
+  await screen.findByRole('heading', { name: 'Avery & Jordan' });
   expect(screen.getByRole('button', { name: 'Send reply' })).toBeTruthy();
   revoked = true;
   await Promise.resolve(
@@ -55,9 +55,38 @@ test('background revocation removes protected invitation content and its RSVP fo
       await queryClient.invalidateQueries({ queryKey: invitationKeys.content(token) });
     }),
   );
-  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Massimo & Liza' })).toBeNull());
+  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Avery & Jordan' })).toBeNull());
   expect(screen.queryByRole('button', { name: 'Send reply' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Open personal link' })).toBeTruthy();
   expect(queryClient.getQueryData(invitationKeys.content(token))).toBeNull();
+  queryClient.clear();
+});
+
+test('an unconfigured wedding shows a neutral not-ready page without RSVP controls', async () => {
+  const CONFLICT = 409;
+  const fetchResponse = Object.assign(
+    () =>
+      Promise.resolve(
+        Response.json({ error: 'Wedding details have not been set.' }, { status: CONFLICT }),
+      ),
+    { preconnect: globalThis.fetch.preconnect },
+  );
+  spyOn(globalThis, 'fetch').mockImplementation(fetchResponse);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const token = 'b'.repeat(TOKEN_LENGTH);
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    history: createMemoryHistory({ initialEntries: [`/i/${token}/invitation`] }),
+  });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  await screen.findByRole('heading', { name: 'This invitation is not ready yet.' });
+  expect(screen.getByText('Please try again later.')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Send reply' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Avery & Jordan' })).toBeNull();
   queryClient.clear();
 });

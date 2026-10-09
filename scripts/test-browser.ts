@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { virtualPasskeyBrowser } from '@repo/browser-testing/browser';
 import { startIsolatedApp } from './isolated-app';
 import { seedGuests } from './seed-guests';
+import { EXAMPLE_WEDDING } from './seed-wedding';
 
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
@@ -54,6 +55,45 @@ async function captureSelfie(page: Page) {
   await page.getByRole('button', { name: 'Capture photo', exact: true }).click();
   await page.getByRole('img', { name: 'Your captured selfie' }).waitFor();
   await page.getByRole('button', { name: 'Use this photo', exact: true }).click();
+}
+
+async function configureWedding({ page, origin }: { page: Page; origin: string }) {
+  const empty = await page.request.get(`${origin}/api/admin/wedding`);
+  assert(empty.ok());
+  assert.equal(await empty.json(), null);
+  await page.getByRole('link', { name: 'Add wedding details', exact: true }).click();
+  await page.getByRole('button', { name: 'Save wedding', exact: true }).click();
+  await page.getByRole('alert').first().waitFor();
+  await page.getByLabel('Couple names', { exact: true }).fill(EXAMPLE_WEDDING.coupleNames);
+  await page.getByLabel('Ceremony date', { exact: true }).fill(EXAMPLE_WEDDING.date);
+  await page.getByRole('button', { name: 'Save wedding', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit wedding', exact: true }).waitFor();
+  await page.reload();
+  await page.getByText(EXAMPLE_WEDDING.coupleNames, { exact: true }).waitFor();
+  assert.deepEqual(
+    await (await page.request.get(`${origin}/api/admin/wedding`)).json(),
+    EXAMPLE_WEDDING,
+  );
+  await page.screenshot({
+    path: resolve(artifacts, 'wedding-settings-desktop.png'),
+    fullPage: true,
+  });
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.screenshot({
+    path: resolve(artifacts, 'wedding-settings-mobile.png'),
+    fullPage: true,
+  });
+  assert.ok(
+    (await page.locator('html').evaluate((element) => element.scrollWidth)) <=
+      MOBILE_VIEWPORT.width,
+  );
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await page.goto(origin);
+  await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole('link', { name: 'Add wedding details', exact: true }).count(),
+    0,
+  );
 }
 
 async function createGuestInDashboard(page: Page) {
@@ -130,6 +170,7 @@ try {
   await page.goto(app.origin);
   await page.getByRole('button', { name: 'Create dashboard with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+  await configureWedding({ page, origin: app.origin });
   const link = await createGuestInDashboard(page);
   const token = new URL(link).pathname.split('/').at(-1)!;
   const guestsResponse = await page.request.get(`${app.origin}/api/admin/guests`);
@@ -160,7 +201,9 @@ try {
     .getByRole('heading', { name: 'An important message for Taylor Reed.' })
     .waitFor();
   assert.equal(await newcomer.page.locator('input[type=file]').count(), 0);
-  assert(!(await newcomer.page.locator('body').innerText()).includes('29 June'));
+  const anonymousMessage = await newcomer.page.locator('body').innerText();
+  assert(!anonymousMessage.includes(EXAMPLE_WEDDING.coupleNames));
+  assert(!anonymousMessage.includes('September'));
   await newcomer.page.setViewportSize(MOBILE_VIEWPORT);
   await newcomer.page.screenshot({
     path: resolve(artifacts, 'personal-message-mobile.png'),
@@ -182,14 +225,19 @@ try {
   await guestBrowser.page.setViewportSize(MOBILE_VIEWPORT);
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page.getByRole('heading', { name: 'Massimo & Liza', exact: true }).waitFor();
+  await guestBrowser.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
+  await guestBrowser.page.getByText('21 September 2030', { exact: true }).waitFor();
   await saveReply(guestBrowser.page);
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'invitation-mobile.png'),
     fullPage: true,
   });
   await guestBrowser.page.goto(link);
-  await guestBrowser.page.getByRole('heading', { name: 'Massimo & Liza', exact: true }).waitFor();
+  await guestBrowser.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
   const excess = await guestBrowser.page.request.put(`${prefix}/rsvp`, {
     headers: { origin: app.origin },
     data: { status: 'accepted', companions: ['One', 'Two'] },
@@ -203,7 +251,9 @@ try {
   const seeded = await seedGuests({ page, origin: app.origin });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
-  await newcomer.page.getByRole('heading', { name: 'Massimo & Liza', exact: true }).waitFor();
+  await newcomer.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
   assert.equal(await newcomer.page.getByRole('button', { name: 'Take a selfie' }).count(), 0);
   await page.goto(app.origin);
   await page.getByText('Jordan Reed', { exact: true }).waitFor();
@@ -249,7 +299,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, guest creation, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, wedding setup, guest creation, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {

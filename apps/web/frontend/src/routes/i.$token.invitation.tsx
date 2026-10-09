@@ -49,6 +49,14 @@ function Invitation() {
       </main>
     );
   }
+  if ('notReady' in invitation) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12 text-center">
+        <h1 className="font-semibold text-2xl">This invitation is not ready yet.</h1>
+        <p className="mt-4 text-muted-foreground">Please try again later.</p>
+      </main>
+    );
+  }
   return (
     <main className="mx-auto max-w-lg px-6 py-16 sm:py-24">
       <p className="text-muted-foreground text-sm">You’re invited</p>

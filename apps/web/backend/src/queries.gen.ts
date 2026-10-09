@@ -149,6 +149,16 @@ export interface IClearInvitationCompanionsResult {
 export interface ICreateInvitationCompanionResult {
 }
 
+/** Result of query `GetWeddingSettings`. */
+export interface IGetWeddingSettingsResult {
+    coupleNames: string;
+    date: string;
+}
+
+/** Result of query `SaveWeddingSettings`. */
+export interface ISaveWeddingSettingsResult {
+}
+
 export interface Queries {
     FindOwner: IFindOwnerResult;
     ListInvitationGuests: IListInvitationGuestsResult;
@@ -173,6 +183,8 @@ export interface Queries {
     UpdateInvitationRsvp: IUpdateInvitationRsvpResult;
     ClearInvitationCompanions: IClearInvitationCompanionsResult;
     CreateInvitationCompanion: ICreateInvitationCompanionResult;
+    GetWeddingSettings: IGetWeddingSettingsResult;
+    SaveWeddingSettings: ISaveWeddingSettingsResult;
 }
 
 declare module "@ilbertt/bun-sqlgen" {

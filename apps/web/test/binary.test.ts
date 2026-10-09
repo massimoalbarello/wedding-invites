@@ -33,6 +33,7 @@ test('standalone binary embeds frontend and migrations and preserves state on re
     expect((await app.request({ path: '/missing.js' })).status).toBe(HTTP_NOT_FOUND);
     expect((await app.request({ path: '/login' })).status).toBe(HTTP_OK);
     expect((await app.request({ path: '/api/admin/guests' })).status).toBe(HTTP_UNAUTHORIZED);
+    expect((await app.request({ path: '/api/admin/wedding' })).status).toBe(HTTP_UNAUTHORIZED);
     const absentInvitation = `/api/invitations/${'0'.repeat(INVITATION_TOKEN_LENGTH)}/content`;
     expect((await app.request({ path: absentInvitation })).status).toBe(HTTP_NOT_FOUND);
     await app.stop();
@@ -41,6 +42,7 @@ test('standalone binary embeds frontend and migrations and preserves state on re
     try {
       const migrations = await db`select name from __migrations`;
       expect(migrations).toContainEqual({ name: '0002_invitations.sql' });
+      expect(migrations).toContainEqual({ name: '0003_wedding_settings.sql' });
     } finally {
       await db.close();
     }

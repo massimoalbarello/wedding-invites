@@ -17,9 +17,12 @@ import {
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
+import { WeddingRepository } from '#backend/repositories/wedding/repository.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
 import { GuestManagementService } from '#backend/services/invitations/guest-management.ts';
+import { WeddingService } from '#backend/services/wedding/service.ts';
 export const ORIGIN = 'http://localhost:3000';
+export const EXAMPLE_WEDDING = { coupleNames: 'Alex & Sam', date: '2028-09-16' };
 const SECRET = 'invitation-test-secret-at-least-thirty-two-characters';
 const FACE_ID_OFFSET = 3;
 const DIFFERENT_PERSON = 3;
@@ -62,7 +65,10 @@ export function cookies(response: Response) {
     .join('; ');
 }
 export async function fixture(
-  input: { createInvitationsRepository?: (database: SQL) => InvitationsRepository } = {},
+  input: {
+    createInvitationsRepository?: (database: SQL) => InvitationsRepository;
+    weddingConfigured?: boolean;
+  } = {},
 ) {
   const folder = await mkdtemp(join(tmpdir(), 'wedding-api-test-'));
   const database = await createSqliteDatabase({ dataFolder: folder });
@@ -77,11 +83,14 @@ export async function fixture(
     faces,
     admin: new AdminRepository(database),
   });
+  const weddingRepository = new WeddingRepository(database);
+  const wedding = new WeddingService(weddingRepository);
   const auth = createAuth({ database, baseUrl: new URL(ORIGIN), secret: SECRET });
   const app = createApp({
     auth,
     management,
-    access: new GuestAccessService({ guests, faces }),
+    wedding,
+    access: new GuestAccessService({ guests, faces, wedding: weddingRepository }),
     origin: ORIGIN,
     frontend: { routes: () => new Map(), fallback: () => null },
   });
@@ -91,6 +100,9 @@ export async function fixture(
     const expiry = '2030-01-01T00:00:00.000Z';
     await database`insert into auth_user (id,name,email,emailVerified,createdAt,updatedAt) values (${userId}, ${userId}, ${`${userId}@test.invalid`}, 1, ${now}, ${now})`;
     await database`insert into auth_session (id,token,userId,expiresAt,createdAt,updatedAt) values (${token}, ${token}, ${userId}, ${expiry}, ${now}, ${now})`;
+    if (userId === OWNER_USER_ID && input.weddingConfigured !== false) {
+      await wedding.save({ actor: { userId }, settings: EXAMPLE_WEDDING });
+    }
     const signature = createHmac('sha256', SECRET).update(token).digest('base64');
     return `better-auth.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
   }
@@ -118,6 +130,9 @@ export async function fixture(
   }
   return {
     database,
+    folder,
+    wedding,
+    weddingRepository,
     guests,
     management,
     app,

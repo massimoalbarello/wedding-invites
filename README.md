@@ -1,6 +1,6 @@
 # Wedding invites
 
-Massimo and Liza’s invitations for 29 June 2027, with a private guest dashboard, personal links, face verification, and RSVPs.
+Wedding invitations with a private guest dashboard, personal links, face verification, and RSVPs. Set your couple names and ceremony date in the dashboard.
 
 [![Deploy to nibrun](.github/assets/deploy-your-own.svg)](https://app.nibrun.com/deploy?name=wedding-invites&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Fwedding-invites%2Freleases%2Fdownload%2Fnibrun-latest%2Fapp&port=3000&minimal)
 

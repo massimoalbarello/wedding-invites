@@ -14,6 +14,7 @@ import {
   statsOptions,
 } from '../queries/guests';
 import { sessionOptions } from '../queries/session';
+import { weddingOptions } from '../queries/wedding';
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>): GuestFilters => ({
@@ -39,6 +40,7 @@ export const Route = createFileRoute('/')({
       ),
       context.queryClient.ensureQueryData(statsOptions(context.userId)),
       context.queryClient.ensureQueryData(groupsOptions(context.userId)),
+      context.queryClient.ensureQueryData(weddingOptions(context.userId)),
     ]);
   },
   component: GuestList,
@@ -85,6 +87,7 @@ function GuestList() {
             + Add guest
           </Button>
         </div>
+        <WeddingSetup ownerId={userId} />
         <dl className="my-9 grid grid-cols-3 gap-x-6 gap-y-6 sm:grid-cols-6">
           {[
             ['Invited', stats.invited],
@@ -314,3 +317,23 @@ const replyFilters: { value: NonNullable<GuestFilters['status']> | ''; label: st
   { value: 'accepted', label: 'Accepted' },
   { value: 'declined', label: 'Declined' },
 ];
+
+function WeddingSetup({ ownerId }: { ownerId: string }) {
+  const { data: wedding } = useSuspenseQuery(weddingOptions(ownerId));
+  if (wedding) {
+    return null;
+  }
+  return (
+    <aside className="mt-7 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-muted/60 p-5">
+      <div>
+        <h2 className="font-medium text-sm">Set up your wedding</h2>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Add your names and ceremony date before sharing invitations.
+        </p>
+      </div>
+      <Button variant="outline" render={<Link to="/settings" />}>
+        Add wedding details
+      </Button>
+    </aside>
+  );
+}

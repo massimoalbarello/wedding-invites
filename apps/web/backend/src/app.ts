@@ -7,9 +7,11 @@ import { createInvitationsController } from '#backend/routes/api/invitations/con
 import type { FrontendAssetsServiceContract } from '#backend/services/frontend-assets/service.ts';
 import type { GuestAccessServiceContract } from '#backend/services/invitations/guest-access.ts';
 import type { GuestManagementServiceContract } from '#backend/services/invitations/guest-management.ts';
+import type { WeddingServiceContract } from '#backend/services/wedding/service.ts';
 export function createApp(input: {
   auth: Auth;
   management: GuestManagementServiceContract;
+  wedding: WeddingServiceContract;
   access: GuestAccessServiceContract;
   frontend: FrontendAssetsServiceContract;
   origin: string;

@@ -1,13 +1,8 @@
-import { OWNER_USER_ID } from '#backend/lib/auth/owner-registration.ts';
-import {
-  BadRequestError,
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-} from '#backend/lib/errors.ts';
+import { requireOwner } from '#backend/lib/auth/owner-access.ts';
+import { BadRequestError, ConflictError, NotFoundError } from '#backend/lib/errors.ts';
 import { opaqueId } from '#backend/lib/opaque-id.ts';
+import type { Actor } from '#backend/models/auth/model.ts';
 import {
-  type Actor,
   DEFAULT_PAGE_SIZE,
   type Guest,
   type GuestListInput,
@@ -23,11 +18,6 @@ import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
 
-export function requireOwner(actor: Actor) {
-  if (actor.userId !== OWNER_USER_ID) {
-    throw new ForbiddenError();
-  }
-}
 export function publicGuest(guest: Guest) {
   return {
     id: guest.publicId,

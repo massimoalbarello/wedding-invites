@@ -10,24 +10,25 @@ import { opaqueId } from '#backend/lib/opaque-id.ts';
 import { compareFace } from '#backend/models/faces/comparison.ts';
 import {
   type Guest,
-  INVITATION_DATE,
   MAX_GUEST_NAME_LENGTH,
   MILLISECONDS_PER_SECOND,
   type RsvpStatus,
   SESSION_MAX_AGE_SECONDS,
 } from '#backend/models/invitations/model.ts';
+import type { WeddingSettings } from '#backend/models/wedding/model.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
+import type { WeddingRepositoryContract } from '#backend/repositories/wedding/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
 
 function hashSession(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
-function invitationContent(guest: Guest) {
+function invitationContent({ guest, wedding }: { guest: Guest; wedding: WeddingSettings }) {
   return {
     name: guest.name,
-    date: INVITATION_DATE,
-    coupleNames: 'Massimo & Liza',
+    date: wedding.date,
+    coupleNames: wedding.coupleNames,
     status: guest.status,
     maxGuests: guest.maxGuests,
     companions: guest.companions,
@@ -35,7 +36,11 @@ function invitationContent(guest: Guest) {
 }
 export class GuestAccessService {
   constructor(
-    private readonly input: { guests: InvitationsRepositoryContract; faces: FaceAnalyzer },
+    private readonly input: {
+      guests: InvitationsRepositoryContract;
+      faces: FaceAnalyzer;
+      wedding: WeddingRepositoryContract;
+    },
   ) {}
   private async guest(token: string) {
     const guest = await this.input.guests.byToken(token);
@@ -122,8 +127,17 @@ export class GuestAccessService {
     }
     return this.session(guest);
   }
+  private async weddingDetails(ownerId: string) {
+    const wedding = await this.input.wedding.get({ ownerId });
+    if (!wedding) {
+      throw new ConflictError('This invitation is not ready yet. Please try again later.');
+    }
+    return wedding;
+  }
   async content(input: { token: string; session?: string }) {
-    return invitationContent(await this.authorized(input));
+    const guest = await this.authorized(input);
+    const wedding = await this.weddingDetails(guest.ownerId);
+    return invitationContent({ guest, wedding });
   }
   async rsvp(input: {
     token: string;
@@ -132,6 +146,7 @@ export class GuestAccessService {
     companions: string[];
   }) {
     const guest = await this.authorized(input);
+    await this.weddingDetails(guest.ownerId);
     const names = input.status === 'accepted' ? input.companions.map((name) => name.trim()) : [];
     if (names.some((name) => !name || name.length > MAX_GUEST_NAME_LENGTH)) {
       throw new BadRequestError('Enter a name for each guest.');

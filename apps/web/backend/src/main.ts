@@ -9,9 +9,11 @@ import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import { createLocalFaceAnalyzer } from '#backend/repositories/faces/local-analyzer.ts';
 import { FrontendAssetsRepository } from '#backend/repositories/frontend-assets/repository.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
+import { WeddingRepository } from '#backend/repositories/wedding/repository.ts';
 import { FrontendAssetsService } from '#backend/services/frontend-assets/service.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
 import { GuestManagementService } from '#backend/services/invitations/guest-management.ts';
+import { WeddingService } from '#backend/services/wedding/service.ts';
 
 const MULTIPART_OVERHEAD_BYTES = 65_536;
 const env = loadEnv();
@@ -24,6 +26,7 @@ const faces = createLocalFaceAnalyzer({ dataFolder: env.DATA_FOLDER });
 try {
   await runMigrations({ db: database });
   const guests = new InvitationsRepository(database);
+  const wedding = new WeddingRepository(database);
   const app = createApp({
     auth: createAuth({
       database,
@@ -32,7 +35,8 @@ try {
       secret: secret.value,
     }),
     management: new GuestManagementService({ guests, admin: new AdminRepository(database), faces }),
-    access: new GuestAccessService({ guests, faces }),
+    access: new GuestAccessService({ guests, faces, wedding }),
+    wedding: new WeddingService(wedding),
     frontend: new FrontendAssetsService(new FrontendAssetsRepository()),
     origin: env.BASE_URL.origin,
   }).listen({

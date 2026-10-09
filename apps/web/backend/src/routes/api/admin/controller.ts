@@ -10,11 +10,14 @@ import {
   PhotoUploadSchema,
   StatsSchema,
 } from '#backend/routes/api/admin/model.ts';
+import { WeddingSettingsSchema } from '#backend/routes/api/admin/wedding/model.ts';
 import { apiResponse } from '#backend/routes/api/response.ts';
 import type { GuestManagementServiceContract } from '#backend/services/invitations/guest-management.ts';
+import type { WeddingServiceContract } from '#backend/services/wedding/service.ts';
 export function createAdminController(input: {
   auth: Auth;
   management: GuestManagementServiceContract;
+  wedding: WeddingServiceContract;
   origin: string;
 }) {
   return new Elysia({ prefix: '/admin' })
@@ -32,6 +35,20 @@ export function createAdminController(input: {
             throw new ForbiddenError('Invalid request origin.');
           }
           return { actor: { userId: session.user.id } };
+        })
+        .get(
+          '/wedding',
+          async ({ actor }) => {
+            const settings = await input.wedding.get({ actor });
+            return Response.json(settings);
+          },
+          {
+            response: apiResponse(t.Union([WeddingSettingsSchema, t.Null()])),
+          },
+        )
+        .put('/wedding', ({ actor, body }) => input.wedding.save({ actor, settings: body }), {
+          body: WeddingSettingsSchema,
+          response: apiResponse(WeddingSettingsSchema),
         })
         .get('/stats', ({ actor }) => input.management.stats({ actor }), {
           response: apiResponse(StatsSchema),
