@@ -9,7 +9,7 @@ export type GuestFilters = {
 export const guestKeys = {
   owner: (ownerId: string) => ['guests', ownerId] as const,
   list: ({ ownerId, filters }: { ownerId: string; filters: GuestFilters }) =>
-    [...guestKeys.owner(ownerId), 'list', filters] as const,
+    [...guestKeys.owner(ownerId), 'list', 'group', filters] as const,
   detail: ({ ownerId, id }: { ownerId: string; id: string }) =>
     [...guestKeys.owner(ownerId), 'detail', id] as const,
 };
@@ -29,7 +29,7 @@ export function guestsOptions({ ownerId, filters }: { ownerId: string; filters: 
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const result = await api.api.admin.guests.get({
-        query: { ...filters, cursor: pageParam, limit: 40 },
+        query: { ...filters, order: 'group', cursor: pageParam, limit: 40 },
       });
       if (result.error) {
         throw new Error('Could not load the guest list. Try again.');

@@ -25,7 +25,7 @@ export const Route = createFileRoute('/')({
       search.status === 'accepted' || search.status === 'declined' || search.status === 'pending'
         ? search.status
         : undefined,
-    group: typeof search.group === 'string' && search.group ? search.group : undefined,
+    group: typeof search.group === 'string' ? search.group : undefined,
   }),
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.fetchQuery(sessionOptions);
@@ -76,7 +76,7 @@ function GuestList() {
   const filter = (next: Partial<GuestFilters>) => {
     void navigate({ search: { ...filters, ...next }, replace: true });
   };
-  const filtered = Boolean(filters.search || filters.status || filters.group);
+  const filtered = Boolean(filters.search || filters.status || filters.group !== undefined);
   return (
     <AdminLayout>
       <main className="mx-auto max-w-6xl px-5 py-9 sm:px-10 sm:py-12">
@@ -133,19 +133,38 @@ function GuestList() {
           {groups.length > 0 && (
             <Select
               items={[
-                { value: '', label: 'All groups' },
-                ...groups.map((group) => ({ value: group, label: group })),
+                { value: 'all', label: 'All groups' },
+                { value: 'ungrouped', label: 'Ungrouped' },
+                ...groups.map((group) => ({ value: `group:${group}`, label: group })),
               ]}
-              value={filters.group ?? ''}
-              onValueChange={(value) => filter({ group: value || undefined })}
+              value={
+                filters.group === undefined
+                  ? 'all'
+                  : filters.group === ''
+                    ? 'ungrouped'
+                    : `group:${filters.group}`
+              }
+              onValueChange={(value) => {
+                if (value !== null) {
+                  filter({
+                    group:
+                      value === 'all'
+                        ? undefined
+                        : value === 'ungrouped'
+                          ? ''
+                          : value.slice('group:'.length),
+                  });
+                }
+              }}
             >
               <SelectTrigger aria-label="Filter by group" className="max-w-44">
                 <SelectValue className="truncate" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All groups</SelectItem>
+                <SelectItem value="all">All groups</SelectItem>
+                <SelectItem value="ungrouped">Ungrouped</SelectItem>
                 {groups.map((group) => (
-                  <SelectItem key={group} value={group}>
+                  <SelectItem key={group} value={`group:${group}`}>
                     {group}
                   </SelectItem>
                 ))}
@@ -182,7 +201,7 @@ function GuestList() {
               )}
             </div>
           ) : (
-            <GuestRows guests={guests} />
+            <GuestGroups guests={guests} />
           )}
           <ListContinuation
             sentinel={sentinel}
@@ -206,6 +225,27 @@ function GuestList() {
   );
 }
 
+function GuestGroups({ guests }: { guests: Guest[] }) {
+  const grouped = new Map<string, Guest[]>();
+  for (const guest of guests) {
+    const members = grouped.get(guest.groupName) ?? [];
+    members.push(guest);
+    grouped.set(guest.groupName, members);
+  }
+  return (
+    <div className="space-y-8">
+      {Array.from(grouped, ([group, members]) => (
+        <section key={group} aria-label={group || 'Ungrouped'}>
+          <h2 className="mb-2 break-words px-3 font-medium text-muted-foreground text-sm sm:px-4">
+            {group || 'Ungrouped'}
+          </h2>
+          <GuestRows guests={members} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
 function GuestRows({ guests }: { guests: Guest[] }) {
   return (
     <ul className="space-y-1">
@@ -224,7 +264,6 @@ function GuestRows({ guests }: { guests: Guest[] }) {
                 <p className="truncate font-medium">{guest.name}</p>
                 <p className="mt-1 truncate text-muted-foreground text-xs">
                   {[
-                    guest.groupName,
                     guest.faceScanRequired ? 'Face scan' : 'Direct access',
                     guest.maxGuests > 0
                       ? `Up to ${guest.maxGuests} additional ${guest.maxGuests === 1 ? 'guest' : 'guests'}`

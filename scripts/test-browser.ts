@@ -122,7 +122,9 @@ async function createGuestInDashboard(page: Page) {
   await page.getByRole('button', { name: 'Save guest', exact: true }).click();
   await page.getByRole('alert').waitFor();
   await page.getByLabel('Full name', { exact: true }).fill('Taylor Reed');
-  await page.getByLabel('Group (optional)', { exact: true }).fill('Friends');
+  await page.getByRole('combobox', { name: 'Group', exact: true }).click();
+  await page.getByRole('option', { name: 'Create a new group…', exact: true }).click();
+  await page.getByRole('textbox', { name: 'New group name', exact: true }).fill('Friends');
   await page.getByLabel('Additional guests allowed', { exact: true }).fill('1');
   await page
     .getByLabel('Upload reference photos', { exact: true })
@@ -256,6 +258,60 @@ async function saveReply(page: Page) {
   await page.getByRole('status').filter({ hasText: 'You’re on the list' }).waitFor();
 }
 
+async function checkGuestGrouping({ page, origin }: { page: Page; origin: string }) {
+  await page.goto(origin);
+  await page.getByRole('link', { name: 'Add guest' }).click();
+  await page.getByLabel('Full name', { exact: true }).fill('Riley Brooks');
+  const chooseGroup = async (name: string) => {
+    await page.getByRole('combobox', { name: 'Group', exact: true }).click();
+    await page.getByRole('option', { name, exact: true }).click();
+  };
+  await chooseGroup('Friends');
+  await page.screenshot({ path: resolve(artifacts, 'guest-existing-group.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('heading', { name: 'Riley Brooks', exact: true }).waitFor();
+  const id = new URL(page.url()).pathname.split('/').at(-1)!;
+  const savedGroup = async () => {
+    const response = await page.request.get(`${origin}/api/admin/guests/${id}`);
+    assert(response.ok());
+    return ((await response.json()) as { groupName: string }).groupName;
+  };
+  assert.equal(await savedGroup(), 'Friends');
+  for (const group of ['', 'Neighbours', 'Friends']) {
+    await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+    await chooseGroup(group === 'Neighbours' ? 'Create a new group…' : group || 'Ungrouped');
+    if (group === 'Neighbours') {
+      await page.getByRole('textbox', { name: 'New group name', exact: true }).fill(group);
+    }
+    await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+    assert.equal(await savedGroup(), group);
+  }
+  await page.goto(origin);
+  await page
+    .getByRole('region', { name: 'Friends', exact: true })
+    .getByText('Riley Brooks', { exact: true })
+    .waitFor();
+  await page
+    .getByRole('region', { name: 'Family', exact: true })
+    .getByText('Jamie Chen', { exact: true })
+    .waitFor();
+  await page
+    .getByRole('region', { name: 'Ungrouped', exact: true })
+    .getByText('Charlie Lane', { exact: true })
+    .waitFor();
+  await page.getByRole('combobox', { name: 'Filter by group', exact: true }).click();
+  await page.getByRole('option', { name: 'Ungrouped', exact: true }).click();
+  await page.reload();
+  await page
+    .getByRole('region', { name: 'Ungrouped', exact: true })
+    .getByText('Charlie Lane', { exact: true })
+    .waitFor();
+  assert.equal(await page.getByRole('region', { name: 'Friends', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await page.getByRole('region', { name: 'Friends', exact: true }).waitFor();
+}
+
 async function checkPagination({ page, origin }: { page: Page; origin: string }) {
   for (let index = 1; index <= PAGE_OVERFLOW_COUNT; index++) {
     const response = await page.request.post(`${origin}/api/admin/guests`, {
@@ -275,6 +331,12 @@ async function checkPagination({ page, origin }: { page: Page; origin: string })
     .getByRole('button', { name: 'Load more people', exact: true })
     .scrollIntoViewIfNeeded();
   await final.waitFor();
+  const group = page.getByRole('region', { name: 'Test group', exact: true });
+  assert.equal(await group.count(), 1, 'A group spanning pages must keep one section.');
+  assert.equal(
+    await group.getByRole('link').filter({ hasText: 'Example guest' }).count(),
+    PAGE_OVERFLOW_COUNT,
+  );
   await page.getByRole('searchbox', { name: 'Search guests' }).fill('Jordan Reed');
   await page.getByText('Jordan Reed', { exact: true }).waitFor();
 }
@@ -383,6 +445,7 @@ try {
 
   const seeded = await seedGuests({ page, origin: app.origin });
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
+  await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
   await newcomer.page
@@ -393,10 +456,10 @@ try {
   await page.getByText('Jordan Reed', { exact: true }).waitFor();
   const stats = await (await page.request.get(`${app.origin}/api/admin/stats`)).json();
   assert.deepEqual(stats, {
-    invited: 7,
+    invited: 8,
     accepted: 4,
     declined: 1,
-    pending: 2,
+    pending: 3,
     companions: 4,
     attending: 8,
   });
@@ -435,7 +498,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {

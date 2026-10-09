@@ -52,6 +52,7 @@ export const GuestSchema = t.Object({
   references: t.Array(t.Object({ id: PublicIdSchema, createdAt: t.String() })),
 });
 export const GuestListQuerySchema = t.Object({
+  order: t.Optional(t.Literal('group')),
   cursor: t.Optional(GuestPublicIdSchema),
   search: t.Optional(t.String({ maxLength: MAX_GUEST_NAME_LENGTH })),
   group: t.Optional(t.String({ maxLength: MAX_GROUP_NAME_LENGTH })),

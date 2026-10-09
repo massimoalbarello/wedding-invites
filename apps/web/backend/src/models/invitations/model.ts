@@ -29,6 +29,7 @@ export type Guest = GuestSettings & {
   references: ReferencePhoto[];
 };
 export type GuestListInput = {
+  order?: 'group';
   cursor?: string;
   search?: string;
   group?: string;

@@ -82,6 +82,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
   }
   async list(input: GuestListInput & { ownerId: string }) {
     const search = input.search ?? '';
+    const grouped = Number(input.order === 'group');
     const rows = await this.sql.ListInvitationGuests`
       /* @type id string */
       /* @type owner_id string */
@@ -89,17 +90,32 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       /* @type created_at string */
       /* @type companions string */
       /* @type references_json string */
+      with cursor_guest as (
+        select group_name, public_id from invitation_guest
+        where owner_id = ${input.ownerId} and public_id = ${input.cursor ?? null}
+      )
       select g.*,
         (select json_group_array(json_object('id', c.id, 'name', c.name)) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
         (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from (select id, created_at from invitation_reference where owner_id = g.owner_id and guest_id = g.id order by created_at, rowid) p) as references_json
       from invitation_guest g
       where g.owner_id = ${input.ownerId}
-        and (${input.cursor ?? null} is null or g.public_id > ${input.cursor ?? null})
+        and (
+          ${input.cursor ?? null} is null
+          or (${grouped} = 0 and g.public_id > ${input.cursor ?? null})
+          or (${grouped} = 1 and (g.group_name = '', g.group_name collate nocase, g.group_name, g.public_id) > (
+            select group_name = '', group_name collate nocase, group_name, public_id from cursor_guest
+          ))
+        )
         and (${input.status ?? null} is null or g.status = ${input.status ?? null})
         and (${input.group ?? null} is null or g.group_name = ${input.group ?? null})
         and (${search} = '' or instr(lower(g.name), lower(${search})) > 0 or instr(lower(g.group_name), lower(${search})) > 0
           or exists (select 1 from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id and instr(lower(c.name), lower(${search})) > 0))
-      order by g.public_id asc limit ${input.limit}
+      order by
+        case when ${grouped} = 1 then g.group_name = '' else 0 end,
+        case when ${grouped} = 1 then g.group_name else '' end collate nocase,
+        case when ${grouped} = 1 then g.group_name else '' end,
+        g.public_id
+      limit ${input.limit}
     `;
     return rows.map(mapGuest);
   }
@@ -227,7 +243,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
   }
   async groups(ownerId: string) {
     const rows = await this.sql.InvitationGroups`
-      select distinct group_name from invitation_guest where owner_id = ${ownerId} and group_name <> '' order by group_name collate nocase
+      select distinct group_name from invitation_guest where owner_id = ${ownerId} and group_name <> '' order by group_name collate nocase, group_name
     `;
     return rows.map((row) => row.group_name);
   }

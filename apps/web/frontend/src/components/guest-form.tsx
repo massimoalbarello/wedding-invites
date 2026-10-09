@@ -3,6 +3,7 @@ import { Input } from '@repo/ui/input';
 import { Switch } from '@repo/ui/switch';
 import { revalidateLogic, useForm } from '@tanstack/react-form';
 import type { GuestDraft, GuestSettings } from '../queries/guests';
+import { type GuestGroupDraft, GuestGroupField } from './guest-group-field';
 import {
   type ExistingGuestPhoto,
   GuestPhotosField,
@@ -23,6 +24,8 @@ export function GuestForm({
   groups?: string[];
   references?: ExistingGuestPhoto[];
 }) {
+  const { groupName, ...guestSettings } = initial;
+  const groupNames = [...new Set([...groups, groupName].filter(Boolean))];
   const form = useForm({
     validationLogic: revalidateLogic(),
     validators: {
@@ -34,13 +37,20 @@ export function GuestForm({
         }),
     },
     defaultValues: {
-      ...initial,
+      ...guestSettings,
+      group: (groupName
+        ? { kind: 'existing', name: groupName }
+        : { kind: 'ungrouped' }) as GuestGroupDraft,
       pendingPhotos: [] as PendingGuestPhoto[],
       removedPhotoIds: [] as string[],
     },
     onSubmit: async ({ value }) => {
-      const { pendingPhotos, ...settings } = value;
-      await onSave({ ...settings, photos: pendingPhotos.map((photo) => photo.file) });
+      const { pendingPhotos, group, ...settings } = value;
+      await onSave({
+        ...settings,
+        groupName: group.kind === 'ungrouped' ? '' : group.name,
+        photos: pendingPhotos.map((photo) => photo.file),
+      });
     },
   });
   return (
@@ -95,30 +105,23 @@ export function GuestForm({
           </div>
         )}
       </form.Field>
-      <form.Field name="groupName">
+      <form.Field
+        name="group"
+        validators={{
+          onDynamic: ({ value }) =>
+            value.kind === 'new' && !value.name.trim()
+              ? 'Enter a name for the new group.'
+              : undefined,
+        }}
+      >
         {(field) => (
-          <div className="space-y-2">
-            <label htmlFor="guest-group" className="font-medium text-sm">
-              Group <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <Input
-              id="guest-group"
-              list="guest-groups"
-              placeholder="Family, friends, colleagues…"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onValueChange={field.handleChange}
-              maxLength={80}
-            />
-            <datalist id="guest-groups">
-              {groups.map((group) => (
-                <option key={group} value={group} />
-              ))}
-            </datalist>
-            <p className="text-muted-foreground text-sm">
-              Keep people together in your guest list.
-            </p>
-          </div>
+          <GuestGroupField
+            value={field.state.value}
+            groups={groupNames}
+            onChange={field.handleChange}
+            onBlur={field.handleBlur}
+            errors={field.state.meta.errors.filter((error) => typeof error === 'string')}
+          />
         )}
       </form.Field>
       <form.Subscribe
