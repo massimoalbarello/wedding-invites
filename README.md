@@ -3,9 +3,11 @@
 Starter for Massimo and Liza’s wedding invitation app for the ceremony on 29 June 2027.
 Bootstrapped from [bun-full-stack-template](https://github.com/massimoalbarello/bun-full-stack-template)
 at commit `d091a956e21f45ff91cd2baa5ebe76c4f1706fb7`.
-The invitation experience, guest access, RSVP, and private management view are still being designed.
-The application currently runs the template’s passkey and private-notes example.
-Requires Bun 1.4.0 and Node 24 (for architecture and frontend lint tools).
+A private passkey dashboard manages invitees, reference photos, access settings, and RSVPs.
+Personal invitation links open a camera check or go directly to the invitation when bypass is enabled.
+The creative invitation experience is reserved for a later iteration.
+Requires Bun 1.4.0, Node 24, CMake 3.24+, and a C++ compiler. Browser journeys also need FFmpeg;
+Linux builds use Docker. The first native face-engine build downloads pinned sources and models.
 
 ```sh
 bun install --frozen-lockfile
@@ -13,9 +15,10 @@ bunx playwright install chromium
 bun run dev
 ```
 
-Open http://localhost:5173 and create an account with a passkey. Each account has private notes.
-Passkeys require localhost or HTTPS. Registration is open; decide your product’s onboarding policy
-before exposing a deployment. Accounts have no password or email recovery flow.
+Open http://localhost:5173 and create the owner dashboard with a passkey. Only the first owner
+can register; later visits use that passkey to sign in. Complete this initial setup before sharing
+a deployment. Passkeys and guest camera access require localhost or HTTPS.
+The owner account has no password or email recovery flow.
 
 ## Opinionated stack
 
@@ -55,9 +58,8 @@ requirement cannot fit the established approach. Package manifests and `bun.lock
 | [Fontsource](https://fontsource.org/) | Bundles DM Sans and Geist Mono locally with the frontend. |
 | [tweakcn](https://tweakcn.com/) | Provides the Minimal Neutral theme whose tokens are checked into `packages/ui`. |
 
-[Zod](https://zod.dev/) is also included as an available schema-validation library, but the starter
-does not currently import it. Backend request validation uses Elysia schemas; add client schemas
-only for a concrete form or URL boundary, following the [frontend guide](apps/web/frontend/AGENTS.md).
+[Zod](https://zod.dev/) validates native face-engine results and image fingerprints. Backend request
+validation uses Elysia schemas; client forms follow the [frontend guide](apps/web/frontend/AGENTS.md).
 
 ### Testing, guardrails, and delivery
 
@@ -86,24 +88,28 @@ only for a concrete form or URL boundary, following the [frontend guide](apps/we
 - `AGENTS.md` and scoped guides: engineering judgment, ownership, trust, tests, and UI contracts.
 - `.agents/skills`: feature delivery, pull request creation, and nibrun deployment workflows.
 
-The notes example demonstrates the complete vertical slice. Replace it with your product’s domain;
-retain the ownership, validation, query, authentication, and accessibility boundaries.
+Face detection and matching run locally using OpenCV YuNet and SFace. The executable embeds the
+native engine and models, while reference images, observations, and revocable guest sessions live
+in the private SQLite database. A separate image-copy heuristic rejects recognizable reuse of a
+reference photo; it does not establish camera liveness.
 
 ## Development and verification
 
 ```sh
-bun run dev:isolated:seeded  # disposable database, real passkey signup, seeded through the UI
+bun run dev:isolated:seeded  # disposable database, real passkey signup, seeded through authenticated APIs
 bun run fix:codestyle
 bun run check:all
 bun run test
 bun run test:browser
+bun --filter @repo/web test:faces
 bun run build              # executable for this machine
 bun run test:binary
 ```
 
 `dev:isolated` opens an unseeded browser. Both isolated modes use separate ports and temporary data,
-and remove only their own data on shutdown. Browser checks cover registration, sign-in, session
-changes, notes, and cross-account access. Screenshots go to ignored `artifacts/`.
+and remove only their own data on shutdown. Browser checks cover real passkey registration/sign-in,
+face matching, reference-photo reuse, forwarded links, bypass settings, RSVPs, pagination, and
+revocation. Screenshots go to ignored `artifacts/`. Test photography is attributed in `LICENSE`.
 
 After editing schema or repository SQL, run `bun --filter @repo/web generate:queries` and commit the
 updated generated file. CI checks generation drift, types, formatting, frontend conventions,
@@ -131,7 +137,7 @@ bun run deploy --new my-app
 bun run deploy --app exact-existing-slug
 ```
 
-The deploy command builds for Linux x64 and embeds the frontend and SQL migrations into
+The deploy command builds for Linux x64 and embeds the frontend, face engine, models, and migrations into
 `apps/web/dist/app`. `bun run build:linux` produces the same binary without deploying it.
 CI uploads the verified executable as `nibrun-binary`; no deployment credentials are required in CI.
 

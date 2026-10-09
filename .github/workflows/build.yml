@@ -25,7 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/prepare
+      - run: sudo apt-get update && sudo apt-get install -y cmake build-essential ffmpeg
+      - uses: actions/cache@v5
+        with:
+          path: |
+            .cache/face-build-host
+            apps/web/.cache/face-runtime-host
+          key: faces-host-${{ runner.os }}-${{ hashFiles('apps/web/backend/native/faces/**', 'apps/web/backend/src/models/faces/models.ts') }}
       - run: bunx playwright install --with-deps chromium
+      - run: bun --filter @repo/web test:faces
       - run: bun run test:browser
       - uses: actions/upload-artifact@v7
         if: always()

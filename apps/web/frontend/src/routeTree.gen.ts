@@ -11,6 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GuestsGuestIdRouteImport } from './routes/guests.$guestId'
+import { Route as GuestsNewRouteImport } from './routes/guests.new'
+import { Route as ITokenRouteImport } from './routes/i.$token'
+import { Route as ITokenIndexRouteImport } from './routes/i.$token.index'
+import { Route as ITokenInvitationRouteImport } from './routes/i.$token.invitation'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +27,94 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuestsGuestIdRoute = GuestsGuestIdRouteImport.update({
+  id: '/guests/$guestId',
+  path: '/guests/$guestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuestsNewRoute = GuestsNewRouteImport.update({
+  id: '/guests/new',
+  path: '/guests/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ITokenRoute = ITokenRouteImport.update({
+  id: '/i/$token',
+  path: '/i/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ITokenIndexRoute = ITokenIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ITokenRoute,
+} as any)
+const ITokenInvitationRoute = ITokenInvitationRouteImport.update({
+  id: '/invitation',
+  path: '/invitation',
+  getParentRoute: () => ITokenRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/guests/$guestId': typeof GuestsGuestIdRoute
+  '/guests/new': typeof GuestsNewRoute
+  '/i/$token': typeof ITokenRouteWithChildren
+  '/i/$token/invitation': typeof ITokenInvitationRoute
+  '/i/$token/': typeof ITokenIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/guests/$guestId': typeof GuestsGuestIdRoute
+  '/guests/new': typeof GuestsNewRoute
+  '/i/$token/invitation': typeof ITokenInvitationRoute
+  '/i/$token': typeof ITokenIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/guests/$guestId': typeof GuestsGuestIdRoute
+  '/guests/new': typeof GuestsNewRoute
+  '/i/$token': typeof ITokenRouteWithChildren
+  '/i/$token/invitation': typeof ITokenInvitationRoute
+  '/i/$token/': typeof ITokenIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/guests/$guestId'
+    | '/guests/new'
+    | '/i/$token'
+    | '/i/$token/invitation'
+    | '/i/$token/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/'
+    | '/login'
+    | '/guests/$guestId'
+    | '/guests/new'
+    | '/i/$token/invitation'
+    | '/i/$token'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/guests/$guestId'
+    | '/guests/new'
+    | '/i/$token'
+    | '/i/$token/invitation'
+    | '/i/$token/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  GuestsGuestIdRoute: typeof GuestsGuestIdRoute
+  GuestsNewRoute: typeof GuestsNewRoute
+  ITokenRoute: typeof ITokenRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +133,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guests/$guestId': {
+      id: '/guests/$guestId'
+      path: '/guests/$guestId'
+      fullPath: '/guests/$guestId'
+      preLoaderRoute: typeof GuestsGuestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guests/new': {
+      id: '/guests/new'
+      path: '/guests/new'
+      fullPath: '/guests/new'
+      preLoaderRoute: typeof GuestsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/i/$token': {
+      id: '/i/$token'
+      path: '/i/$token'
+      fullPath: '/i/$token'
+      preLoaderRoute: typeof ITokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/i/$token/': {
+      id: '/i/$token/'
+      path: '/'
+      fullPath: '/i/$token/'
+      preLoaderRoute: typeof ITokenIndexRouteImport
+      parentRoute: typeof ITokenRoute
+    }
+    '/i/$token/invitation': {
+      id: '/i/$token/invitation'
+      path: '/invitation'
+      fullPath: '/i/$token/invitation'
+      preLoaderRoute: typeof ITokenInvitationRouteImport
+      parentRoute: typeof ITokenRoute
+    }
   }
 }
+
+interface ITokenRouteChildren {
+  ITokenInvitationRoute: typeof ITokenInvitationRoute
+  ITokenIndexRoute: typeof ITokenIndexRoute
+}
+
+const ITokenRouteChildren: ITokenRouteChildren = {
+  ITokenInvitationRoute: ITokenInvitationRoute,
+  ITokenIndexRoute: ITokenIndexRoute,
+}
+
+const ITokenRouteWithChildren =
+  ITokenRoute._addFileChildren(ITokenRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  GuestsGuestIdRoute: GuestsGuestIdRoute,
+  GuestsNewRoute: GuestsNewRoute,
+  ITokenRoute: ITokenRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
