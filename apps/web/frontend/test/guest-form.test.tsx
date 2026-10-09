@@ -32,7 +32,14 @@ test('a guest requires a name and saves the per-person access choices', async ()
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
   await waitFor(() =>
     expect(saves).toEqual([
-      { name: 'Alex Morgan', groupName: '', faceScanRequired: false, maxGuests: 2 },
+      {
+        name: 'Alex Morgan',
+        groupName: '',
+        faceScanRequired: false,
+        maxGuests: 2,
+        photos: [],
+        removedPhotoIds: [],
+      },
     ]),
   );
 });

@@ -61,13 +61,24 @@ export interface IInvitationGuestByTokenResult {
 export interface ICreateInvitationGuestResult {
 }
 
+/** Result of query `InvitationEditState`. */
+export interface IInvitationEditStateResult {
+    face_scan_required: number;
+    companions: number;
+    references_count: number;
+    removed_count: number;
+}
+
 /** Result of query `RevokeChangedInvitationMode`. */
 export interface IRevokeChangedInvitationModeResult {
 }
 
 /** Result of query `UpdateInvitationGuest`. */
 export interface IUpdateInvitationGuestResult {
-    id: string;
+}
+
+/** Result of query `RemoveEditedInvitationReferences`. */
+export interface IRemoveEditedInvitationReferencesResult {
 }
 
 /** Result of query `InvitationStats`. */
@@ -149,6 +160,10 @@ export interface IClearInvitationCompanionsResult {
 export interface ICreateInvitationCompanionResult {
 }
 
+/** Result of query `InsertGuestReference`. */
+export interface IInsertGuestReferenceResult {
+}
+
 /** Result of query `GetWeddingSettings`. */
 export interface IGetWeddingSettingsResult {
     coupleNames: string;
@@ -165,8 +180,10 @@ export interface Queries {
     InvitationGuestById: IInvitationGuestByIdResult;
     InvitationGuestByToken: IInvitationGuestByTokenResult;
     CreateInvitationGuest: ICreateInvitationGuestResult;
+    InvitationEditState: IInvitationEditStateResult;
     RevokeChangedInvitationMode: IRevokeChangedInvitationModeResult;
     UpdateInvitationGuest: IUpdateInvitationGuestResult;
+    RemoveEditedInvitationReferences: IRemoveEditedInvitationReferencesResult;
     InvitationStats: IInvitationStatsResult;
     InvitationGroups: IInvitationGroupsResult;
     SetInvitationAccess: ISetInvitationAccessResult;
@@ -183,6 +200,7 @@ export interface Queries {
     UpdateInvitationRsvp: IUpdateInvitationRsvpResult;
     ClearInvitationCompanions: IClearInvitationCompanionsResult;
     CreateInvitationCompanion: ICreateInvitationCompanionResult;
+    InsertGuestReference: IInsertGuestReferenceResult;
     GetWeddingSettings: IGetWeddingSettingsResult;
     SaveWeddingSettings: ISaveWeddingSettingsResult;
 }

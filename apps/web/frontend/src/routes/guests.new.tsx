@@ -36,7 +36,7 @@ function NewGuest() {
         </Link>
         <h1 className="mt-8 font-semibold text-3xl tracking-tight">Add a guest</h1>
         <p className="mt-2 text-muted-foreground text-sm">
-          Create their personal link, then add reference photos.
+          Add their details and photos to create a personal invitation.
         </p>
         <GuestForm
           initial={{ name: '', groupName: '', faceScanRequired: true, maxGuests: 0 }}

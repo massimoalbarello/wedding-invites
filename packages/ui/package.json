@@ -8,7 +8,8 @@
     "./theme.css": "./src/styles/minimal-neutral.css",
     "./input": "./src/components/ui/input.tsx",
     "./switch": "./src/components/ui/switch.tsx",
-    "./select": "./src/components/ui/select.tsx"
+    "./select": "./src/components/ui/select.tsx",
+    "./avatar": "./src/components/ui/avatar.tsx"
   },
   "scripts": {
     "check:types": "bun run --bun tsc"

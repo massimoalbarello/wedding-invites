@@ -12,13 +12,30 @@ import {
 import type { Queries } from '#backend/queries.gen.ts';
 
 export type GuestScope = { ownerId: string; guestId: string };
+export type PreparedReference = {
+  id: string;
+  image: Uint8Array;
+  mediaType: string;
+  observation: FaceObservation;
+};
+export type GuestUpdateResult =
+  | 'saved'
+  | 'not_found'
+  | 'companion_limit'
+  | 'reference_limit'
+  | 'reference_missing';
+export type GuestUpdate = GuestScope & {
+  settings: GuestSettings;
+  references: PreparedReference[];
+  removedPhotoIds: string[];
+};
 export type StoredReference = { id: string; observation: FaceObservation };
 export interface InvitationsRepositoryContract {
   list(input: GuestListInput & { ownerId: string }): Promise<Guest[]>;
   get(input: { ownerId: string; publicId: string }): Promise<Guest | null>;
   byToken(token: string): Promise<Guest | null>;
-  create(guest: Guest): Promise<void>;
-  update(input: GuestScope & { settings: GuestSettings }): Promise<boolean>;
+  create(input: { guest: Guest; references: PreparedReference[] }): Promise<void>;
+  update(input: GuestUpdate): Promise<GuestUpdateResult>;
   stats(ownerId: string): Promise<InvitationStats>;
   groups(ownerId: string): Promise<string[]>;
   setAccess(input: GuestScope & { active: boolean }): Promise<void>;
@@ -74,7 +91,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       /* @type references_json string */
       select g.*,
         (select json_group_array(json_object('id', c.id, 'name', c.name)) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
-        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id) as references_json
+        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from (select id, created_at from invitation_reference where owner_id = g.owner_id and guest_id = g.id order by created_at, rowid) p) as references_json
       from invitation_guest g
       where g.owner_id = ${input.ownerId}
         and (${input.cursor ?? null} is null or g.public_id > ${input.cursor ?? null})
@@ -96,7 +113,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       /* @type references_json string */
       select g.*,
         (select json_group_array(json_object('id', c.id, 'name', c.name)) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
-        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id) as references_json
+        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from (select id, created_at from invitation_reference where owner_id = g.owner_id and guest_id = g.id order by created_at, rowid) p) as references_json
       from invitation_guest g where g.owner_id = ${ownerId} and g.public_id = ${publicId}
     `;
     return rows[0] ? mapGuest(rows[0]) : null;
@@ -111,32 +128,84 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       /* @type references_json string */
       select g.*,
         (select json_group_array(json_object('id', c.id, 'name', c.name)) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
-        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id) as references_json
+        (select json_group_array(json_object('id', p.id, 'createdAt', p.created_at)) from (select id, created_at from invitation_reference where owner_id = g.owner_id and guest_id = g.id order by created_at, rowid) p) as references_json
       from invitation_guest g where g.token = ${token} and g.active = 1
     `;
     return rows[0] ? mapGuest(rows[0]) : null;
   }
-  async create(guest: Guest) {
-    await this.sql.CreateInvitationGuest`
-      insert into invitation_guest (id, public_id, owner_id, token, name, group_name, face_scan_required, max_guests, status, active, created_at)
-      values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.name}, ${guest.groupName}, ${Number(guest.faceScanRequired)}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
-    `;
+  async create({ guest, references }: { guest: Guest; references: PreparedReference[] }) {
+    if (references.length > MAX_REFERENCE_PHOTOS) {
+      throw new Error('Reference photo limit exceeded.');
+    }
+    await this.database.begin(async (tx) => {
+      const sql = withTypes<Queries>(tx);
+      await sql.CreateInvitationGuest`
+        insert into invitation_guest (id, public_id, owner_id, token, name, group_name, face_scan_required, max_guests, status, active, created_at)
+        values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.name}, ${guest.groupName}, ${Number(guest.faceScanRequired)}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
+      `;
+      const createdAt = new Date().toISOString();
+      for (const reference of references) {
+        await insertReference({
+          sql,
+          ownerId: guest.ownerId,
+          guestId: guest.id,
+          reference,
+          createdAt,
+        });
+      }
+    });
   }
-  update(input: GuestScope & { settings: GuestSettings }) {
+  update(input: GuestUpdate): Promise<GuestUpdateResult> {
     return this.database.begin(async (tx) => {
       const sql = withTypes<Queries>(tx);
-      await sql.RevokeChangedInvitationMode`
-        delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
-          and exists (select 1 from invitation_guest g where g.owner_id = ${input.ownerId} and g.id = ${input.guestId} and g.face_scan_required <> ${Number(input.settings.faceScanRequired)})
-          and ${input.settings.maxGuests} >= (select count(*) from invitation_companion c where c.owner_id = ${input.ownerId} and c.guest_id = ${input.guestId})
+      const rows = await sql.InvitationEditState`
+        /* @type companions number */
+        /* @type references_count number */
+        /* @type removed_count number */
+        select g.face_scan_required,
+          (select count(*) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
+          (select count(*) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id) as references_count,
+          (select count(*) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id and p.id in (select value from json_each(${JSON.stringify(input.removedPhotoIds)}))) as removed_count
+        from invitation_guest g where g.owner_id = ${input.ownerId} and g.id = ${input.guestId}
       `;
-      const rows = await sql.UpdateInvitationGuest`
+      const current = rows[0];
+      if (!current) {
+        return 'not_found';
+      }
+      if (current.removed_count !== input.removedPhotoIds.length) {
+        return 'reference_missing';
+      }
+      if (
+        current.references_count - current.removed_count + input.references.length >
+        MAX_REFERENCE_PHOTOS
+      ) {
+        return 'reference_limit';
+      }
+      if (current.companions > input.settings.maxGuests) {
+        return 'companion_limit';
+      }
+      if (Boolean(current.face_scan_required) !== input.settings.faceScanRequired) {
+        await sql.RevokeChangedInvitationMode`delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
+      }
+      await sql.UpdateInvitationGuest`
         update invitation_guest set name = ${input.settings.name}, group_name = ${input.settings.groupName}, face_scan_required = ${Number(input.settings.faceScanRequired)}, max_guests = ${input.settings.maxGuests}
         where owner_id = ${input.ownerId} and id = ${input.guestId}
-          and ${input.settings.maxGuests} >= (select count(*) from invitation_companion c where c.owner_id = ${input.ownerId} and c.guest_id = ${input.guestId})
-        returning id
       `;
-      return rows.length > 0;
+      await sql.RemoveEditedInvitationReferences`
+        delete from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
+          and id in (select value from json_each(${JSON.stringify(input.removedPhotoIds)}))
+      `;
+      const createdAt = new Date().toISOString();
+      for (const reference of input.references) {
+        await insertReference({
+          sql,
+          ownerId: input.ownerId,
+          guestId: input.guestId,
+          reference,
+          createdAt,
+        });
+      }
+      return 'saved';
     });
   }
   async stats(ownerId: string): Promise<InvitationStats> {
@@ -199,7 +268,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
   }
   async references(input: GuestScope) {
     const rows = await this.sql
-      .InvitationReferenceObservations`select id, observation from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
+      .InvitationReferenceObservations`select id, observation from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId} order by created_at, rowid`;
     return rows.map((row) => ({
       id: row.id,
       observation: JSON.parse(row.observation) as FaceObservation,
@@ -290,4 +359,14 @@ function mapGuest(row: Queries['ListInvitationGuests']): Guest {
     companions: JSON.parse(row.companions),
     references: JSON.parse(row.references_json),
   };
+}
+
+async function insertReference(
+  input: GuestScope & { sql: TypedSQL<Queries>; reference: PreparedReference; createdAt: string },
+) {
+  const { reference, sql } = input;
+  await sql.InsertGuestReference`
+    insert into invitation_reference (id, owner_id, guest_id, image, media_type, observation, created_at)
+    values (${reference.id}, ${input.ownerId}, ${input.guestId}, ${reference.image}, ${reference.mediaType}, ${JSON.stringify(reference.observation)}, ${input.createdAt})
+  `;
 }

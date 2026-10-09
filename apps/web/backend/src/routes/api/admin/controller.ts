@@ -2,10 +2,11 @@ import { Elysia, t } from 'elysia';
 import type { Auth } from '#backend/lib/auth/better-auth.ts';
 import { ForbiddenError, UnauthorizedError } from '#backend/lib/errors.ts';
 import {
+  CreateGuestSchema,
+  EditGuestSchema,
   GuestListQuerySchema,
   GuestParamsSchema,
   GuestSchema,
-  GuestSettingsSchema,
   PhotoParamsSchema,
   PhotoUploadSchema,
   StatsSchema,
@@ -65,21 +66,32 @@ export function createAdminController(input: {
             }),
           ),
         })
-        .post('/guests', ({ actor, body }) => input.management.create({ actor, settings: body }), {
-          body: GuestSettingsSchema,
-          response: apiResponse(GuestSchema),
-        })
+        .post(
+          '/guests',
+          ({ actor, body: { photos, ...settings } }) =>
+            input.management.create({ actor, settings, photos }),
+          {
+            body: CreateGuestSchema,
+            response: apiResponse(GuestSchema),
+          },
+        )
         .get('/guests/:id', ({ actor, params }) => input.management.get({ actor, id: params.id }), {
           params: GuestParamsSchema,
           response: apiResponse(GuestSchema),
         })
         .patch(
           '/guests/:id',
-          ({ actor, params, body }) =>
-            input.management.update({ actor, id: params.id, settings: body }),
+          ({ actor, params, body: { photos, removedPhotoIds, ...settings } }) =>
+            input.management.update({
+              actor,
+              id: params.id,
+              settings,
+              photos,
+              removedPhotoIds,
+            }),
           {
             params: GuestParamsSchema,
-            body: GuestSettingsSchema,
+            body: EditGuestSchema,
             response: apiResponse(GuestSchema),
           },
         )

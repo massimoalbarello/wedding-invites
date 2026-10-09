@@ -4,7 +4,7 @@ import { runMigrations } from '#backend/db/migrate.ts';
 import { loadAuthSecret } from '#backend/lib/auth/auth-secret.ts';
 import { createAuth } from '#backend/lib/auth/better-auth.ts';
 import { loadEnv } from '#backend/lib/env.ts';
-import { MAX_PHOTO_BYTES } from '#backend/models/invitations/model.ts';
+import { MAX_PHOTO_BYTES, MAX_REFERENCE_PHOTOS } from '#backend/models/invitations/model.ts';
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import { createLocalFaceAnalyzer } from '#backend/repositories/faces/local-analyzer.ts';
 import { FrontendAssetsRepository } from '#backend/repositories/frontend-assets/repository.ts';
@@ -42,7 +42,7 @@ try {
   }).listen({
     port: env.PORT,
     hostname: '0.0.0.0',
-    maxRequestBodySize: MAX_PHOTO_BYTES + MULTIPART_OVERHEAD_BYTES,
+    maxRequestBodySize: MAX_PHOTO_BYTES * MAX_REFERENCE_PHOTOS + MULTIPART_OVERHEAD_BYTES,
   });
   console.log(`Application listening on http://0.0.0.0:${app.server!.port}`);
   let stopping = false;

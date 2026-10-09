@@ -6,6 +6,7 @@ import {
   MAX_GUEST_NAME_LENGTH,
   MAX_PAGE_SIZE,
   MAX_PHOTO_BYTES,
+  MAX_REFERENCE_PHOTOS,
 } from '#backend/models/invitations/model.ts';
 export const PublicIdSchema = t.String({ pattern: '^[a-f0-9]{48}$' });
 export const GuestPublicIdSchema = t.String({ format: 'uuid' });
@@ -20,8 +21,22 @@ export const CompanionSchema = t.Object({ id: PublicIdSchema, name: t.String() }
 export const GuestSettingsSchema = t.Object({
   name: t.String({ minLength: 1, maxLength: MAX_GUEST_NAME_LENGTH }),
   groupName: t.String({ maxLength: MAX_GROUP_NAME_LENGTH, default: '' }),
-  faceScanRequired: t.Boolean({ default: true }),
+  faceScanRequired: t.BooleanString({ default: true }),
   maxGuests: t.Integer({ minimum: 0, maximum: MAX_COMPANIONS, default: 0 }),
+});
+const GuestPhotosSchema = t.Optional(
+  t.Files({ maxSize: MAX_PHOTO_BYTES, maxItems: MAX_REFERENCE_PHOTOS }),
+);
+export const CreateGuestSchema = t.Object({
+  ...GuestSettingsSchema.properties,
+  photos: GuestPhotosSchema,
+});
+export const EditGuestSchema = t.Object({
+  ...GuestSettingsSchema.properties,
+  photos: GuestPhotosSchema,
+  removedPhotoIds: t.Optional(
+    t.ArrayQuery(PublicIdSchema, { maxItems: MAX_REFERENCE_PHOTOS, uniqueItems: true }),
+  ),
 });
 export const GuestSchema = t.Object({
   id: GuestPublicIdSchema,

@@ -2,8 +2,9 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { AdminLayout } from '../components/admin-layout';
+import { GuestAvatar } from '../components/guest-avatar';
 import { GuestForm } from '../components/guest-form';
 import { StatusLabel } from '../components/status-label';
 import {
@@ -12,12 +13,10 @@ import {
   guestKeys,
   guestOptions,
   referenceUrl,
-  removeReference,
   revokeGuestSessions,
   rotateInvitation,
   setGuestAccess,
   updateGuest,
-  uploadReference,
 } from '../queries/guests';
 import { sessionOptions } from '../queries/session';
 
@@ -60,6 +59,7 @@ function GuestDetail() {
           ← Guest list
         </Link>
         <div className="mt-8 flex flex-wrap items-center gap-3">
+          <GuestAvatar guest={guest} />
           <h1 className="min-w-0 break-words font-semibold text-3xl tracking-tight">
             {guest.name}
           </h1>
@@ -74,6 +74,10 @@ function GuestDetail() {
               faceScanRequired: guest.faceScanRequired,
               maxGuests: guest.maxGuests,
             }}
+            references={guest.references.map((photo) => ({
+              id: photo.id,
+              src: referenceUrl({ id: guest.id, photoId: photo.id }),
+            }))}
             groups={groups}
             onCancel={() => {
               update.reset();
@@ -102,7 +106,7 @@ function GuestDetail() {
             {update.error.message}
           </p>
         )}
-        <GuestPhotos guest={guest} ownerId={userId} />
+        {!editing && <GuestPhotos guest={guest} />}
         <GuestAccess guest={guest} ownerId={userId} />
         {guest.companions.length > 0 && (
           <section className="mt-8 border-border border-t pt-7">
@@ -149,61 +153,17 @@ function GuestIdentity({ guest }: { guest: Guest }) {
     </dl>
   );
 }
-function GuestPhotos({ guest, ownerId }: { guest: Guest; ownerId: string }) {
-  const client = useQueryClient();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const refresh = () => client.invalidateQueries({ queryKey: guestKeys.owner(ownerId) });
-  const upload = useMutation({
-    mutationFn: async (files: File[]) => {
-      for (const photo of files) {
-        await uploadReference({ id: guest.id, photo });
-      }
-    },
-    onSettled: refresh,
-  });
-  const remove = useMutation({ mutationFn: removeReference, onSuccess: refresh });
-  const error = upload.error || remove.error;
+function GuestPhotos({ guest }: { guest: Guest }) {
   return (
     <section className="mt-9 space-y-4 border-border border-t pt-7" aria-labelledby="photos-title">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 id="photos-title" className="font-medium">
-            Reference photos{' '}
-            <span className="ml-1 text-muted-foreground">{guest.references.length}</span>
-          </h2>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Clear photos of this person, one face in each.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          disabled={upload.isPending}
-          onClick={() => fileInput.current?.click()}
-        >
-          {upload.isPending ? 'Adding…' : 'Add photos'}
-        </Button>
-      </div>
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        aria-label="Upload reference photos"
-        className="sr-only"
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          if (files.length) {
-            upload.mutate(files);
-          }
-          event.target.value = '';
-        }}
-      />
+      <h2 id="photos-title" className="font-medium">
+        Reference photos{' '}
+        <span className="ml-1 text-muted-foreground">{guest.references.length}</span>
+      </h2>
       {guest.references.length === 0 ? (
-        <div className="rounded-xl bg-muted/60 px-5 py-7 text-center text-muted-foreground text-sm">
-          {guest.faceScanRequired
-            ? 'Add a reference photo before sending their invitation.'
-            : 'Photos are optional while face scanning is off.'}
-        </div>
+        <p className="rounded-xl bg-muted/60 px-5 py-7 text-center text-muted-foreground text-sm">
+          No photos yet. Edit this guest to add reference photos.
+        </p>
       ) : (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {Array.from(guest.references.entries()).map(([index, photo]) => (
@@ -213,24 +173,10 @@ function GuestPhotos({ guest, ownerId }: { guest: Guest; ownerId: string }) {
                 alt={`Reference ${index + 1} for ${guest.name}`}
                 className="aspect-square w-full rounded-lg bg-muted object-cover"
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                disabled={remove.isPending}
-                aria-label={`Remove reference photo ${index + 1}`}
-                onClick={() => remove.mutate({ id: guest.id, photoId: photo.id })}
-              >
-                Remove
-              </Button>
+              {index === 0 && <p className="text-muted-foreground text-xs">Avatar</p>}
             </li>
           ))}
         </ul>
-      )}
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error.message}
-        </p>
       )}
     </section>
   );

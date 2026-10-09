@@ -1,23 +1,47 @@
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Switch } from '@repo/ui/switch';
-import { useForm } from '@tanstack/react-form';
-import type { GuestDraft } from '../queries/guests';
+import { revalidateLogic, useForm } from '@tanstack/react-form';
+import type { GuestDraft, GuestSettings } from '../queries/guests';
+import {
+  type ExistingGuestPhoto,
+  GuestPhotosField,
+  type PendingGuestPhoto,
+  validateGuestPhotos,
+} from './guest-photos-field';
 
 export function GuestForm({
   initial,
   onSave,
   onCancel,
   groups = [],
+  references = [],
 }: {
-  initial: GuestDraft;
+  initial: GuestSettings;
   onSave: (value: GuestDraft) => Promise<void>;
   onCancel: () => void;
   groups?: string[];
+  references?: ExistingGuestPhoto[];
 }) {
   const form = useForm({
-    defaultValues: initial,
-    onSubmit: async ({ value }) => onSave(value),
+    validationLogic: revalidateLogic(),
+    validators: {
+      onDynamic: ({ value }) =>
+        validateGuestPhotos({
+          referenceCount: references.filter((photo) => !value.removedPhotoIds.includes(photo.id))
+            .length,
+          photos: value.pendingPhotos.map((photo) => photo.file),
+        }),
+    },
+    defaultValues: {
+      ...initial,
+      pendingPhotos: [] as PendingGuestPhoto[],
+      removedPhotoIds: [] as string[],
+    },
+    onSubmit: async ({ value }) => {
+      const { pendingPhotos, ...settings } = value;
+      await onSave({ ...settings, photos: pendingPhotos.map((photo) => photo.file) });
+    },
   });
   return (
     <form
@@ -97,6 +121,45 @@ export function GuestForm({
           </div>
         )}
       </form.Field>
+      <form.Subscribe
+        selector={(state) => ({
+          name: state.values.name,
+          photos: state.values.pendingPhotos,
+          removedPhotoIds: state.values.removedPhotoIds,
+          disabled: state.isSubmitting,
+          errors: state.errors.filter((error) => typeof error === 'string'),
+        })}
+      >
+        {(draft: {
+          name: string;
+          photos: PendingGuestPhoto[];
+          removedPhotoIds: string[];
+          disabled: boolean;
+          errors: string[];
+        }) => (
+          <GuestPhotosField
+            name={draft.name}
+            references={references.filter((photo) => !draft.removedPhotoIds.includes(photo.id))}
+            photos={draft.photos}
+            disabled={draft.disabled}
+            errors={draft.errors}
+            onSelect={(files) =>
+              form.setFieldValue('pendingPhotos', (previous) => [
+                ...previous,
+                ...files.map((file) => ({ id: crypto.randomUUID(), file })),
+              ])
+            }
+            onRemoveExisting={(id) =>
+              form.setFieldValue('removedPhotoIds', (previous) => [...previous, id])
+            }
+            onRemovePending={(id) =>
+              form.setFieldValue('pendingPhotos', (previous) =>
+                previous.filter((photo) => photo.id !== id),
+              )
+            }
+          />
+        )}
+      </form.Subscribe>
       <div className="space-y-7 border-border border-t pt-7">
         <form.Field name="faceScanRequired">
           {(field) => (

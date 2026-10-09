@@ -1,5 +1,5 @@
 import { requireOwner } from '#backend/lib/auth/owner-access.ts';
-import { BadRequestError, ConflictError, NotFoundError } from '#backend/lib/errors.ts';
+import { AppError, BadRequestError, ConflictError, NotFoundError } from '#backend/lib/errors.ts';
 import { opaqueId } from '#backend/lib/opaque-id.ts';
 import type { Actor } from '#backend/models/auth/model.ts';
 import {
@@ -15,7 +15,11 @@ import {
 } from '#backend/models/invitations/model.ts';
 import type { AdminRepositoryContract } from '#backend/repositories/admin/repository.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
-import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
+import type {
+  GuestUpdateResult,
+  InvitationsRepositoryContract,
+  PreparedReference,
+} from '#backend/repositories/invitations/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
 
 export function publicGuest(guest: Guest) {
@@ -46,7 +50,12 @@ function normalizedSettings(settings: GuestSettings): GuestSettings {
   ) {
     throw new BadRequestError('Choose a valid guest allowance.');
   }
-  return { ...settings, name, groupName };
+  return {
+    name,
+    groupName,
+    faceScanRequired: settings.faceScanRequired,
+    maxGuests: settings.maxGuests,
+  };
 }
 export class GuestManagementService {
   constructor(
@@ -90,7 +99,15 @@ export class GuestManagementService {
   async get(input: { actor: Actor; id: string }) {
     return publicGuest(await this.find(input));
   }
-  async create({ actor, settings }: { actor: Actor; settings: GuestSettings }) {
+  async create({
+    actor,
+    settings,
+    photos = [],
+  }: {
+    actor: Actor;
+    settings: GuestSettings;
+    photos?: File[];
+  }) {
     requireOwner(actor);
     const guest: Guest = {
       ...normalizedSettings(settings),
@@ -104,22 +121,71 @@ export class GuestManagementService {
       companions: [],
       references: [],
     };
-    await this.input.guests.create(guest);
-    return publicGuest(guest);
+    const references = await this.preparePhotos({ ownerId: actor.userId, photos });
+    await this.input.guests.create({ guest, references });
+    return this.get({ actor, id: guest.publicId });
   }
-  async update(input: { actor: Actor; id: string; settings: GuestSettings }) {
-    const guest = await this.find(input);
-    if (
-      !(await this.input.guests.update({
-        ownerId: guest.ownerId,
-        guestId: guest.id,
-        settings: normalizedSettings(input.settings),
-      }))
-    ) {
-      throw new ConflictError(
-        'The guest allowance cannot be smaller than the guests already added.',
-      );
+  private async preparePhotos({
+    ownerId,
+    photos,
+  }: {
+    ownerId: string;
+    photos: File[];
+  }): Promise<PreparedReference[]> {
+    if (photos.length > MAX_REFERENCE_PHOTOS) {
+      throw new ConflictError(`A guest can have up to ${MAX_REFERENCE_PHOTOS} reference photos.`);
     }
+    const references: PreparedReference[] = [];
+    for (const [index, file] of photos.entries()) {
+      try {
+        const photo = await readPhoto(file);
+        const observation = await analyzePhoto({
+          faces: this.input.faces,
+          ownerId,
+          image: photo.image,
+        });
+        references.push({ id: opaqueId(), ...photo, observation });
+      } catch (error) {
+        if (error instanceof AppError) {
+          throw new AppError({
+            statusCode: error.statusCode,
+            message: `Photo ${index + 1}: ${error.message}`,
+          });
+        }
+        throw error;
+      }
+    }
+    return references;
+  }
+  async update(input: {
+    actor: Actor;
+    id: string;
+    settings: GuestSettings;
+    photos?: File[];
+    removedPhotoIds?: string[];
+  }) {
+    const guest = await this.find(input);
+    const settings = normalizedSettings(input.settings);
+    const removedPhotoIds = input.removedPhotoIds ?? [];
+    if (new Set(removedPhotoIds).size !== removedPhotoIds.length) {
+      throw new BadRequestError('Each reference photo can be removed once.');
+    }
+    if (removedPhotoIds.some((id) => !guest.references.some((reference) => reference.id === id))) {
+      throw new NotFoundError();
+    }
+    const photos = input.photos ?? [];
+    if (guest.references.length - removedPhotoIds.length + photos.length > MAX_REFERENCE_PHOTOS) {
+      throw new ConflictError(`A guest can have up to ${MAX_REFERENCE_PHOTOS} reference photos.`);
+    }
+    const references = await this.preparePhotos({ ownerId: guest.ownerId, photos });
+    const result = await this.input.guests.update({
+      ownerId: guest.ownerId,
+      guestId: guest.id,
+      settings,
+      references,
+      removedPhotoIds,
+    });
+    assertGuestSaved(result);
     return this.get(input);
   }
   async setAccess(input: { actor: Actor; id: string; active: boolean }) {
@@ -211,3 +277,15 @@ export type GuestManagementServiceContract = Pick<
   | 'photo'
   | 'removePhoto'
 >;
+
+function assertGuestSaved(result: GuestUpdateResult) {
+  if (result === 'not_found' || result === 'reference_missing') {
+    throw new NotFoundError();
+  }
+  if (result === 'companion_limit') {
+    throw new ConflictError('The guest allowance cannot be smaller than the guests already added.');
+  }
+  if (result === 'reference_limit') {
+    throw new ConflictError(`A guest can have up to ${MAX_REFERENCE_PHOTOS} reference photos.`);
+  }
+}

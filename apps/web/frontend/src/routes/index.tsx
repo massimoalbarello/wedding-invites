@@ -5,6 +5,7 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { AdminLayout } from '../components/admin-layout';
+import { GuestAvatar } from '../components/guest-avatar';
 import { StatusLabel } from '../components/status-label';
 import {
   type Guest,
@@ -214,16 +215,7 @@ function GuestRows({ guests }: { guests: Guest[] }) {
             params={{ guestId: guest.id }}
             className="group flex min-h-20 items-center gap-4 rounded-xl px-3 py-4 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:px-4"
           >
-            <span
-              aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted font-medium text-muted-foreground text-sm"
-            >
-              {guest.name
-                .split(' ')
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join('')}
-            </span>
+            <GuestAvatar guest={guest} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{guest.name}</p>
               <p className="mt-1 truncate text-muted-foreground text-xs">

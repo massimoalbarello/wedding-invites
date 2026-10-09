@@ -75,40 +75,35 @@ export function guestOptions({ ownerId, id }: { ownerId: string; id: string }) {
     },
   });
 }
-export type GuestDraft = Parameters<typeof api.api.admin.guests.post>[0];
+export type GuestSettings = Pick<Guest, 'name' | 'groupName' | 'faceScanRequired' | 'maxGuests'>;
+export type GuestDraft = GuestSettings & { photos: File[]; removedPhotoIds: string[] };
 export async function createGuest(input: GuestDraft) {
-  const result = await api.api.admin.guests.post(input);
+  const { removedPhotoIds: _removedPhotoIds, ...body } = input;
+  const result = await api.api.admin.guests.post({
+    ...body,
+    photos: body.photos.length ? body.photos : undefined,
+  });
   if (result.error) {
-    throw new Error('Could not add this guest. Check their name and guest allowance.');
+    throw new Error(guestSaveError(result.error.value));
   }
   return result.data;
 }
 export async function updateGuest({ id, input }: { id: string; input: GuestDraft }) {
-  const result = await api.api.admin.guests({ id }).patch(input);
+  const result = await api.api.admin
+    .guests({ id })
+    .patch({ ...input, photos: input.photos.length ? input.photos : undefined });
   if (result.error) {
-    throw new Error(
-      'Could not save changes. The guest allowance must cover their existing companions.',
-    );
+    throw new Error(guestSaveError(result.error.value));
   }
   return result.data;
 }
-export async function uploadReference({ id, photo }: { id: string; photo: File }) {
-  const result = await api.api.admin.guests({ id }).photos.post({ photo });
-  if (result.error) {
-    const value = result.error.value;
-    throw new Error(
-      typeof value === 'object' && value !== null && 'error' in value
-        ? String(value.error)
-        : 'Use a clear photo with exactly one face and try again.',
-    );
-  }
-  return result.data;
-}
-export async function removeReference({ id, photoId }: { id: string; photoId: string }) {
-  const result = await api.api.admin.guests({ id }).photos({ photoId }).delete();
-  if (result.error) {
-    throw new Error('Could not remove the reference photo. Try again.');
-  }
+function guestSaveError(value: unknown) {
+  return typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof value.error === 'string'
+    ? value.error
+    : 'Could not save this guest. Check their details and reference photos, then try again.';
 }
 export function referenceUrl({ id, photoId }: { id: string; photoId: string }) {
   return `/api/admin/guests/${encodeURIComponent(id)}/photos/${encodeURIComponent(photoId)}`;

@@ -103,16 +103,128 @@ async function createGuestInDashboard(page: Page) {
   await page.getByLabel('Full name', { exact: true }).fill('Taylor Reed');
   await page.getByLabel('Group (optional)', { exact: true }).fill('Friends');
   await page.getByLabel('Additional guests allowed', { exact: true }).fill('1');
-  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
-  await page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
   await page
     .getByLabel('Upload reference photos', { exact: true })
     .setInputFiles(resolve(fixtures, 'reference.jpg'));
+  await page.getByRole('img', { name: 'Reference 1 for Taylor Reed', exact: true }).waitFor();
+  await page.screenshot({
+    path: resolve(artifacts, 'guest-creation-with-photo.png'),
+    fullPage: true,
+  });
+  await page.getByLabel('Upload reference photos', { exact: true }).setInputFiles({
+    name: 'invalid.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('This is not an image.'),
+  });
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('alert').waitFor();
+  const origin = new URL(page.url()).origin;
+  const empty = await page.request.get(`${origin}/api/admin/guests`);
+  assert.equal(
+    ((await empty.json()) as { items: Guest[] }).items.length,
+    0,
+    'A rejected photo must not create a partial guest.',
+  );
+  assert.equal(await page.getByLabel('Full name', { exact: true }).inputValue(), 'Taylor Reed');
+  await page.getByRole('button', { name: 'Remove reference photo 2', exact: true }).click();
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
   await page.getByRole('img', { name: 'Reference 1 for Taylor Reed', exact: true }).waitFor();
   const link = await page.getByLabel('Personal invitation link', { exact: true }).inputValue();
   assert(link.includes('/i/'));
   await page.screenshot({ path: resolve(artifacts, 'guest-settings.png'), fullPage: true });
   return link;
+}
+
+async function checkGuestPhotoEditing({
+  page,
+  origin,
+  guest,
+}: {
+  page: Page;
+  origin: string;
+  guest: Guest;
+}) {
+  const detailUrl = `${origin}/guests/${guest.id}`;
+  const current = async () => {
+    const response = await page.request.get(`${origin}/api/admin/guests/${guest.id}`);
+    assert(response.ok());
+    return (await response.json()) as Guest & { references: { id: string }[] };
+  };
+  const first = (await current()).references[0]!.id;
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+  await page
+    .getByLabel('Upload reference photos', { exact: true })
+    .setInputFiles(resolve(fixtures, 'different-person.jpg'));
+  await page.getByRole('button', { name: 'Remove reference photo 1', exact: true }).click();
+  await page.getByLabel('Full name', { exact: true }).fill('Unsaved name');
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  assert.equal((await current()).name, guest.name);
+  assert.deepEqual(
+    (await current()).references.map((photo) => photo.id),
+    [first],
+  );
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+  await page
+    .getByLabel('Upload reference photos', { exact: true })
+    .setInputFiles(resolve(fixtures, 'different-person.jpg'));
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+  const added = (await current()).references;
+  assert.equal(added.length, 2);
+  assert.equal(added[0]!.id, first);
+  await checkAvatar({ page, origin, guest, photoId: first });
+  await page.goto(detailUrl);
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove reference photo 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+  assert.deepEqual(
+    (await current()).references.map((photo) => photo.id),
+    [added[1]!.id],
+  );
+  await checkAvatar({ page, origin, guest, photoId: added[1]!.id });
+  await page.goto(detailUrl);
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove reference photo 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+  assert.equal((await current()).references.length, 0);
+  await page.goto(origin);
+  const row = page.getByRole('link').filter({ hasText: guest.name }).first();
+  await row.getByText('TR', { exact: true }).waitFor();
+  assert.equal(await row.locator('img').count(), 0);
+  await page.goto(detailUrl);
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
+  await page
+    .getByLabel('Upload reference photos', { exact: true })
+    .setInputFiles(resolve(fixtures, 'reference.jpg'));
+  await page.getByRole('button', { name: 'Save guest', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+  await page.screenshot({ path: resolve(artifacts, 'guest-settings.png'), fullPage: true });
+}
+
+async function checkAvatar({
+  page,
+  origin,
+  guest,
+  photoId,
+}: {
+  page: Page;
+  origin: string;
+  guest: Guest;
+  photoId: string;
+}) {
+  await page.goto(origin);
+  const avatar = page.getByRole('link').filter({ hasText: guest.name }).first().locator('img');
+  await avatar.waitFor();
+  assert.equal(await avatar.getAttribute('src'), `/api/admin/guests/${guest.id}/photos/${photoId}`);
+  await avatar.evaluate((element) => {
+    if ('decode' in element && typeof element.decode === 'function') {
+      return element.decode();
+    }
+    throw new Error('Expected an avatar image.');
+  });
 }
 
 async function saveReply(page: Page) {
@@ -249,6 +361,7 @@ try {
   assert.equal((await forwarded.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
 
   const seeded = await seedGuests({ page, origin: app.origin });
+  await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
   await newcomer.page
@@ -299,7 +412,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, wedding setup, guest creation, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, cancellation, avatar promotion and fallback, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {
