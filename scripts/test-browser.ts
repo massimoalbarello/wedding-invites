@@ -57,6 +57,27 @@ async function captureSelfie(page: Page) {
   await page.getByRole('button', { name: 'Use this photo', exact: true }).click();
 }
 
+async function checkInvitationCopy({
+  page,
+  origin,
+  guest,
+}: {
+  page: Page;
+  origin: string;
+  guest: Guest;
+}) {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
+  const location = page.url();
+  const copy = page.getByRole('button', {
+    name: `Copy invitation link for ${guest.name}`,
+    exact: true,
+  });
+  await copy.click();
+  await copy.getByText('Copied', { exact: true }).waitFor();
+  assert.equal(await page.evaluate('navigator.clipboard.readText()'), `${origin}/i/${guest.token}`);
+  assert.equal(page.url(), location, 'Copying an invitation must not navigate away from the list.');
+}
+
 async function configureWedding({ page, origin }: { page: Page; origin: string }) {
   const empty = await page.request.get(`${origin}/api/admin/wedding`);
   assert(empty.ok());
@@ -379,8 +400,10 @@ try {
     companions: 4,
     attending: 8,
   });
+  await checkInvitationCopy({ page, origin: app.origin, guest });
   await page.screenshot({ path: resolve(artifacts, 'guest-list-desktop.png'), fullPage: true });
   await page.setViewportSize(MOBILE_VIEWPORT);
+  await checkInvitationCopy({ page, origin: app.origin, guest: seeded[0]! });
   await page.screenshot({ path: resolve(artifacts, 'guest-list-mobile.png'), fullPage: true });
   const scrollWidth = await page.locator('html').evaluate((element) => element.scrollWidth);
   assert.ok(
@@ -412,7 +435,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, cancellation, avatar promotion and fallback, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {

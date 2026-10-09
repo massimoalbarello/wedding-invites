@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
 import { AdminLayout } from '../components/admin-layout';
+import { CopyInvitationLink, invitationUrl } from '../components/copy-invitation-link';
 import { GuestAvatar } from '../components/guest-avatar';
 import { GuestForm } from '../components/guest-form';
 import { StatusLabel } from '../components/status-label';
@@ -193,7 +194,7 @@ function GuestAccess({ guest, ownerId }: { guest: Guest; ownerId: string }) {
       <h2 id="link-title" className="font-medium">
         Personal invitation
       </h2>
-      <InvitationLink key={guest.token} token={guest.token} />
+      <InvitationLink key={guest.token} token={guest.token} name={guest.name} />
       <p className="text-muted-foreground text-sm">
         {guest.faceScanRequired
           ? 'This link asks for their face before opening the invitation.'
@@ -238,39 +239,16 @@ function GuestAccess({ guest, ownerId }: { guest: Guest; ownerId: string }) {
     </section>
   );
 }
-function InvitationLink({ token }: { token: string }) {
-  const link = `${window.location.origin}/i/${encodeURIComponent(token)}`;
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(false);
+function InvitationLink({ token, name }: { token: string; name: string }) {
   return (
-    <div>
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Personal invitation link"
-          readOnly
-          value={link}
-          onFocus={(event) => event.target.select()}
-        />
-        <Button
-          variant="outline"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(link);
-              setCopied(true);
-              setError(false);
-            } catch {
-              setError(true);
-            }
-          }}
-        >
-          {copied ? 'Copied' : 'Copy link'}
-        </Button>
-      </div>
-      {error && (
-        <p role="alert" className="mt-2 text-muted-foreground text-sm">
-          Select and copy the link above.
-        </p>
-      )}
+    <div className="flex items-center gap-2">
+      <Input
+        aria-label="Personal invitation link"
+        readOnly
+        value={invitationUrl(token)}
+        onFocus={(event) => event.target.select()}
+      />
+      <CopyInvitationLink token={token} name={name} />
     </div>
   );
 }

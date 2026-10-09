@@ -5,6 +5,7 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { AdminLayout } from '../components/admin-layout';
+import { CopyInvitationLink } from '../components/copy-invitation-link';
 import { GuestAvatar } from '../components/guest-avatar';
 import { StatusLabel } from '../components/status-label';
 import {
@@ -210,36 +211,41 @@ function GuestRows({ guests }: { guests: Guest[] }) {
     <ul className="space-y-1">
       {guests.map((guest) => (
         <li key={guest.id}>
-          <Link
-            to="/guests/$guestId"
-            params={{ guestId: guest.id }}
-            className="group flex min-h-20 items-center gap-4 rounded-xl px-3 py-4 outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:px-4"
-          >
-            <GuestAvatar guest={guest} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{guest.name}</p>
-              <p className="mt-1 truncate text-muted-foreground text-xs">
-                {[
-                  guest.groupName,
-                  guest.faceScanRequired ? 'Face scan' : 'Direct access',
-                  guest.maxGuests > 0
-                    ? `Up to ${guest.maxGuests} additional ${guest.maxGuests === 1 ? 'guest' : 'guests'}`
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <StatusLabel status={guest.status} />
-              {!guest.active && (
-                <span className="text-muted-foreground text-xs">Access paused</span>
-              )}
-            </div>
-            <span aria-hidden="true" className="hidden text-muted-foreground sm:block">
-              →
-            </span>
-          </Link>
+          <div className="flex items-center gap-2 rounded-xl pr-3 hover:bg-muted/60 sm:pr-4">
+            <Link
+              to="/guests/$guestId"
+              params={{ guestId: guest.id }}
+              className="grid min-h-20 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 rounded-xl px-3 py-4 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:px-4"
+            >
+              <div className="row-span-2 sm:row-span-1">
+                <GuestAvatar guest={guest} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{guest.name}</p>
+                <p className="mt-1 truncate text-muted-foreground text-xs">
+                  {[
+                    guest.groupName,
+                    guest.faceScanRequired ? 'Face scan' : 'Direct access',
+                    guest.maxGuests > 0
+                      ? `Up to ${guest.maxGuests} additional ${guest.maxGuests === 1 ? 'guest' : 'guests'}`
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </div>
+              <div className="col-start-2 flex flex-wrap items-center gap-1.5 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end">
+                <StatusLabel status={guest.status} />
+                {!guest.active && (
+                  <span className="text-muted-foreground text-xs">Access paused</span>
+                )}
+              </div>
+              <span aria-hidden="true" className="hidden text-muted-foreground sm:block">
+                →
+              </span>
+            </Link>
+            <CopyInvitationLink key={guest.token} token={guest.token} name={guest.name} />
+          </div>
           {guest.companions.map((companion) => (
             <Link
               key={companion.id}
