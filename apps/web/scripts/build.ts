@@ -1,9 +1,11 @@
 import { join } from 'node:path';
+import { buildFaceRuntime } from './build-faces.ts';
 
 const target = process.env.BUILD_TARGET;
 if (target && target !== 'bun-linux-x64') {
   throw new Error('BUILD_TARGET must be bun-linux-x64 or unset for a host build.');
 }
+const faceAssets = await buildFaceRuntime({ linux: target === 'bun-linux-x64' });
 const result = await Bun.build({
   entrypoints: [join(import.meta.dir, '../backend/src/main.ts')],
   compile: {
@@ -12,6 +14,8 @@ const result = await Bun.build({
     ...(target ? { target: 'bun-linux-x64' as const } : {}),
     assets: [
       join(import.meta.dir, '../dist/public'),
+      faceAssets,
+      join(import.meta.dir, '../../../LICENSE'),
       join(import.meta.dir, '../backend/src/db/migrations'),
     ],
   },

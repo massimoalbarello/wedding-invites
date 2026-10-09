@@ -15,7 +15,9 @@
     "test": "bun run --sequential test:backend test:frontend",
     "test:backend": "bun test backend/test",
     "test:frontend": "bun test --preload ./frontend/test/dom.ts frontend/test",
-    "test:binary": "bun test test/binary.test.ts"
+    "test:binary": "bun test test/binary.test.ts",
+    "build:faces": "bun run scripts/build-faces.ts",
+    "test:faces": "bun run build:faces && bun test test/faces-native.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

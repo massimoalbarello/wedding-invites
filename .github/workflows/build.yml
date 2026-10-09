@@ -25,7 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/prepare
-      - run: bunx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y cmake build-essential ffmpeg
+      - uses: actions/cache@v5
+        with:
+          path: |
+            .cache/face-build-host
+            apps/web/.cache/face-runtime-host
+          key: faces-host-${{ runner.os }}-${{ hashFiles('apps/web/backend/native/faces/**', 'apps/web/backend/src/models/faces/models.ts') }}
+      - run: bun run install:browser --with-deps
+      - run: bun --filter @repo/web test:faces
       - run: bun run test:browser
       - uses: actions/upload-artifact@v7
         if: always()
@@ -49,7 +57,7 @@ jobs:
         with:
           name: nibrun-binary
 
-      - name: Publish rolling nibrun prerelease
+      - name: Publish latest Nibrun prerelease
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
@@ -67,10 +75,10 @@ jobs:
             gh api --method PATCH "repos/${GH_REPO}/git/refs/tags/nibrun-latest" \
               -f sha="$GITHUB_SHA" -F force=true
             gh release edit nibrun-latest \
-              --prerelease --latest=false --notes "$notes"
+              --title "Latest Nibrun build" --prerelease --latest=false --notes "$notes"
           else
             gh release create nibrun-latest app \
               --target "$GITHUB_SHA" \
-              --title "nibrun deployment" \
+              --title "Latest Nibrun build" \
               --prerelease --latest=false --notes "$notes"
           fi

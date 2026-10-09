@@ -1,0 +1,4 @@
+[install]
+# Compiler API tools must resolve the root TypeScript 6 dependency.
+linker = "isolated"
+hoistPattern = ["undici-types"]
