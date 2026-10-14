@@ -64,7 +64,7 @@ function GuestDetail() {
           <h1 className="min-w-0 break-words font-semibold text-3xl tracking-tight">
             {guest.name}
           </h1>
-          <StatusLabel status={guest.status} />
+          <StatusLabel guest={guest} />
         </div>
         {editing ? (
           <GuestForm

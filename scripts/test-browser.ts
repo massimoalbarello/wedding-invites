@@ -19,6 +19,22 @@ type TestBrowser = Awaited<ReturnType<typeof virtualPasskeyBrowser>>;
 type Page = TestBrowser['page'];
 type Guest = { id: string; name: string; token: string };
 
+async function waitForGuestStatus({
+  page,
+  guest,
+  status,
+}: {
+  page: Page;
+  guest: Guest;
+  status: string;
+}) {
+  await page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('link').filter({ hasText: guest.name }) })
+    .getByText(status)
+    .waitFor({ timeout: 20_000 });
+}
+
 async function cameraVideo(name: string) {
   const destination = resolve(artifacts, `${name}.y4m`);
   // The independent portrait is a stage photograph; frame the face like a phone selfie.
@@ -496,6 +512,8 @@ try {
   const guestsResponse = await page.request.get(`${app.origin}/api/admin/guests`);
   const guest = ((await guestsResponse.json()) as { items: Guest[] }).items[0]!;
   const prefix = `${app.origin}/api/invitations/${token}`;
+  await page.goto(app.origin);
+  await waitForGuestStatus({ page, guest, status: 'Not opened' });
   const newcomer = await browser();
   await newcomer.page.goto(app.origin);
   await newcomer.page.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
@@ -513,6 +531,7 @@ try {
   );
   await newcomer.page.goto(link);
   await newcomer.page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Link opened' });
   assert.equal(await newcomer.page.locator('input[type=file]').count(), 0);
   const anonymousMessage = await newcomer.page.locator('body').innerText();
   assert(!anonymousMessage.includes('Elena'));
@@ -527,6 +546,10 @@ try {
   await duplicate.page.goto(link);
   await captureSelfie(duplicate.page);
   await duplicate.page.getByRole('alert').filter({ hasText: 'reference photo' }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Verification failed' });
+  await page
+    .locator('main')
+    .screenshot({ path: resolve(artifacts, 'funnel-verification-failed.png') });
   assert.equal((await duplicate.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
   const stranger = await browser({
     cameraFile: videos.stranger,
@@ -607,6 +630,8 @@ try {
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
   await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Verified' });
+  await page.locator('main').screenshot({ path: resolve(artifacts, 'funnel-verified.png') });
   assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'verification-success-mobile.png'),
@@ -617,6 +642,10 @@ try {
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
     .waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Invitation opened' });
+  await page
+    .locator('main')
+    .screenshot({ path: resolve(artifacts, 'funnel-invitation-opened.png') });
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'amalfi-envelope-mobile.png'),
     fullPage: true,
@@ -631,6 +660,7 @@ try {
     .first()
     .waitFor();
   await saveReply(guestBrowser.page);
+  await waitForGuestStatus({ page, guest, status: 'Accepted' });
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'invitation-mobile.png'),
     fullPage: true,
@@ -673,6 +703,8 @@ try {
   assert.equal((await forwarded.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
 
   const seeded = await seedGuests({ page, origin: app.origin });
+  await page.goto(`${app.origin}/guests/${guest.id}`);
+  await page.getByRole('heading', { name: guest.name, exact: true }).waitFor();
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
@@ -710,6 +742,9 @@ try {
     .getByRole('button', { name: `Copy invitation link for ${bypass.name}`, exact: true })
     .getByText('Invitation link', { exact: true })
     .waitFor();
+  await waitForGuestStatus({ page, guest: bypass, status: 'Invitation opened' });
+  await waitForGuestStatus({ page, guest: seeded[5]!, status: 'Not opened' });
+  await waitForGuestStatus({ page, guest: seeded[3]!, status: 'Declined' });
   await page.screenshot({ path: resolve(artifacts, 'guest-list-desktop.png'), fullPage: true });
   await checkInvitationCopy({ page, origin: app.origin, guest: bypass });
   await page.setViewportSize(MOBILE_VIEWPORT);

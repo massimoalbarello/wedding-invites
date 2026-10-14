@@ -32,6 +32,10 @@ export interface IListInvitationGuestsResult {
     status: string;
     active: number;
     created_at: string;
+    link_opened_at: string | null;
+    verification_failed_at: string | null;
+    verified_at: string | null;
+    invitation_opened_at: string | null;
     companions: string;
     references_json: string;
 }
@@ -48,6 +52,10 @@ export interface IInvitationGuestByIdResult {
     status: string;
     active: number;
     created_at: string;
+    link_opened_at: string | null;
+    verification_failed_at: string | null;
+    verified_at: string | null;
+    invitation_opened_at: string | null;
     companions: string;
     references_json: string;
 }
@@ -64,6 +72,10 @@ export interface IInvitationGuestByTokenResult {
     status: string;
     active: number;
     created_at: string;
+    link_opened_at: string | null;
+    verification_failed_at: string | null;
+    verified_at: string | null;
+    invitation_opened_at: string | null;
     companions: string;
     references_json: string;
 }
@@ -160,6 +172,15 @@ export interface ICreateInvitationSessionResult {
     token_hash: string | null;
 }
 
+/** Result of query `RecordInvitationVerified`. */
+export interface IRecordInvitationVerifiedResult {
+}
+
+/** Result of query `RecordInvitationActivity`. */
+export interface IRecordInvitationActivityResult {
+    id: string | null;
+}
+
 /** Result of query `FindInvitationSession`. */
 export interface IFindInvitationSessionResult {
     token_hash: string;
@@ -209,6 +230,8 @@ export interface Queries {
     RemoveInvitationReference: IRemoveInvitationReferenceResult;
     RevokeLastReferenceSessions: IRevokeLastReferenceSessionsResult;
     CreateInvitationSession: ICreateInvitationSessionResult;
+    RecordInvitationVerified: IRecordInvitationVerifiedResult;
+    RecordInvitationActivity: IRecordInvitationActivityResult;
     FindInvitationSession: IFindInvitationSessionResult;
     UpdateInvitationRsvp: IUpdateInvitationRsvpResult;
     ClearInvitationCompanions: IClearInvitationCompanionsResult;

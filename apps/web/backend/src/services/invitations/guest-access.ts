@@ -73,6 +73,15 @@ export class GuestAccessService {
   }
   async entry(input: { token: string; session?: string }) {
     const guest = await this.guest(input.token);
+    if (!guest.activity.linkOpenedAt) {
+      await this.input.guests.recordActivity({
+        ownerId: guest.ownerId,
+        guestId: guest.id,
+        linkToken: input.token,
+        event: 'link_opened',
+        now: new Date().toISOString(),
+      });
+    }
     return {
       name: guest.name,
       faceScanRequired: guest.references.length > 0,
@@ -116,12 +125,33 @@ export class GuestAccessService {
     if (!references.length) {
       return this.bypass(input.token);
     }
+    try {
+      return await this.verifyPhoto({ guest, photo: input.photo, references });
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof ForbiddenError) {
+        await this.input.guests.recordActivity({
+          ownerId: guest.ownerId,
+          guestId: guest.id,
+          linkToken: input.token,
+          event: 'verification_failed',
+          now: new Date().toISOString(),
+        });
+      }
+      throw error;
+    }
+  }
+  private async verifyPhoto(input: {
+    guest: Guest;
+    photo: File;
+    references: Awaited<ReturnType<InvitationsRepositoryContract['references']>>;
+  }) {
+    const { guest, references } = input;
     const { image, mediaType } = await readPhoto(input.photo);
     const saved = await this.input.captures.save({
       id: opaqueId(),
       ownerId: guest.ownerId,
       guestId: guest.id,
-      linkToken: input.token,
+      linkToken: guest.token,
       image,
       mediaType,
       createdAt: new Date().toISOString(),
@@ -157,6 +187,20 @@ export class GuestAccessService {
     const asset = this.input.assets.get(input);
     if (!asset) {
       throw new NotFoundError();
+    }
+    if (input.path === 'index.html' && !guest.activity.invitationOpenedAt) {
+      const recorded = await this.input.guests.recordActivity({
+        ownerId: guest.ownerId,
+        guestId: guest.id,
+        linkToken: input.token,
+        tokenHash: hashSession(input.session!),
+        event: 'invitation_opened',
+        now: new Date().toISOString(),
+      });
+      if (!recorded) {
+        await this.authorized(input);
+        throw new ConflictError('The invitation changed. Please refresh and try again.');
+      }
     }
     return asset;
   }
