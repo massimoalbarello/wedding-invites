@@ -1,10 +1,8 @@
 # Wedding invites
 
-Wedding invitations with a private guest dashboard, personal links, face verification, and RSVPs. Set your couple names and ceremony date in the dashboard.
+Wedding invitations with a private guest dashboard, personal links, face verification, and RSVPs.
 
 [![Deploy to nibrun](.github/assets/deploy-your-own.svg)](https://app.nibrun.com/deploy?name=wedding-invites&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Fwedding-invites%2Freleases%2Fdownload%2Fnibrun-latest%2Fapp&port=3000&minimal)
-
-CI builds and tests the Linux executable, then publishes it to the [latest prerelease](https://github.com/massimoalbarello/wedding-invites/releases/tag/nibrun-latest) after successful pushes to `main`. The button deploys that build. Create the owner passkey before sharing the app.
 
 ## Local development
 
