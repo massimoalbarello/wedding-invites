@@ -38,16 +38,7 @@ export function SelfDestruct() {
       data-burst={seconds === 0}
       style={{ '--secret-burst-duration': `${BURST_MS}ms` } as CSSProperties}
     >
-      <div className="secret-burst" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
+      <div className="secret-burst" aria-hidden="true" />
       <SecretPaper>
         <SecretStamp>
           ACCESS
