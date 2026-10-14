@@ -251,15 +251,13 @@ function GuestRows({ guests }: { guests: Guest[] }) {
     <ul className="space-y-1">
       {guests.map((guest) => (
         <li key={guest.id}>
-          <div className="flex items-center gap-2 rounded-xl pr-3 hover:bg-muted/60 sm:pr-4">
+          <div className="grid min-h-20 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 rounded-xl px-3 py-4 hover:bg-muted/60 sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1fr)] sm:px-4">
             <Link
               to="/guests/$guestId"
               params={{ guestId: guest.id }}
-              className="grid min-h-20 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 rounded-xl px-3 py-4 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:px-4"
+              className="col-start-1 row-start-1 flex min-w-0 items-center gap-4 self-stretch rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div className="row-span-2 sm:row-span-1">
-                <GuestAvatar guest={guest} />
-              </div>
+              <GuestAvatar guest={guest} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{guest.name}</p>
                 <p className="mt-1 truncate text-muted-foreground text-xs">
@@ -273,17 +271,18 @@ function GuestRows({ guests }: { guests: Guest[] }) {
                     .join(' · ')}
                 </p>
               </div>
-              <div className="col-start-2 flex flex-wrap items-center gap-1.5 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end">
-                <StatusLabel status={guest.status} />
-                {!guest.active && (
-                  <span className="text-muted-foreground text-xs">Access paused</span>
-                )}
-              </div>
-              <span aria-hidden="true" className="hidden text-muted-foreground sm:block">
-                →
-              </span>
             </Link>
-            <CopyInvitationLink key={guest.token} token={guest.token} name={guest.name} />
+            {guest.status === 'pending' && (
+              <div className="col-span-2 row-start-2 justify-self-center sm:col-span-1 sm:col-start-2 sm:row-start-1">
+                <CopyInvitationLink key={guest.token} token={guest.token} name={guest.name} />
+              </div>
+            )}
+            <div className="col-start-2 row-start-1 flex flex-col items-end gap-1.5 justify-self-end sm:col-start-3">
+              <StatusLabel status={guest.status} />
+              {!guest.active && (
+                <span className="text-muted-foreground text-xs">Access paused</span>
+              )}
+            </div>
           </div>
           {guest.companions.map((companion) => (
             <Link

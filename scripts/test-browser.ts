@@ -504,11 +504,24 @@ try {
     companions: 4,
     attending: 8,
   });
-  await checkInvitationCopy({ page, origin: app.origin, guest });
+  for (const replied of [guest, seeded[0]!, seeded[3]!]) {
+    assert.equal(
+      await page
+        .getByRole('button', { name: `Copy invitation link for ${replied.name}`, exact: true })
+        .count(),
+      0,
+      'Guests who accepted or declined should not have a copy action in the list.',
+    );
+  }
+  await page
+    .getByRole('button', { name: `Copy invitation link for ${bypass.name}`, exact: true })
+    .getByText('Invitation link', { exact: true })
+    .waitFor();
   await page.screenshot({ path: resolve(artifacts, 'guest-list-desktop.png'), fullPage: true });
+  await checkInvitationCopy({ page, origin: app.origin, guest: bypass });
   await page.setViewportSize(MOBILE_VIEWPORT);
-  await checkInvitationCopy({ page, origin: app.origin, guest: seeded[0]! });
   await page.screenshot({ path: resolve(artifacts, 'guest-list-mobile.png'), fullPage: true });
+  await checkInvitationCopy({ page, origin: app.origin, guest: seeded[5]! });
   const scrollWidth = await page.locator('html').evaluate((element) => element.scrollWidth);
   assert.ok(
     scrollWidth <= MOBILE_VIEWPORT.width,
