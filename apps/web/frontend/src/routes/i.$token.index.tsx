@@ -46,11 +46,8 @@ function PersonalMessage() {
       <h1 className="mt-3 break-words font-semibold text-3xl leading-tight tracking-tight">
         An important message for {entry.name}.
       </h1>
-      <p className="mt-4 text-muted-foreground">
+      <p className="mt-4 mb-8 text-muted-foreground">
         Before you open it, let’s make sure it’s you. Take a quick selfie to continue.
-      </p>
-      <p className="mt-3 mb-8 text-muted-foreground text-xs">
-        The sender will keep the selfie you submit as a keepsake.
       </p>
       <SelfieCamera
         onRetake={() => verify.reset()}
