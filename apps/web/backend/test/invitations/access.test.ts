@@ -126,16 +126,24 @@ test('only this guest references match and any reused reference rejects before a
       expect(response.status).toBe(SUCCESS);
     }
     expect((await f.request({ path: `${route}/session`, method: 'POST' })).status).toBe(FORBIDDEN);
-    expect(
-      (await f.request({ path: `${route}/verify`, method: 'POST', body: upload(MISMATCH) })).status,
-    ).toBe(FORBIDDEN);
+    const mismatch = await f.request({
+      path: `${route}/verify`,
+      method: 'POST',
+      body: upload(MISMATCH),
+    });
+    expect(mismatch.status).toBe(FORBIDDEN);
+    expect(await mismatch.json()).toMatchObject({ reason: 'face_mismatch' });
+    expect(mismatch.headers.get('set-cookie')).toBeNull();
+    expect((await f.request({ path: `${route}/content` })).status).toBe(UNAUTHORIZED);
     const duplicate = await f.request({
       path: `${route}/verify`,
       method: 'POST',
       body: upload(ALTERNATE_REFERENCE),
     });
     expect(duplicate.status).toBe(FORBIDDEN);
-    expect((await duplicate.json()).error).toContain('reference photo');
+    const duplicateError = await duplicate.json();
+    expect(duplicateError.error).toContain('reference photo');
+    expect(duplicateError.reason).toBeUndefined();
     expect(duplicate.headers.get('set-cookie')).toBeNull();
     const login = await f.request({
       path: `${route}/verify`,

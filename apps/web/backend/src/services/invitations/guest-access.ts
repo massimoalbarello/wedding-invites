@@ -20,6 +20,7 @@ import type { InvitationAssetsRepositoryContract } from '#backend/repositories/i
 import type { InvitationDesignsRepositoryContract } from '#backend/repositories/invitation-designs/repository.ts';
 import type { InvitationCapturesRepositoryContract } from '#backend/repositories/invitations/captures.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
+import { FaceMismatchError } from '#backend/services/invitations/face-mismatch.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
 
 function hashSession(token: string) {
@@ -136,7 +137,7 @@ export class GuestAccessService {
       throw new ForbiddenError('That looks like a reference photo. Please take a fresh selfie.');
     }
     if (!comparisons.includes('match')) {
-      throw new ForbiddenError('We could not match your face. Please try another selfie.');
+      throw new FaceMismatchError();
     }
     return this.session({ guest, faceVerified: true });
   }

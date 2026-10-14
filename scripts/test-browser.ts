@@ -10,6 +10,7 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const HTTP_BAD_REQUEST = 400;
 const PAGE_OVERFLOW_COUNT = 42;
+const BURST_FRAME_MS = 240;
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 1000 };
 const fixtures = resolve('apps/web/backend/test/fixtures/faces');
@@ -50,10 +51,8 @@ async function cameraVideo(name: string) {
 }
 
 async function captureSelfie(page: Page) {
-  await page.getByRole('button', { name: 'Take a selfie', exact: true }).click();
-  await page.getByRole('button', { name: 'Capture photo', exact: true }).click();
-  await page.getByRole('img', { name: 'Your captured selfie' }).waitFor();
-  await page.getByRole('button', { name: 'Use this photo', exact: true }).click();
+  await page.getByRole('button', { name: 'Take a selfie & open', exact: true }).click();
+  await page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
 }
 
 async function checkInvitationCopy({
@@ -171,6 +170,7 @@ async function checkDesignSelection(input: {
   );
   const noAllowance = await browser();
   await noAllowance.page.goto(`${origin}/i/${input.noAllowance.token}`);
+  await noAllowance.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
   const noAllowanceFrame = invitationFrame(noAllowance.page);
   await noAllowanceFrame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
   assert.equal(await noAllowanceFrame.getByRole('button', { name: 'Add a guest' }).count(), 0);
@@ -282,10 +282,13 @@ async function checkGuestPhotoEditing({
   assert.equal(await row.locator('img').count(), 0);
   const previouslyBypassed = await browser();
   await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
+  await previouslyBypassed.page
+    .getByRole('button', { name: 'Open invitation', exact: true })
+    .click();
   await openLetter(previouslyBypassed.page);
   assert.equal(
     await previouslyBypassed.page
-      .getByRole('button', { name: 'Take a selfie', exact: true })
+      .getByRole('button', { name: 'Take a selfie & open', exact: true })
       .count(),
     0,
   );
@@ -298,7 +301,7 @@ async function checkGuestPhotoEditing({
   await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
   await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
   await previouslyBypassed.page
-    .getByRole('button', { name: 'Take a selfie', exact: true })
+    .getByRole('button', { name: 'Take a selfie & open', exact: true })
     .waitFor();
   assert.equal(
     (
@@ -364,9 +367,12 @@ async function checkGuestGrouping({ page, origin }: { page: Page; origin: string
   await noReference.page.goto(
     await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
   );
+  await noReference.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
   await openLetter(noReference.page);
   assert.equal(
-    await noReference.page.getByRole('button', { name: 'Take a selfie', exact: true }).count(),
+    await noReference.page
+      .getByRole('button', { name: 'Take a selfie & open', exact: true })
+      .count(),
     0,
   );
   await noReference.page.screenshot({
@@ -500,9 +506,7 @@ try {
     HTTP_FORBIDDEN,
   );
   await newcomer.page.goto(link);
-  await newcomer.page
-    .getByRole('heading', { name: 'An important message for Taylor Reed.' })
-    .waitFor();
+  await newcomer.page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
   assert.equal(await newcomer.page.locator('input[type=file]').count(), 0);
   const anonymousMessage = await newcomer.page.locator('body').innerText();
   assert(!anonymousMessage.includes('Elena'));
@@ -518,11 +522,61 @@ try {
   await captureSelfie(duplicate.page);
   await duplicate.page.getByRole('alert').filter({ hasText: 'reference photo' }).waitFor();
   assert.equal((await duplicate.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
-  const stranger = await browser({ cameraFile: videos.stranger });
+  const stranger = await browser({
+    cameraFile: videos.stranger,
+    recordVideo: { dir: resolve(artifacts, 'recordings'), size: MOBILE_VIEWPORT },
+  });
+  await stranger.page.setViewportSize(MOBILE_VIEWPORT);
   await stranger.page.goto(link);
   await captureSelfie(stranger.page);
-  await stranger.page.getByRole('alert').filter({ hasText: 'could not match your face' }).waitFor();
+  await stranger.page
+    .getByRole('heading', { name: 'Sorry, this message isn’t for you.' })
+    .waitFor();
+  await stranger.page.getByRole('status').filter({ hasText: 'Self-destructing in 3' }).waitFor();
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-denied.png'),
+    fullPage: true,
+  });
+  await stranger.page.locator('[data-burst=true]').waitFor();
+  await stranger.page.waitForTimeout(BURST_FRAME_MS);
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-burst-start.png'),
+    fullPage: true,
+  });
+  await stranger.page.waitForTimeout(BURST_FRAME_MS);
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-burst.png'),
+    fullPage: true,
+  });
+  await stranger.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-blank.png'),
+    fullPage: true,
+  });
+  console.log(`Denial recording: ${await stranger.page.video()!.path()}`);
+  const reduced = await browser({ cameraFile: videos.stranger });
+  await reduced.page.emulateMedia({ reducedMotion: 'reduce' });
+  await reduced.page.goto(link);
+  await captureSelfie(reduced.page);
+  await reduced.page.locator('[data-burst=true]').waitFor();
+  assert.equal(
+    await reduced.page.evaluate(
+      'getComputedStyle(document.querySelector(".secret-mail")).animationName',
+    ),
+    'none',
+  );
+  await reduced.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
+  assert.equal(await stranger.page.locator('main section').count(), 0);
+  assert.equal(await stranger.page.getByRole('button').count(), 0);
+  assert.equal(await stranger.page.locator('iframe').count(), 0);
   assert.equal((await stranger.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
+  await stranger.page.reload();
+  await stranger.page.getByRole('button', { name: 'Take a selfie & open', exact: true }).waitFor();
+  await captureSelfie(stranger.page);
+  await stranger.page
+    .getByRole('heading', { name: 'Sorry, this message isn’t for you.' })
+    .waitFor();
+  await stranger.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
 
   const guestBrowser = await browser({
     cameraFile: videos.genuine,
@@ -530,7 +584,29 @@ try {
   });
   await guestBrowser.page.setViewportSize(MOBILE_VIEWPORT);
   await guestBrowser.page.goto(link);
-  await captureSelfie(guestBrowser.page);
+  await guestBrowser.page
+    .getByRole('button', { name: 'Take a selfie & open', exact: true })
+    .click();
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).waitFor();
+  await guestBrowser.page.getByRole('button', { name: 'Back', exact: true }).click();
+  assert.equal(await guestBrowser.page.locator('video').count(), 0);
+  await guestBrowser.page
+    .getByRole('button', { name: 'Take a selfie & open', exact: true })
+    .click();
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).waitFor();
+  await guestBrowser.page.waitForFunction('document.querySelector("video")?.readyState >= 2');
+  await guestBrowser.page.screenshot({
+    path: resolve(artifacts, 'verification-camera-mobile.png'),
+    fullPage: true,
+  });
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
+  await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
+  assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
+  await guestBrowser.page.screenshot({
+    path: resolve(artifacts, 'verification-success-mobile.png'),
+    fullPage: true,
+  });
+  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
   console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
@@ -587,19 +663,24 @@ try {
   assert.equal(excess.status(), HTTP_BAD_REQUEST);
   const forwarded = await browser();
   await forwarded.page.goto(guestBrowser.page.url());
-  await forwarded.page.getByRole('button', { name: 'Take a selfie', exact: true }).waitFor();
+  await forwarded.page.getByRole('button', { name: 'Take a selfie & open', exact: true }).waitFor();
   assert.equal((await forwarded.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
 
   const seeded = await seedGuests({ page, origin: app.origin });
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
+  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
+  await newcomer.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
   await openLetter(newcomer.page);
-  assert.equal(await newcomer.page.getByRole('button', { name: 'Take a selfie' }).count(), 0);
+  assert.equal(
+    await newcomer.page.getByRole('button', { name: 'Take a selfie & open' }).count(),
+    0,
+  );
   await page.goto(app.origin);
   await page.getByText('Jordan Reed', { exact: true }).waitFor();
   const stats = await (await page.request.get(`${app.origin}/api/admin/stats`)).json();

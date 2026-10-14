@@ -64,8 +64,14 @@ export function useLiveCamera() {
     active,
     ready,
     error,
-    start: () => setActive(true),
-    stop: () => setActive(false),
+    start: () => {
+      setReady(false);
+      setActive(true);
+    },
+    stop: () => {
+      setReady(false);
+      setActive(false);
+    },
   };
 }
 export async function captureFrame(source: HTMLVideoElement | null) {
