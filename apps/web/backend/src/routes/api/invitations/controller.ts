@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { ForbiddenError } from '#backend/lib/errors.ts';
 import { SESSION_MAX_AGE_SECONDS } from '#backend/models/invitations/model.ts';
+import { PackageIdSchema } from '#backend/routes/api/admin/designs/model.ts';
 import { PhotoUploadSchema, PublicIdSchema } from '#backend/routes/api/admin/model.ts';
 import { assetResponse } from '#backend/routes/api/invitations/asset-response.ts';
 import {
@@ -76,20 +77,24 @@ export function createInvitationsController(input: {
       { params: InvitationParamsSchema, response: apiResponse(InvitationContentSchema) },
     )
     .get(
-      '/:token/assets/*',
+      '/:token/assets/:packageId/*',
       async ({ params, cookie, request }) =>
         assetResponse({
           asset: await input.access.asset({
             token: params.token,
             session: cookie[GUEST_COOKIE_NAME]?.value as string | undefined,
             path: (params as Record<string, string>)['*']!,
+            packageId: params.packageId,
           }),
           range: request.headers.get('range'),
         }),
       {
-        params: t.Object(InvitationParamsSchema.properties, {
-          additionalProperties: t.String({ minLength: 1, maxLength: MAX_ASSET_PATH_LENGTH }),
-        }),
+        params: t.Object(
+          { ...InvitationParamsSchema.properties, packageId: PackageIdSchema },
+          {
+            additionalProperties: t.String({ minLength: 1, maxLength: MAX_ASSET_PATH_LENGTH }),
+          },
+        ),
       },
     )
     .put(

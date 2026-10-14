@@ -5,11 +5,13 @@ import { elysiaErrorHandler } from '#backend/lib/errors.ts';
 import { createAdminController } from '#backend/routes/api/admin/controller.ts';
 import { createInvitationsController } from '#backend/routes/api/invitations/controller.ts';
 import type { FrontendAssetsServiceContract } from '#backend/services/frontend-assets/service.ts';
+import type { InvitationDesignServiceContract } from '#backend/services/invitation-designs/service.ts';
 import type { GuestAccessServiceContract } from '#backend/services/invitations/guest-access.ts';
 import type { GuestManagementServiceContract } from '#backend/services/invitations/guest-management.ts';
 export function createApp(input: {
   auth: Auth;
   management: GuestManagementServiceContract;
+  designs: InvitationDesignServiceContract;
   access: GuestAccessServiceContract;
   frontend: FrontendAssetsServiceContract;
   origin: string;

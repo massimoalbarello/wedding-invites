@@ -32,7 +32,9 @@ test('the invitation and all its resources require the matching active guest ses
       faceScanRequired: false,
     });
     for (const path of ['index.html', 'media/story.mp4', 'missing.js']) {
-      expect((await f.request({ path: `${base}/assets/${path}` })).status).toBe(UNAUTHORIZED);
+      expect((await f.request({ path: `${base}/assets/amalfi/${path}` })).status).toBe(
+        UNAUTHORIZED,
+      );
     }
     const session = cookies(await f.request({ path: `${base}/session`, method: 'POST' }));
     const content = await (await f.request({ path: `${base}/content`, cookie: session })).json();
@@ -41,25 +43,25 @@ test('the invitation and all its resources require the matching active guest ses
       status: 'pending',
       maxGuests: 1,
       companions: [],
-      assetUrl: `${base}/assets/index.html`,
+      assetUrl: `${base}/assets/amalfi/index.html`,
     });
     const html = await f.request({ path: content.assetUrl, cookie: session });
     expect(await html.text()).toContain('Private couple names');
     expect(html.headers.get('cache-control')).toBe('private, no-store');
-    expect((await f.request({ path: `${base}/assets/missing.js`, cookie: session })).status).toBe(
-      NOT_FOUND,
-    );
+    expect(
+      (await f.request({ path: `${base}/assets/amalfi/missing.js`, cookie: session })).status,
+    ).toBe(NOT_FOUND);
     expect(
       (
         await f.request({
-          path: `/api/invitations/${other.token}/assets/index.html`,
+          path: `/api/invitations/${other.token}/assets/amalfi/index.html`,
           cookie: session,
         })
       ).status,
     ).toBe(UNAUTHORIZED);
     const range = async (value: string) =>
       f.app.handle(
-        new Request(`http://localhost:3000${base}/assets/media/story.mp4`, {
+        new Request(`http://localhost:3000${base}/assets/amalfi/media/story.mp4`, {
           headers: { cookie: session, range: value },
         }),
       );

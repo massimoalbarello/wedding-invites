@@ -6,6 +6,15 @@ export interface IFindOwnerResult {
     id: string;
 }
 
+/** Result of query `GetInvitationDesign`. */
+export interface IGetInvitationDesignResult {
+    package_id: string;
+}
+
+/** Result of query `SaveInvitationDesign`. */
+export interface ISaveInvitationDesignResult {
+}
+
 /** Result of query `SaveInvitationCapture`. */
 export interface ISaveInvitationCaptureResult {
     id: string | null;
@@ -175,6 +184,8 @@ export interface IInsertGuestReferenceResult {
 
 export interface Queries {
     FindOwner: IFindOwnerResult;
+    GetInvitationDesign: IGetInvitationDesignResult;
+    SaveInvitationDesign: ISaveInvitationDesignResult;
     SaveInvitationCapture: ISaveInvitationCaptureResult;
     ListInvitationGuests: IListInvitationGuestsResult;
     InvitationGuestById: IInvitationGuestByIdResult;

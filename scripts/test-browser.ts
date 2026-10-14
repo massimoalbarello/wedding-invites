@@ -93,6 +93,92 @@ async function openLetter(page: Page) {
   });
 }
 
+async function checkDesignSelection(input: {
+  page: Page;
+  origin: string;
+  guestPage: Page;
+  bypassPage: Page;
+  guest: Guest;
+  bypass: Guest;
+  noAllowance: Guest;
+}) {
+  const { page, origin } = input;
+  const before = await (await page.request.get(`${origin}/api/admin/stats`)).json();
+  await page.getByRole('link', { name: 'Invitation design', exact: true }).click();
+  await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
+  const chooseSimple = async () => {
+    await page.getByRole('button', { name: 'Edit design', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Design for every invitation', exact: true }).click();
+    await page.getByRole('option', { name: 'Simple letter', exact: true }).waitFor();
+    await page.screenshot({
+      path: resolve(artifacts, 'design-choice-desktop.png'),
+      fullPage: true,
+    });
+    await page.getByRole('option', { name: 'Simple letter', exact: true }).click();
+    await page
+      .frameLocator('iframe[title="Design preview"]')
+      .getByRole('heading', { name: 'Elena & Marco', exact: true })
+      .waitFor();
+  };
+  await chooseSimple();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  assert.equal(
+    (await (await page.request.get(`${origin}/api/admin/designs`)).json()).selectedPackageId,
+    'amalfi',
+  );
+  await chooseSimple();
+  const preview = page.frameLocator('iframe[title="Design preview"]');
+  await preview.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
+  await preview.getByRole('button', { name: 'Send reply', exact: true }).click();
+  await preview.getByRole('status').filter({ hasText: 'Your reply is saved' }).waitFor();
+  assert.deepEqual(await (await page.request.get(`${origin}/api/admin/stats`)).json(), before);
+  await page.getByRole('button', { name: 'Save design', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'applies to every invitation' }).waitFor();
+  await page.reload();
+  await page.getByRole('heading', { name: 'Simple letter', exact: true }).waitFor();
+  await page.screenshot({
+    path: resolve(artifacts, 'design-selection-desktop.png'),
+    fullPage: true,
+  });
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  await page.screenshot({
+    path: resolve(artifacts, 'design-selection-mobile.png'),
+    fullPage: true,
+  });
+  assert.ok(
+    (await page.locator('html').evaluate((element) => element.scrollWidth)) <=
+      MOBILE_VIEWPORT.width,
+  );
+  await page.setViewportSize(DESKTOP_VIEWPORT);
+  await input.guestPage.goto(`${origin}/i/${input.guest.token}`);
+  const guest = invitationFrame(input.guestPage);
+  await guest.getByRole('heading', { name: 'Elena & Marco', exact: true }).waitFor();
+  assert.equal(await guest.getByRole('button', { name: 'Tap to open' }).count(), 0);
+  assert.equal(await guest.getByLabel('Guest name', { exact: true }).inputValue(), 'Jordan Reed');
+  await guest.getByRole('button', { name: 'Update reply', exact: true }).click();
+  await guest.getByRole('status').filter({ hasText: 'Your reply is saved' }).waitFor();
+  await input.guestPage.screenshot({
+    path: resolve(artifacts, 'simple-letter-mobile.png'),
+    fullPage: true,
+  });
+  await input.bypassPage.goto(`${origin}/i/${input.bypass.token}`);
+  await invitationFrame(input.bypassPage)
+    .getByRole('heading', { name: 'Elena & Marco', exact: true })
+    .waitFor();
+  assert.equal(
+    await invitationFrame(input.bypassPage).getByRole('button', { name: 'Tap to open' }).count(),
+    0,
+  );
+  const noAllowance = await browser();
+  await noAllowance.page.goto(`${origin}/i/${input.noAllowance.token}`);
+  const noAllowanceFrame = invitationFrame(noAllowance.page);
+  await noAllowanceFrame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
+  assert.equal(await noAllowanceFrame.getByRole('button', { name: 'Add a guest' }).count(), 0);
+  assert.deepEqual(await (await page.request.get(`${origin}/api/admin/stats`)).json(), before);
+  await page.goto(origin);
+  await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+}
+
 async function createGuestInDashboard(page: Page) {
   await page.getByRole('link', { name: 'Add guest' }).click();
   assert.equal(await page.getByRole('switch', { name: 'Require a face scan' }).count(), 0);
@@ -541,6 +627,15 @@ try {
   );
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await checkPagination({ page, origin: app.origin });
+  await checkDesignSelection({
+    page,
+    origin: app.origin,
+    guestPage: guestBrowser.page,
+    bypassPage: newcomer.page,
+    guest,
+    bypass,
+    noAllowance: seeded[5]!,
+  });
 
   const csrf = await page.request.post(`${app.origin}/api/admin/guests`, {
     headers: { origin: 'https://untrusted.invalid' },
@@ -564,7 +659,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, private invitation assets and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, private invitation assets, owner-wide design selection and preview, and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {

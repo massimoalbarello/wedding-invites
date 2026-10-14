@@ -24,19 +24,10 @@ export function getPublicAssets(): AssetFiles {
   return readAssets({ folderName: publicFrontendFolderName, folder: PUBLIC_FRONTEND_DIR });
 }
 
-export function getInvitationAssets(input: { packageId: string }): AssetFiles {
+export function getInvitationAssets(): AssetFiles {
   const folderName =
     typeof INVITATION_ASSETS_DIR_NAME === 'undefined' ? 'invitations' : INVITATION_ASSETS_DIR_NAME;
-  const files = readAssets({
-    folderName,
-    folder: resolve(import.meta.dir, '../../../dist/invitations'),
-  });
-  const prefix = `${input.packageId}/`;
-  return new Map(
-    [...files]
-      .filter(([path]) => path.startsWith(prefix))
-      .map(([path, file]) => [path.slice(prefix.length), file]),
-  );
+  return readAssets({ folderName, folder: resolve(import.meta.dir, '../../../dist/invitations') });
 }
 
 export function getMigrations(): AssetFiles {

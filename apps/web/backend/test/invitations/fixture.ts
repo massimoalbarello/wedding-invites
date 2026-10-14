@@ -16,8 +16,10 @@ import {
 } from '#backend/models/faces/models.ts';
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
+import { InvitationDesignsRepository } from '#backend/repositories/invitation-designs/repository.ts';
 import { InvitationCapturesRepository } from '#backend/repositories/invitations/captures.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
+import { InvitationDesignService } from '#backend/services/invitation-designs/service.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
 import { GuestManagementService } from '#backend/services/invitations/guest-management.ts';
 export const ORIGIN = 'http://localhost:3000';
@@ -67,6 +69,7 @@ export async function fixture(
     createInvitationsRepository?: (database: SQL) => InvitationsRepository;
     faces?: FaceAnalyzer;
     assets?: Map<string, Blob>;
+    packages?: Map<string, Map<string, Blob>>;
   } = {},
 ) {
   const folder = await mkdtemp(join(tmpdir(), 'wedding-api-test-'));
@@ -85,15 +88,34 @@ export async function fixture(
   const assets =
     input.assets ??
     new Map([['index.html', new Blob(['<h1>Private invitation</h1>'], { type: 'text/html' })]]);
+  const packages = input.packages ?? new Map([['amalfi', assets]]);
+  const assetRepository = {
+    list: () =>
+      [...packages]
+        .filter(([, files]) => files.has('index.html'))
+        .map(([id]) => ({ id, name: id, description: `${id} invitation` })),
+    get: (input: { packageId: string; path: string }) =>
+      packages.get(input.packageId)?.get(input.path) ?? null,
+  };
+  const designRepository = new InvitationDesignsRepository({
+    database,
+    defaultPackageId: 'amalfi',
+  });
+  const designs = new InvitationDesignService({
+    assets: assetRepository,
+    designs: designRepository,
+  });
   const auth = createAuth({ database, baseUrl: new URL(ORIGIN), secret: SECRET });
   const app = createApp({
     auth,
     management,
+    designs,
     access: new GuestAccessService({
       guests,
       captures: new InvitationCapturesRepository(database),
       faces,
-      assets: { get: (path) => assets.get(path) ?? null },
+      assets: assetRepository,
+      designs: designRepository,
     }),
     origin: ORIGIN,
     frontend: { routes: () => new Map(), fallback: () => null },
@@ -134,6 +156,8 @@ export async function fixture(
     folder,
     guests,
     management,
+    designs,
+    designRepository,
     app,
     admin,
     request,

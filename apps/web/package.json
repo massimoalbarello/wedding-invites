@@ -18,7 +18,7 @@
     "test:binary": "bun test test/binary.test.ts",
     "build:faces": "bun run scripts/build-faces.ts",
     "test:faces": "bun run build:faces && bun test test/faces-native.test.ts",
-    "build:invitations": "vite build --config ../amalfi/vite.config.ts"
+    "build:invitations": "vite build --config ../amalfi/vite.config.ts && vite build --config ../minimal/vite.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -28,6 +28,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <span className="hidden sm:inline">Invitation dashboard</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-3">
+          <Button variant="ghost" render={<Link to="/design" />}>
+            Invitation design
+          </Button>
           <Button variant="ghost" disabled={logout.isPending} onClick={() => logout.mutate()}>
             Sign out
           </Button>

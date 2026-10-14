@@ -6,7 +6,7 @@ export default {
       name: 'invitation-packages-use-only-the-runtime',
       severity: 'error',
       comment: 'An authored invitation must not depend on application implementation details.',
-      from: { path: '^apps/amalfi/src/' },
+      from: { path: '^apps/(amalfi|minimal)/src/' },
       to: { path: '^apps/web/' },
     },
     {
@@ -19,7 +19,7 @@ export default {
       name: 'host-does-not-import-invitation-content',
       severity: 'error',
       from: { path: '^apps/web/' },
-      to: { path: '^apps/amalfi/src/' },
+      to: { path: '^apps/(amalfi|minimal)/src/' },
     },
     {
       name: 'resolve-backend-imports',

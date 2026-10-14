@@ -11,6 +11,7 @@ import { startBinary } from '@repo/build-tools/binary-check';
 import { SQL } from 'bun';
 import { OWNER_USER_ID } from '../backend/src/lib/auth/owner-registration';
 import { opaqueId } from '../backend/src/lib/opaque-id';
+import { InvitationDesignsRepository } from '../backend/src/repositories/invitation-designs/repository';
 import { InvitationsRepository } from '../backend/src/repositories/invitations/repository';
 
 test('standalone binary embeds frontend and migrations and preserves state on restart', async () => {
@@ -76,7 +77,7 @@ test('standalone binary embeds frontend and migrations and preserves state on re
     expect((await restarted.request({ path: '/api/health' })).status).toBe(HTTP_OK);
     expect(await Bun.file(join(dataFolder, '.better-auth-secret')).text()).toBe(secret);
     const prefix = `/api/invitations/${invitationToken}`;
-    expect((await restarted.request({ path: `${prefix}/assets/index.html` })).status).toBe(
+    expect((await restarted.request({ path: `${prefix}/assets/amalfi/index.html` })).status).toBe(
       HTTP_UNAUTHORIZED,
     );
     const opened = await restarted.request({
@@ -97,12 +98,12 @@ test('standalone binary embeds frontend and migrations and preserves state on re
     expect(document.status).toBe(HTTP_OK);
     const invitationScript = invitationHtml.match(/src="([^"]+\.js)"/)?.[1];
     expect(invitationScript).toBeDefined();
-    const scriptPath = `${prefix}/assets/${invitationScript!.replace(/^\.\//, '')}`;
+    const scriptPath = `${prefix}/assets/amalfi/${invitationScript!.replace(/^\.\//, '')}`;
     expect((await restarted.request({ path: scriptPath, headers: { cookie } })).status).toBe(
       HTTP_OK,
     );
     const media = await restarted.request({
-      path: `${prefix}/assets/media/envelope.mp4`,
+      path: `${prefix}/assets/amalfi/media/envelope.mp4`,
       headers: { cookie, range: 'bytes=0-31' },
     });
     const PARTIAL_CONTENT = 206;
@@ -111,6 +112,34 @@ test('standalone binary embeds frontend and migrations and preserves state on re
     expect((await media.arrayBuffer()).byteLength).toBe(HEADER_BYTES);
     expect((await restarted.request({ path: scriptPath })).status).toBe(HTTP_UNAUTHORIZED);
     await restarted.stop();
+    const selectionDatabase = new SQL({ adapter: 'sqlite', filename: join(dataFolder, 'app.db') });
+    try {
+      await new InvitationDesignsRepository({
+        database: selectionDatabase,
+        defaultPackageId: 'amalfi',
+      }).save({ ownerId: OWNER_USER_ID, packageId: 'minimal' });
+    } finally {
+      await selectionDatabase.close();
+    }
+    await using selected = await startBinary({
+      executable,
+      cwd: folder,
+      env: { DATA_FOLDER: dataFolder, BASE_URL: 'http://localhost:3000' },
+    });
+    const selectedContent = (await (
+      await selected.request({ path: `${prefix}/content`, headers: { cookie } })
+    ).json()) as { assetUrl: string };
+    expect(selectedContent.assetUrl).toBe(`${prefix}/assets/minimal/index.html`);
+    expect(
+      await (
+        await selected.request({ path: selectedContent.assetUrl, headers: { cookie } })
+      ).text(),
+    ).toContain('A simple letter');
+    expect(
+      (await selected.request({ path: `${prefix}/assets/amalfi/index.html`, headers: { cookie } }))
+        .status,
+    ).toBe(HTTP_NOT_FOUND);
+    await selected.stop();
   } finally {
     await rm(folder, { recursive: true, force: true });
   }

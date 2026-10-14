@@ -17,6 +17,7 @@ import {
 } from '#backend/models/invitations/model.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
 import type { InvitationAssetsRepositoryContract } from '#backend/repositories/invitation-assets/repository.ts';
+import type { InvitationDesignsRepositoryContract } from '#backend/repositories/invitation-designs/repository.ts';
 import type { InvitationCapturesRepositoryContract } from '#backend/repositories/invitations/captures.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
@@ -24,10 +25,11 @@ import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts
 function hashSession(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
-function invitationContent(guest: Guest) {
+function invitationContent(input: { guest: Guest; packageId: string }) {
+  const { guest, packageId } = input;
   return {
     name: guest.name,
-    assetUrl: `/api/invitations/${guest.token}/assets/index.html`,
+    assetUrl: `/api/invitations/${guest.token}/assets/${packageId}/index.html`,
     status: guest.status,
     maxGuests: guest.maxGuests,
     companions: guest.companions,
@@ -40,6 +42,7 @@ export class GuestAccessService {
       captures: InvitationCapturesRepositoryContract;
       faces: FaceAnalyzer;
       assets: InvitationAssetsRepositoryContract;
+      designs: InvitationDesignsRepositoryContract;
     },
   ) {}
   private async guest(token: string) {
@@ -137,14 +140,20 @@ export class GuestAccessService {
     }
     return this.session({ guest, faceVerified: true });
   }
-  private ready() {
-    if (!this.input.assets.get('index.html')) {
+  private async selectedPackage(ownerId: string) {
+    const packageId = await this.input.designs.get({ ownerId });
+    if (!this.input.assets.list().some((entry) => entry.id === packageId)) {
       throw new ConflictError('This invitation is not ready yet. Please try again later.');
     }
+    return packageId;
   }
-  async asset(input: { token: string; session?: string; path: string }) {
-    await this.authorized(input);
-    const asset = this.input.assets.get(input.path);
+  async asset(input: { token: string; session?: string; packageId: string; path: string }) {
+    const guest = await this.authorized(input);
+    const packageId = await this.selectedPackage(guest.ownerId);
+    if (packageId !== input.packageId) {
+      throw new NotFoundError();
+    }
+    const asset = this.input.assets.get(input);
     if (!asset) {
       throw new NotFoundError();
     }
@@ -152,8 +161,8 @@ export class GuestAccessService {
   }
   async content(input: { token: string; session?: string }) {
     const guest = await this.authorized(input);
-    this.ready();
-    return invitationContent(guest);
+    const packageId = await this.selectedPackage(guest.ownerId);
+    return invitationContent({ guest, packageId });
   }
   async rsvp(input: {
     token: string;
@@ -162,7 +171,7 @@ export class GuestAccessService {
     companions: string[];
   }) {
     const guest = await this.authorized(input);
-    this.ready();
+    await this.selectedPackage(guest.ownerId);
     const names = input.status === 'accepted' ? input.companions.map((name) => name.trim()) : [];
     if (names.some((name) => !name || name.length > MAX_GUEST_NAME_LENGTH)) {
       throw new BadRequestError('Enter a name for each guest.');

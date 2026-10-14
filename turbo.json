@@ -32,7 +32,8 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/apps/amalfi/**",
-        "$TURBO_ROOT$/packages/invitation-runtime/**"
+        "$TURBO_ROOT$/packages/invitation-runtime/**",
+        "$TURBO_ROOT$/apps/minimal/**"
       ],
       "outputs": ["dist/invitations/**"]
     }
