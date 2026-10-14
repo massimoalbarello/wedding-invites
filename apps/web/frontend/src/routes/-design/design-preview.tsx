@@ -27,9 +27,7 @@ export function DesignPreview({ packageId }: { packageId: string }) {
   }, []);
   return (
     <section className="mt-7" aria-label="Design preview">
-      <p className="mb-3 text-muted-foreground text-xs">
-        Preview · Replies here are examples and won’t be saved.
-      </p>
+      <p className="mb-3 text-muted-foreground text-xs">Preview</p>
       <iframe
         ref={frame}
         title="Design preview"

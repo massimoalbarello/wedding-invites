@@ -30,21 +30,26 @@ export function DesignForm({
         void form.handleSubmit();
       }}
     >
-      <div className="mt-6 flex min-h-10 items-center justify-end gap-2">
-        {editing ? (
-          <>
-            <Button type="button" variant="outline" onClick={onCancel} disabled={pending}>
-              Cancel
+      <div className="mt-8 flex items-center justify-between gap-4">
+        <h1 className="min-w-0 font-semibold text-2xl tracking-tight sm:text-3xl">
+          Invitation design
+        </h1>
+        <div className="flex min-h-10 shrink-0 items-center gap-2">
+          {editing ? (
+            <>
+              <Button type="button" variant="outline" onClick={onCancel} disabled={pending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {pending ? 'Saving design…' : 'Save design'}
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="outline" onClick={onEdit}>
+              Select design
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? 'Saving design…' : 'Save design'}
-            </Button>
-          </>
-        ) : (
-          <Button type="button" variant="outline" onClick={onEdit}>
-            Edit design
-          </Button>
-        )}
+          )}
+        </div>
       </div>
       <form.Field
         name="packageId"

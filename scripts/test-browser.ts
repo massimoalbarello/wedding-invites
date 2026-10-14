@@ -107,7 +107,7 @@ async function checkDesignSelection(input: {
   await page.getByRole('link', { name: 'Invitation design', exact: true }).click();
   await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
   const chooseSimple = async () => {
-    await page.getByRole('button', { name: 'Edit design', exact: true }).click();
+    await page.getByRole('button', { name: 'Select design', exact: true }).click();
     await page.getByRole('combobox', { name: 'Design for every invitation', exact: true }).click();
     await page.getByRole('option', { name: 'Simple letter', exact: true }).waitFor();
     await page.screenshot({
@@ -133,7 +133,7 @@ async function checkDesignSelection(input: {
   await preview.getByRole('status').filter({ hasText: 'Your reply is saved' }).waitFor();
   assert.deepEqual(await (await page.request.get(`${origin}/api/admin/stats`)).json(), before);
   await page.getByRole('button', { name: 'Save design', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'applies to every invitation' }).waitFor();
+  await page.getByRole('button', { name: 'Select design', exact: true }).waitFor();
   await page.reload();
   await page.getByRole('heading', { name: 'Simple letter', exact: true }).waitFor();
   await page.screenshot({
