@@ -11,7 +11,7 @@ try {
   browser = await virtualPasskeyBrowser({ headless: false });
   await browser.page.goto(app.origin);
   if (Bun.argv.includes('--seed')) {
-    await browser.page.getByRole('button', { name: 'Create dashboard with a passkey' }).click();
+    await browser.page.getByRole('button', { name: 'Get started' }).click();
     await browser.page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
     await seedGuests({ page: browser.page, origin: app.origin });
     await browser.page.reload();
