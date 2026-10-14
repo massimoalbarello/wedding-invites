@@ -1,7 +1,7 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { api } from '../src/lib/api';
 import { invitationKeys } from '../src/queries/invitations';
@@ -16,6 +16,10 @@ type Content = NonNullable<
 const TOKEN_LENGTH = 48;
 const OK = 200;
 const FORBIDDEN = 403;
+const BAD_REQUEST = 400;
+const UNAVAILABLE = 503;
+const COUNTDOWN_TIMEOUT_MS = 5000;
+const AFTER_COUNTDOWN_MS = 3100;
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
 const originalMediaDevices = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
@@ -66,7 +70,7 @@ function renderEntry(input: {
           return response;
         }
         if (url.endsWith('/content')) {
-          return hasSession
+          return hasSession && url.endsWith(`/${token}/content`)
             ? Response.json(content)
             : Response.json({ error: 'Please verify your identity.' }, { status: 401 });
         }
@@ -147,7 +151,7 @@ async function captureSelfie() {
   await user.click(screen.getByRole('button', { name: 'Capture & verify' }));
 }
 
-test('successful verification opens the invitation immediately and clears pre-verification content', async () => {
+test('successful verification counts down before opening the invitation and clears pre-verification content', async () => {
   const { promise, resolve } = Promise.withResolvers<Response>();
   const view = renderEntry({
     entry: { name: content.name, faceScanRequired: true, authenticated: false },
@@ -160,7 +164,17 @@ test('successful verification opens the invitation immediately and clears pre-ve
   await screen.findByRole('status');
   expect(screen.queryByTitle('Invitation')).toBeNull();
   resolve(Response.json({ authenticated: true }));
-  await screen.findByTitle('Invitation');
+  await screen.findByRole('heading', { name: `It’s you, ${content.name}.` });
+  expect(screen.getByRole('status').textContent).toBe('Opening invitation in 3…');
+  expect(view.router.state.location.pathname).toBe(`/i/${token}`);
+  expect(screen.queryByTitle('Invitation')).toBeNull();
+  expect(screen.queryByRole('button')).toBeNull();
+  await waitFor(
+    () => expect(screen.getByRole('status').textContent).toBe('Opening invitation in 2…'),
+    { timeout: COUNTDOWN_TIMEOUT_MS },
+  );
+  expect(screen.queryByTitle('Invitation')).toBeNull();
+  await screen.findByTitle('Invitation', {}, { timeout: COUNTDOWN_TIMEOUT_MS });
   expect(view.router.state.location.pathname).toBe(`/i/${token}/invitation`);
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.queryByText(`It’s you, ${content.name}.`)).toBeNull();
@@ -169,9 +183,29 @@ test('successful verification opens the invitation immediately and clears pre-ve
   expect(view.queryClient.getQueryData<Content>(invitationKeys.content(token))).toEqual(content);
 });
 
-test('a face mismatch keeps the guest on the entry route for self-destruction', async () => {
+test('opening another personal link during the success countdown cancels automatic navigation', async () => {
   const view = renderEntry({
     entry: { name: content.name, faceScanRequired: true, authenticated: false },
+    verify: () => Promise.resolve(Response.json({ authenticated: true })),
+  });
+  await captureSelfie();
+  await screen.findByRole('heading', { name: `It’s you, ${content.name}.` });
+  const otherToken = 'b'.repeat(TOKEN_LENGTH);
+  await Promise.resolve(
+    act(async () => {
+      await view.router.navigate({ to: '/i/$token', params: { token: otherToken } });
+    }),
+  );
+  await screen.findByRole('button', { name: 'Take a selfie & open' });
+  await new Promise((resolve) => setTimeout(resolve, AFTER_COUNTDOWN_MS));
+  expect(view.router.state.location.pathname).toBe(`/i/${otherToken}`);
+  expect(screen.getByRole('button', { name: 'Take a selfie & open' })).toBeTruthy();
+  expect(screen.queryByTitle('Invitation')).toBeNull();
+});
+
+test.each([
+  {
+    failure: 'face mismatch',
     verify: () =>
       Promise.resolve(
         Response.json(
@@ -179,6 +213,32 @@ test('a face mismatch keeps the guest on the entry route for self-destruction', 
           { status: FORBIDDEN },
         ),
       ),
+  },
+  {
+    failure: 'reference-photo reuse',
+    verify: () =>
+      Promise.resolve(
+        Response.json({ error: 'Please take a fresh selfie.' }, { status: FORBIDDEN }),
+      ),
+  },
+  {
+    failure: 'no face found',
+    verify: () =>
+      Promise.resolve(Response.json({ error: 'No face found.' }, { status: BAD_REQUEST })),
+  },
+  {
+    failure: 'service unavailable',
+    verify: () =>
+      Promise.resolve(Response.json({ error: 'Please try again later.' }, { status: UNAVAILABLE })),
+  },
+  {
+    failure: 'network error',
+    verify: () => Promise.reject(new TypeError('Failed to fetch')),
+  },
+])('a $failure keeps the guest on the entry route for self-destruction', async ({ verify }) => {
+  const view = renderEntry({
+    entry: { name: content.name, faceScanRequired: true, authenticated: false },
+    verify,
   });
   await captureSelfie();
   await screen.findByRole('heading', { name: 'Sorry, this message isn’t for you.' });

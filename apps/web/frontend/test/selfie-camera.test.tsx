@@ -19,15 +19,7 @@ test('camera permission rejection offers a retry without a gallery picker', asyn
     Promise.reject(new DOMException('Permission denied', 'NotAllowedError')),
   );
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
-  const view = render(
-    <SelfieCamera
-      name="Alex Morgan"
-      onVerify={() => {}}
-      onRetake={() => {}}
-      pending={false}
-      error={undefined}
-    />,
-  );
+  const view = render(<SelfieCamera name="Alex Morgan" onVerify={() => {}} pending={false} />);
   expect(view.container.querySelector('input[type="file"]')).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Take a selfie & open' }));
   await waitFor(() =>
@@ -46,15 +38,7 @@ test('leaving the gate stops a camera stream even when permission resolves after
   const getUserMedia = mock(() => permission);
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
   spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
-  const view = render(
-    <SelfieCamera
-      name="Alex Morgan"
-      onVerify={() => {}}
-      onRetake={() => {}}
-      pending={false}
-      error={undefined}
-    />,
-  );
+  const view = render(<SelfieCamera name="Alex Morgan" onVerify={() => {}} pending={false} />);
   await user.click(screen.getByRole('button', { name: 'Take a selfie & open' }));
   await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(1));
   view.unmount();
@@ -106,9 +90,7 @@ test('capturing sends one selfie immediately without a confirmation action', asy
   const props = {
     name: 'Alex Morgan',
     onVerify,
-    onRetake: () => {},
     pending: false,
-    error: undefined,
   };
   const view = render(<SelfieCamera {...props} />);
   const user = await readyCamera();
@@ -131,15 +113,7 @@ test('leaving during photo conversion prevents a late automatic upload', async (
     finish = callback;
   });
   const onVerify = mock((_photo: File) => {});
-  const view = render(
-    <SelfieCamera
-      name="Alex Morgan"
-      onVerify={onVerify}
-      onRetake={() => {}}
-      pending={false}
-      error={undefined}
-    />,
-  );
+  const view = render(<SelfieCamera name="Alex Morgan" onVerify={onVerify} pending={false} />);
   const user = await readyCamera();
   await user.click(screen.getByRole('button', { name: 'Capture & verify' }));
   view.unmount();
