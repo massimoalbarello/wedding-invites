@@ -1,4 +1,4 @@
-const names = ['Massimo', 'Lisa'] as const;
+const names = ['Massimo', 'Elizaveta'] as const;
 
 export const content = {
   names,

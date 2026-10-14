@@ -43,7 +43,7 @@ test('opening is gated by recipient context and reveals live text without a skip
   fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
     animationName: 'envelope-depart',
   });
-  const heading = screen.getByRole('heading', { name: 'Massimo & Lisa' });
+  const heading = screen.getByRole('heading', { name: 'Massimo & Elizaveta' });
   expect(document.activeElement).toBe(heading);
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
@@ -56,12 +56,12 @@ test('inner light animation does not finish the opening before the envelope', as
   fireEvent.animationEnd(document.querySelector('.envelope-glow')!, {
     animationName: 'letter-glow',
   });
-  expect(screen.queryByRole('heading', { name: 'Massimo & Lisa' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
   fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
     animationName: 'envelope-depart',
   });
-  expect(screen.getByRole('heading', { name: 'Massimo & Lisa' })).toBeDefined();
+  expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
 });
 
 test('reduced motion opens immediately without the opening stage', async () => {
@@ -75,7 +75,7 @@ test('reduced motion opens immediately without the opening stage', async () => {
     show();
     await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
     expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Massimo & Lisa' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
   } finally {
     window.matchMedia = original;
   }

@@ -64,7 +64,7 @@
     "apps/pastel-garden": {
       "name": "@repo/pastel-garden",
       "dependencies": {
-        "@fontsource-variable/dm-sans": "^5.3.0",
+        "@fontsource/pinyon-script": "^5.3.0",
         "@repo/invitation-runtime": "workspace:*",
         "@tanstack/react-form": "^1.33.5",
         "@tanstack/react-query": "^5.102.8",
@@ -343,6 +343,8 @@
     "@fontsource/karla": ["@fontsource/karla@5.3.0", "", {}, "sha512-zHBkxMumwFE+K4RgHQAv2xH0O2lAX9y4zPun5JEFZyNQQclZ5Oz/XvByE3CB5+rnxKEV5BXlZShIEfz0VILDmQ=="],
 
     "@fontsource/petit-formal-script": ["@fontsource/petit-formal-script@5.3.0", "", {}, "sha512-tBsoEOWIbK1Kjf/X2hBi8kKlzHPoBS9xPYOhy4NfkG6fTMSR0Nth8Puute+rYSNn9W97d+6Zs4ZIDytHceRRyg=="],
+
+    "@fontsource/pinyon-script": ["@fontsource/pinyon-script@5.3.0", "", {}, "sha512-ilhy4l5apzyDkfuKb7PZBUT5Sf6nfxucdXT5TQ0wQDyWtDPlouLy1lQq3lMEPk1lPsHHVrd11EkPnEG8FqDgUA=="],
 
     "@happy-dom/global-registrator": ["@happy-dom/global-registrator@20.14.5", "", { "dependencies": { "@types/node": ">=20.0.0", "happy-dom": "^20.14.5" } }, "sha512-B05ID9DhSwLs6mlm1fzlkAtTIvB3duCvjJjfr19LBrlTK7VZtRjDqoTRIVv13GuYuNdhByu8LSZgThwV3Rkj7g=="],
 
