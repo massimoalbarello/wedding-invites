@@ -55,11 +55,11 @@ function Login() {
           {(register.error || login.error)?.message}
         </p>
       )}
-      <p className="mt-6 text-muted-foreground text-xs">
-        {owner.hasOwner
-          ? 'Sign in with the passkey you created during setup.'
-          : 'You’ll create a passkey to sign in without a password.'}
-      </p>
+      {owner.hasOwner && (
+        <p className="mt-6 text-muted-foreground text-xs">
+          Sign in with the passkey you created during setup.
+        </p>
+      )}
     </main>
   );
 }
