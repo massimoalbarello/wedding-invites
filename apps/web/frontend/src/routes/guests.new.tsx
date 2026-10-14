@@ -39,7 +39,7 @@ function NewGuest() {
           Add their details and photos to create a personal invitation.
         </p>
         <GuestForm
-          initial={{ name: '', groupName: '', faceScanRequired: true, maxGuests: 0 }}
+          initial={{ name: '', groupName: '', maxGuests: 0 }}
           groups={groups}
           onCancel={() => {
             void navigate({ to: '/' });

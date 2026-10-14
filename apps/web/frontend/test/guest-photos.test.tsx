@@ -7,7 +7,7 @@ import { MAX_PHOTO_BYTES, MAX_REFERENCE_PHOTOS } from '#backend/models/invitatio
 import { GuestForm } from '../src/components/guest-form';
 import type { GuestDraft } from '../src/queries/guests';
 
-const initial = { name: 'Alex Morgan', groupName: 'Friends', faceScanRequired: true, maxGuests: 0 };
+const initial = { name: 'Alex Morgan', groupName: 'Friends', maxGuests: 0 };
 const references = [
   { id: 'existing-reference', src: '/api/admin/guests/alex/photos/existing-reference' },
 ];
@@ -19,14 +19,12 @@ function mockPreviews() {
   spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:${crypto.randomUUID()}`);
   return spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 }
-test('draft photo changes update entry instructions without changing the face scan preference', async () => {
+test('adding or removing the last draft photo changes whether the invitation requires a selfie', async () => {
   mockPreviews();
   const user = userEvent.setup();
   const saves: GuestDraft[] = [];
-  const noPhotosDescription =
-    'Without reference photos, this link opens the invitation directly. Add a photo to enable the face scan.';
-  const directDescription = 'Anyone with this personal link can open the invitation directly.';
-  const scanDescription = 'A selfie unlocks this person’s invitation.';
+  const noPhotosDescription = 'Without reference photos, this invitation opens directly.';
+  const scanDescription = 'A selfie is required to open this invitation.';
   render(
     <GuestForm
       initial={initial}
@@ -41,17 +39,12 @@ test('draft photo changes update entry instructions without changing the face sc
   expect(screen.getByText(scanDescription)).toBeTruthy();
   await user.click(screen.getByRole('button', { name: 'Remove reference photo 1' }));
   expect(screen.getByText(noPhotosDescription)).toBeTruthy();
-  expect(screen.getByRole('switch', { name: 'Require a face scan', checked: true })).toBeTruthy();
   await user.upload(
     screen.getByLabelText('Upload reference photos'),
     new File(['replacement'], 'replacement.png', { type: 'image/png' }),
   );
   expect(screen.getByText(scanDescription)).toBeTruthy();
-  await user.click(screen.getByRole('switch', { name: 'Require a face scan' }));
-  expect(screen.getByText(directDescription)).toBeTruthy();
   await user.click(screen.getByRole('button', { name: 'Remove reference photo 1' }));
-  expect(screen.getByText(directDescription)).toBeTruthy();
-  await user.click(screen.getByRole('switch', { name: 'Require a face scan' }));
   expect(screen.getByText(noPhotosDescription)).toBeTruthy();
   expect(saves).toEqual([]);
   await user.click(screen.getByRole('button', { name: 'Save guest' }));

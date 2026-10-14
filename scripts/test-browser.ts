@@ -119,6 +119,7 @@ async function configureWedding({ page, origin }: { page: Page; origin: string }
 
 async function createGuestInDashboard(page: Page) {
   await page.getByRole('link', { name: 'Add guest' }).click();
+  assert.equal(await page.getByRole('switch', { name: 'Require a face scan' }).count(), 0);
   await page.getByRole('button', { name: 'Save guest', exact: true }).click();
   await page.getByRole('alert').waitFor();
   await page.getByLabel('Full name', { exact: true }).fill('Taylor Reed');
@@ -355,7 +356,6 @@ async function checkPagination({ page, origin }: { page: Page; origin: string })
       data: {
         name: `Example guest ${String(index).padStart(2, '0')}`,
         groupName: 'Test group',
-        faceScanRequired: true,
         maxGuests: 0,
       },
     });
@@ -519,7 +519,7 @@ try {
 
   const csrf = await page.request.post(`${app.origin}/api/admin/guests`, {
     headers: { origin: 'https://untrusted.invalid' },
-    data: { name: 'Injected', groupName: '', faceScanRequired: false, maxGuests: 0 },
+    data: { name: 'Injected', groupName: '', maxGuests: 0 },
   });
   assert.equal(csrf.status(), HTTP_FORBIDDEN);
   await page.goto(`${app.origin}/guests/${guest.id}`);

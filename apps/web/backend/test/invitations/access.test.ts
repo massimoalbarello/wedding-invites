@@ -17,7 +17,6 @@ const actor = { userId: OWNER_USER_ID };
 const defaults = {
   name: 'Ada Lovelace',
   groupName: 'Friends',
-  faceScanRequired: false,
   maxGuests: 1,
 };
 
@@ -110,7 +109,7 @@ test('only this guest references match and any reused reference rejects before a
     const owner = await f.admin();
     const guest = await f.management.create({
       actor,
-      settings: { ...defaults, faceScanRequired: true },
+      settings: defaults,
     });
     const route = `/api/invitations/${guest.token}`;
     expect((await f.request({ path: `${route}/session`, method: 'POST' })).status).toBe(SUCCESS);
@@ -152,7 +151,7 @@ test('only this guest references match and any reused reference rejects before a
   }
 });
 
-test('revocation, access-mode changes, expiration and link rotation invalidate existing guest access', async () => {
+test('revocation, expiration and link rotation invalidate existing guest access', async () => {
   const f = await fixture();
   try {
     await f.admin();
@@ -169,16 +168,6 @@ test('revocation, access-mode changes, expiration and link rotation invalidate e
     expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
       UNAUTHORIZED,
     );
-    session = cookies(await login());
-    await f.management.update({
-      actor,
-      id: guest.id,
-      settings: { ...defaults, faceScanRequired: true },
-    });
-    expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
-      UNAUTHORIZED,
-    );
-    await f.management.update({ actor, id: guest.id, settings: defaults });
     session = cookies(await login());
     await f.management.setAccess({ actor, id: guest.id, active: false });
     expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(NOT_FOUND);
@@ -238,7 +227,7 @@ test('RSVP capacity, companion names, counts and cursor pages stay consistent', 
       path: `/api/admin/guests/${guest.id}`,
       method: 'PATCH',
       cookie: owner,
-      body: { ...defaults, maxGuests: 0, faceScanRequired: true },
+      body: { ...defaults, maxGuests: 0 },
     });
     expect(reduce.status).toBe(CONFLICT);
     expect((await f.management.get({ actor, id: guest.id })).maxGuests).toBe(1);

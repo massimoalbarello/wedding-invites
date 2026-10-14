@@ -5,12 +5,12 @@ import { GuestForm } from '../src/components/guest-form';
 import type { GuestDraft } from '../src/queries/guests';
 
 afterEach(cleanup);
-test('a guest requires a name and saves the per-person access choices', async () => {
+test('a guest requires a name and saves their additional guest allowance', async () => {
   const user = userEvent.setup();
   const saves: GuestDraft[] = [];
   render(
     <GuestForm
-      initial={{ name: '', groupName: '', faceScanRequired: true, maxGuests: 0 }}
+      initial={{ name: '', groupName: '', maxGuests: 0 }}
       onCancel={() => {}}
       onSave={(value) => {
         saves.push(value);
@@ -19,19 +19,14 @@ test('a guest requires a name and saves the per-person access choices', async ()
     />,
   );
   expect(
-    screen.getByText(
-      'Without reference photos, this link opens the invitation directly. Add a photo to enable the face scan.',
-    ),
+    screen.getByText('Without reference photos, this invitation opens directly.'),
   ).toBeTruthy();
+  expect(screen.queryByRole('switch')).toBeNull();
   expect(screen.queryByRole('alert')).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
   expect(screen.getByRole('alert').textContent).toContain('Enter the guest’s name');
   expect(saves).toEqual([]);
   await user.type(screen.getByLabelText('Full name'), 'Alex Morgan');
-  await user.click(screen.getByRole('switch', { name: 'Require a face scan' }));
-  expect(
-    screen.getByText('Anyone with this personal link can open the invitation directly.'),
-  ).toBeTruthy();
   await user.clear(screen.getByLabelText('Additional guests allowed'));
   await user.type(screen.getByLabelText('Additional guests allowed'), '2');
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
@@ -40,7 +35,6 @@ test('a guest requires a name and saves the per-person access choices', async ()
       {
         name: 'Alex Morgan',
         groupName: '',
-        faceScanRequired: false,
         maxGuests: 2,
         photos: [],
         removedPhotoIds: [],

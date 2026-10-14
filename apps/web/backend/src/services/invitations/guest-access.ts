@@ -13,7 +13,6 @@ import {
   MAX_GUEST_NAME_LENGTH,
   MILLISECONDS_PER_SECOND,
   type RsvpStatus,
-  requiresFaceScan,
   SESSION_MAX_AGE_SECONDS,
 } from '#backend/models/invitations/model.ts';
 import type { WeddingSettings } from '#backend/models/wedding/model.ts';
@@ -72,14 +71,11 @@ export class GuestAccessService {
     const guest = await this.guest(input.token);
     return {
       name: guest.name,
-      faceScanRequired: requiresFaceScan({
-        faceScanRequired: guest.faceScanRequired,
-        referenceCount: guest.references.length,
-      }),
+      faceScanRequired: guest.references.length > 0,
       authenticated: await this.authenticated({ guest, session: input.session }),
     };
   }
-  private async session(guest: Guest) {
+  private async session({ guest, faceVerified }: { guest: Guest; faceVerified: boolean }) {
     const token = opaqueId();
     const expiresAt = new Date(
       Date.now() + SESSION_MAX_AGE_SECONDS * MILLISECONDS_PER_SECOND,
@@ -90,10 +86,7 @@ export class GuestAccessService {
       linkToken: guest.token,
       tokenHash: hashSession(token),
       expiresAt,
-      faceScanRequired: requiresFaceScan({
-        faceScanRequired: guest.faceScanRequired,
-        referenceCount: guest.references.length,
-      }),
+      faceVerified,
     });
     if (!created) {
       throw new NotFoundError();
@@ -102,25 +95,15 @@ export class GuestAccessService {
   }
   async bypass(token: string) {
     const guest = await this.guest(token);
-    if (
-      requiresFaceScan({
-        faceScanRequired: guest.faceScanRequired,
-        referenceCount: guest.references.length,
-      })
-    ) {
+    if (guest.references.length > 0) {
       throw new ForbiddenError('This invitation requires a selfie.');
     }
-    return this.session(guest);
+    return this.session({ guest, faceVerified: false });
   }
   async verify(input: { token: string; photo: File }) {
     const guest = await this.guest(input.token);
-    if (
-      !requiresFaceScan({
-        faceScanRequired: guest.faceScanRequired,
-        referenceCount: guest.references.length,
-      })
-    ) {
-      return this.session(guest);
+    if (guest.references.length === 0) {
+      return this.session({ guest, faceVerified: false });
     }
     const references = await this.input.guests.references({
       ownerId: guest.ownerId,
@@ -140,7 +123,7 @@ export class GuestAccessService {
     if (!comparisons.includes('match')) {
       throw new ForbiddenError('We could not match your face. Please try another selfie.');
     }
-    return this.session(guest);
+    return this.session({ guest, faceVerified: true });
   }
   private async weddingDetails(ownerId: string) {
     const wedding = await this.input.wedding.get({ ownerId });

@@ -27,7 +27,7 @@ export function publicGuest(guest: Guest) {
     id: guest.publicId,
     name: guest.name,
     groupName: guest.groupName,
-    faceScanRequired: guest.faceScanRequired,
+    faceScanRequired: guest.references.length > 0,
     maxGuests: guest.maxGuests,
     token: guest.token,
     status: guest.status,
@@ -53,7 +53,6 @@ function normalizedSettings(settings: GuestSettings): GuestSettings {
   return {
     name,
     groupName,
-    faceScanRequired: settings.faceScanRequired,
     maxGuests: settings.maxGuests,
   };
 }

@@ -3,7 +3,7 @@ import { treaty } from '@elysiajs/eden';
 import { OWNER_USER_ID } from '#backend/lib/auth/owner-registration.ts';
 import { MAX_REFERENCE_PHOTOS } from '#backend/models/invitations/model.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
-import { cookies, fixture, ORIGIN, photo } from './fixture.ts';
+import { cookies, fixture, ORIGIN, photo, upload } from './fixture.ts';
 
 const SUCCESS = 200;
 const BAD_REQUEST = 400;
@@ -19,7 +19,6 @@ const actor = { userId: OWNER_USER_ID };
 const settings = {
   name: 'Ada Lovelace',
   groupName: 'Friends',
-  faceScanRequired: false,
   maxGuests: 1,
 };
 const invalidPhoto = () => new File(['invalid image'], 'invalid.jpg', { type: 'image/jpeg' });
@@ -104,12 +103,13 @@ test('a bad draft photo leaves no created guest and preserves all edited setting
     expect((await f.management.list({ actor })).items).toEqual([]);
     const guest = await f.management.create({ actor, settings, photos: [photo(FIRST)] });
     const route = `/api/invitations/${guest.token}`;
-    const session = cookies(await f.request({ path: `${route}/session`, method: 'POST' }));
+    const session = cookies(
+      await f.request({ path: `${route}/verify`, method: 'POST', body: upload(FOURTH) }),
+    );
     const edited = await api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
         name: 'Must not persist',
-        faceScanRequired: true,
         photos: [photo(SECOND), invalidPhoto()],
         removedPhotoIds: [guest.references[0]!.id],
       },
@@ -216,7 +216,7 @@ test('reference capacity is checked against retained photos and concurrent commi
   }
 });
 
-test('a concurrent RSVP prevents an edit from lowering capacity or partially saving its photos and access mode', async () => {
+test('a concurrent RSVP prevents an edit from lowering capacity or partially saving its photos', async () => {
   const entered = Promise.withResolvers<void>();
   const resume = Promise.withResolvers<void>();
   class PausedEditRepository extends InvitationsRepository {
@@ -233,14 +233,15 @@ test('a concurrent RSVP prevents an edit from lowering capacity or partially sav
     const owner = await f.admin();
     const guest = await f.management.create({ actor, settings, photos: [photo(FIRST)] });
     const route = `/api/invitations/${guest.token}`;
-    const session = cookies(await f.request({ path: `${route}/session`, method: 'POST' }));
+    const session = cookies(
+      await f.request({ path: `${route}/verify`, method: 'POST', body: upload(FOURTH) }),
+    );
     const api = treaty(f.app, { parseDate: false });
     const response = api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
         name: 'Must not persist',
         maxGuests: 0,
-        faceScanRequired: true,
         photos: [photo(SECOND)],
         removedPhotoIds: [guest.references[0]!.id],
       },

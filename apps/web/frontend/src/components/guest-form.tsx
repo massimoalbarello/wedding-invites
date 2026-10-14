@@ -1,8 +1,6 @@
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
-import { Switch } from '@repo/ui/switch';
 import { revalidateLogic, useForm } from '@tanstack/react-form';
-import { requiresFaceScan } from '#backend/models/invitations/model.ts';
 import type { GuestDraft, GuestSettings } from '../queries/guests';
 import { type GuestGroupDraft, GuestGroupField } from './guest-group-field';
 import {
@@ -165,41 +163,6 @@ export function GuestForm({
         )}
       </form.Subscribe>
       <div className="space-y-7 border-border border-t pt-7">
-        <form.Field name="faceScanRequired">
-          {(field) => (
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <label htmlFor="face-scan" className="font-medium text-sm">
-                  Require a face scan
-                </label>
-                <form.Subscribe
-                  selector={(state) =>
-                    references.filter((photo) => !state.values.removedPhotoIds.includes(photo.id))
-                      .length + state.values.pendingPhotos.length
-                  }
-                >
-                  {(referenceCount: number) => (
-                    <p
-                      id="face-scan-description"
-                      className="mt-1 max-w-sm text-muted-foreground text-sm"
-                    >
-                      {faceScanDescription({
-                        faceScanRequired: field.state.value,
-                        referenceCount,
-                      })}
-                    </p>
-                  )}
-                </form.Subscribe>
-              </div>
-              <Switch
-                id="face-scan"
-                checked={field.state.value}
-                onCheckedChange={field.handleChange}
-                aria-describedby="face-scan-description"
-              />
-            </div>
-          )}
-        </form.Field>
         <form.Field name="maxGuests">
           {(field) => (
             <div className="space-y-2">
@@ -226,14 +189,4 @@ export function GuestForm({
       </div>
     </form>
   );
-}
-
-function faceScanDescription(input: { faceScanRequired: boolean; referenceCount: number }) {
-  if (requiresFaceScan(input)) {
-    return 'A selfie unlocks this person’s invitation.';
-  }
-  if (input.faceScanRequired) {
-    return 'Without reference photos, this link opens the invitation directly. Add a photo to enable the face scan.';
-  }
-  return 'Anyone with this personal link can open the invitation directly.';
 }

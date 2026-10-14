@@ -75,7 +75,7 @@ export function guestOptions({ ownerId, id }: { ownerId: string; id: string }) {
     },
   });
 }
-export type GuestSettings = Pick<Guest, 'name' | 'groupName' | 'faceScanRequired' | 'maxGuests'>;
+export type GuestSettings = Pick<Guest, 'name' | 'groupName' | 'maxGuests'>;
 export type GuestDraft = GuestSettings & { photos: File[]; removedPhotoIds: string[] };
 export async function createGuest(input: GuestDraft) {
   const { removedPhotoIds: _removedPhotoIds, ...body } = input;

@@ -12,18 +12,8 @@ export const MILLISECONDS_PER_SECOND = 1000;
 export type GuestSettings = {
   name: string;
   groupName: string;
-  faceScanRequired: boolean;
   maxGuests: number;
 };
-export function requiresFaceScan({
-  faceScanRequired,
-  referenceCount,
-}: {
-  faceScanRequired: boolean;
-  referenceCount: number;
-}) {
-  return faceScanRequired && referenceCount > 0;
-}
 export type Companion = { id: string; name: string };
 export type ReferencePhoto = { id: string; createdAt: string };
 export type Guest = GuestSettings & {

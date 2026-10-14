@@ -52,6 +52,11 @@ export function GuestPhotosField({
           Add photos
         </Button>
       </div>
+      {previews.length > 0 && (
+        <p className="text-muted-foreground text-sm">
+          A selfie is required to open this invitation.
+        </p>
+      )}
       <input
         ref={input}
         type="file"
@@ -67,7 +72,7 @@ export function GuestPhotosField({
       />
       {previews.length === 0 ? (
         <div className="rounded-xl bg-muted/60 px-5 py-7 text-center text-muted-foreground text-sm">
-          Add photos to help recognise them and personalise your guest list.
+          Without reference photos, this invitation opens directly.
         </div>
       ) : (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">

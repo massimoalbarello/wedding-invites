@@ -19,7 +19,7 @@ export async function seedGuests({ page, origin }: { page: Page; origin: string 
   for (const draft of EXAMPLE_GUESTS) {
     const response = await page.request.post(`${origin}/api/admin/guests`, {
       headers: { origin },
-      data: { ...draft, faceScanRequired: false },
+      data: draft,
     });
     assert(response.ok(), `Could not create the example guest ${draft.name}.`);
     guests.push((await response.json()) as Guest);

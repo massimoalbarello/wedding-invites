@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { GuestForm } from '../src/components/guest-form';
 import type { GuestDraft } from '../src/queries/guests';
 
-const initial = { name: 'Alex Morgan', groupName: '', faceScanRequired: true, maxGuests: 0 };
+const initial = { name: 'Alex Morgan', groupName: '', maxGuests: 0 };
 const groups = ['Family', 'Friends'];
 afterEach(cleanup);
 

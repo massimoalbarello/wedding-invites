@@ -104,7 +104,7 @@ test('guest entry stays anonymous and configured wedding details are available o
     const owner = await f.admin();
     const guest = await f.management.create({
       actor,
-      settings: { name: 'Jamie', groupName: '', faceScanRequired: false, maxGuests: 0 },
+      settings: { name: 'Jamie', groupName: '', maxGuests: 0 },
     });
     const path = `/api/invitations/${guest.token}`;
     expect(await (await f.request({ path })).json()).toEqual({

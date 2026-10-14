@@ -8,7 +8,6 @@ import {
   type InvitationStats,
   MAX_REFERENCE_PHOTOS,
   type RsvpStatus,
-  requiresFaceScan,
 } from '#backend/models/invitations/model.ts';
 import type { Queries } from '#backend/queries.gen.ts';
 
@@ -61,7 +60,7 @@ export interface InvitationsRepositoryContract {
       linkToken: string;
       tokenHash: string;
       expiresAt: string;
-      faceScanRequired: boolean;
+      faceVerified: boolean;
     },
   ): Promise<boolean>;
   hasSession(input: GuestScope & { tokenHash: string; now: string }): Promise<boolean>;
@@ -157,8 +156,8 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     await this.database.begin(async (tx) => {
       const sql = withTypes<Queries>(tx);
       await sql.CreateInvitationGuest`
-        insert into invitation_guest (id, public_id, owner_id, token, name, group_name, face_scan_required, max_guests, status, active, created_at)
-        values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.name}, ${guest.groupName}, ${Number(guest.faceScanRequired)}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
+        insert into invitation_guest (id, public_id, owner_id, token, name, group_name, max_guests, status, active, created_at)
+        values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.name}, ${guest.groupName}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
       `;
       const createdAt = new Date().toISOString();
       for (const reference of references) {
@@ -179,7 +178,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
         /* @type companions number */
         /* @type references_count number */
         /* @type removed_count number */
-        select g.face_scan_required,
+        select
           (select count(*) from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id) as companions,
           (select count(*) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id) as references_count,
           (select count(*) from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id and p.id in (select value from json_each(${JSON.stringify(input.removedPhotoIds)}))) as removed_count
@@ -200,22 +199,11 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       if (current.companions > input.settings.maxGuests) {
         return 'companion_limit';
       }
-      const previousFaceScanRequired = requiresFaceScan({
-        faceScanRequired: Boolean(current.face_scan_required),
-        referenceCount: current.references_count,
-      });
-      const nextFaceScanRequired = requiresFaceScan({
-        faceScanRequired: input.settings.faceScanRequired,
-        referenceCount,
-      });
-      if (
-        Boolean(current.face_scan_required) !== input.settings.faceScanRequired ||
-        previousFaceScanRequired !== nextFaceScanRequired
-      ) {
+      if (current.references_count > 0 !== referenceCount > 0) {
         await sql.RevokeChangedInvitationMode`delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
       }
       await sql.UpdateInvitationGuest`
-        update invitation_guest set name = ${input.settings.name}, group_name = ${input.settings.groupName}, face_scan_required = ${Number(input.settings.faceScanRequired)}, max_guests = ${input.settings.maxGuests}
+        update invitation_guest set name = ${input.settings.name}, group_name = ${input.settings.groupName}, max_guests = ${input.settings.maxGuests}
         where owner_id = ${input.ownerId} and id = ${input.guestId}
       `;
       await sql.RemoveEditedInvitationReferences`
@@ -298,7 +286,6 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       }
       await sql.RevokeFirstReferenceSessions`
         delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
-          and exists (select 1 from invitation_guest where owner_id = ${input.ownerId} and id = ${input.guestId} and face_scan_required = 1)
           and (select count(*) from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}) = 1
       `;
       return true;
@@ -330,7 +317,6 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       }
       await sql.RevokeLastReferenceSessions`
         delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
-          and exists (select 1 from invitation_guest where owner_id = ${input.ownerId} and id = ${input.guestId} and face_scan_required = 1)
           and not exists (select 1 from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId})
       `;
       return true;
@@ -341,16 +327,16 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       linkToken: string;
       tokenHash: string;
       expiresAt: string;
-      faceScanRequired: boolean;
+      faceVerified: boolean;
     },
   ) {
     const rows = await this.sql.CreateInvitationSession`
       insert into invitation_session (token_hash, owner_id, guest_id, expires_at)
       select ${input.tokenHash}, g.owner_id, g.id, ${input.expiresAt} from invitation_guest g
       where g.owner_id = ${input.ownerId} and g.id = ${input.guestId} and g.token = ${input.linkToken} and g.active = 1
-        and (g.face_scan_required = 1 and exists (
+        and exists (
           select 1 from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id
-        )) = ${Number(input.faceScanRequired)}
+        ) = ${Number(input.faceVerified)}
       returning token_hash
     `;
     return rows.length > 0;
@@ -403,7 +389,6 @@ function mapGuest(row: Queries['ListInvitationGuests']): Guest {
     token: row.token,
     name: row.name,
     groupName: row.group_name,
-    faceScanRequired: Boolean(row.face_scan_required),
     maxGuests: row.max_guests,
     status: row.status as RsvpStatus,
     active: Boolean(row.active),

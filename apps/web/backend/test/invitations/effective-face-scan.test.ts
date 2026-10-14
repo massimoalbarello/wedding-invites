@@ -13,9 +13,9 @@ const REFERENCE = 1;
 const ALTERNATE_REFERENCE = 2;
 const SELFIE = 4;
 const actor = { userId: OWNER_USER_ID };
-const settings = { name: 'Ada Lovelace', groupName: '', faceScanRequired: true, maxGuests: 0 };
+const settings = { name: 'Ada Lovelace', groupName: '', maxGuests: 0 };
 
-test('a default guest without photos opens directly and can RSVP while the scan preference stays enabled', async () => {
+test('a default guest without photos opens directly and can RSVP', async () => {
   const f = await fixture();
   try {
     const owner = await f.admin();
@@ -27,7 +27,7 @@ test('a default guest without photos opens directly and can RSVP while the scan 
     });
     expect(created.status).toBe(SUCCESS);
     const guest = await created.json();
-    expect(guest).toMatchObject({ faceScanRequired: true, references: [] });
+    expect(guest).toMatchObject({ faceScanRequired: false, references: [] });
     const route = `/api/invitations/${guest.token}`;
     expect(await (await f.request({ path: route })).json()).toEqual({
       name: settings.name,
@@ -54,7 +54,7 @@ test('a default guest without photos opens directly and can RSVP while the scan 
       body: upload(SELFIE),
     });
     expect(staleCamera.status).toBe(SUCCESS);
-    expect((await f.management.get({ actor, id: guest.id })).faceScanRequired).toBe(true);
+    expect((await f.management.get({ actor, id: guest.id })).faceScanRequired).toBe(false);
   } finally {
     await f.close();
   }
@@ -68,76 +68,66 @@ test.each(['atomic', 'legacy'])(
       const owner = await f.admin();
       const api = treaty(f.app, { parseDate: false });
       const options = { headers: { cookie: owner, origin: ORIGIN } };
-      for (const faceScanRequired of [true, false]) {
-        const guestSettings = { ...settings, faceScanRequired };
-        const guest = await f.management.create({ actor, settings: guestSettings });
-        const route = `/api/invitations/${guest.token}`;
-        const login = () => f.request({ path: `${route}/session`, method: 'POST' });
-        const addPhoto = async (id: number) => {
-          const response =
-            mode === 'atomic'
-              ? await api.api.admin
-                  .guests({ id: guest.id })
-                  .patch({ ...guestSettings, photos: [photo(id)] }, options)
-              : await api.api.admin
-                  .guests({ id: guest.id })
-                  .photos.post({ photo: photo(id) }, options);
-          expect(response.status).toBe(SUCCESS);
-          return response.data!;
-        };
-        const removePhoto = async (id: string) => {
-          const response =
-            mode === 'atomic'
-              ? await api.api.admin
-                  .guests({ id: guest.id })
-                  .patch({ ...guestSettings, removedPhotoIds: [id] }, options)
-              : await api.api.admin
-                  .guests({ id: guest.id })
-                  .photos({ photoId: id })
-                  .delete(undefined, options);
-          expect(response.status).toBe(SUCCESS);
-          return response.data!;
-        };
-        const bypassSession = cookies(await login());
-        const first = await addPhoto(REFERENCE);
-        expect(first.faceScanRequired).toBe(faceScanRequired);
-        expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(
-          faceScanRequired,
-        );
-        expect((await f.request({ path: `${route}/content`, cookie: bypassSession })).status).toBe(
-          faceScanRequired ? UNAUTHORIZED : SUCCESS,
-        );
-        expect((await login()).status).toBe(faceScanRequired ? FORBIDDEN : SUCCESS);
-        const verified = await f.request({
-          path: `${route}/verify`,
-          method: 'POST',
-          body: upload(SELFIE),
-        });
-        expect(verified.status).toBe(SUCCESS);
-        const session = cookies(verified);
-        const second = await addPhoto(ALTERNATE_REFERENCE);
-        expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
-          SUCCESS,
-        );
-        await removePhoto(first.references[0]!.id);
-        expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(
-          faceScanRequired,
-        );
-        expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
-          SUCCESS,
-        );
-        const emptied = await removePhoto(second.references[1]!.id);
-        expect(emptied).toMatchObject({ faceScanRequired, references: [] });
-        expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(false);
-        expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
-          faceScanRequired ? UNAUTHORIZED : SUCCESS,
-        );
-        const direct = await login();
-        expect(direct.status).toBe(SUCCESS);
-        expect(
-          (await f.request({ path: `${route}/content`, cookie: cookies(direct) })).status,
-        ).toBe(SUCCESS);
-      }
+      const guestSettings = settings;
+      const guest = await f.management.create({ actor, settings: guestSettings });
+      const route = `/api/invitations/${guest.token}`;
+      const login = () => f.request({ path: `${route}/session`, method: 'POST' });
+      const addPhoto = async (id: number) => {
+        const response =
+          mode === 'atomic'
+            ? await api.api.admin
+                .guests({ id: guest.id })
+                .patch({ ...guestSettings, photos: [photo(id)] }, options)
+            : await api.api.admin
+                .guests({ id: guest.id })
+                .photos.post({ photo: photo(id) }, options);
+        expect(response.status).toBe(SUCCESS);
+        return response.data!;
+      };
+      const removePhoto = async (id: string) => {
+        const response =
+          mode === 'atomic'
+            ? await api.api.admin
+                .guests({ id: guest.id })
+                .patch({ ...guestSettings, removedPhotoIds: [id] }, options)
+            : await api.api.admin
+                .guests({ id: guest.id })
+                .photos({ photoId: id })
+                .delete(undefined, options);
+        expect(response.status).toBe(SUCCESS);
+        return response.data!;
+      };
+      const bypassSession = cookies(await login());
+      const first = await addPhoto(REFERENCE);
+      expect(first.faceScanRequired).toBe(true);
+      expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(true);
+      expect((await f.request({ path: `${route}/content`, cookie: bypassSession })).status).toBe(
+        UNAUTHORIZED,
+      );
+      expect((await login()).status).toBe(FORBIDDEN);
+      const verified = await f.request({
+        path: `${route}/verify`,
+        method: 'POST',
+        body: upload(SELFIE),
+      });
+      expect(verified.status).toBe(SUCCESS);
+      const session = cookies(verified);
+      const second = await addPhoto(ALTERNATE_REFERENCE);
+      expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(SUCCESS);
+      await removePhoto(first.references[0]!.id);
+      expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(true);
+      expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(SUCCESS);
+      const emptied = await removePhoto(second.references[1]!.id);
+      expect(emptied).toMatchObject({ faceScanRequired: false, references: [] });
+      expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(false);
+      expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(
+        UNAUTHORIZED,
+      );
+      const direct = await login();
+      expect(direct.status).toBe(SUCCESS);
+      expect((await f.request({ path: `${route}/content`, cookie: cookies(direct) })).status).toBe(
+        SUCCESS,
+      );
     } finally {
       await f.close();
     }
@@ -197,6 +187,39 @@ test('a failed first-photo upload leaves direct access and existing sessions unc
     expect(await f.management.get({ actor, id: guest.id })).toEqual(guest);
     expect((await (await f.request({ path: route })).json()).faceScanRequired).toBe(false);
     expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(SUCCESS);
+  } finally {
+    await f.close();
+  }
+});
+
+test('a request cannot override photo-based verification through the read-only access field', async () => {
+  const f = await fixture();
+  try {
+    const owner = await f.admin();
+    const body = new FormData();
+    body.set('name', settings.name);
+    body.set('faceScanRequired', 'false');
+    body.set('photos', photo(REFERENCE));
+    const created = await f.request({
+      path: '/api/admin/guests',
+      method: 'POST',
+      cookie: owner,
+      body,
+    });
+    expect(created.status).toBe(SUCCESS);
+    const guest = await created.json();
+    expect(guest.faceScanRequired).toBe(true);
+    const patched = await f.request({
+      path: `/api/admin/guests/${guest.id}`,
+      method: 'PATCH',
+      cookie: owner,
+      body: { ...settings, faceScanRequired: false },
+    });
+    expect(patched.status).toBe(SUCCESS);
+    expect((await patched.json()).faceScanRequired).toBe(true);
+    expect(
+      (await f.request({ path: `/api/invitations/${guest.token}/session`, method: 'POST' })).status,
+    ).toBe(FORBIDDEN);
   } finally {
     await f.close();
   }

@@ -9,7 +9,7 @@ const BAD_REQUEST = 400;
 const UNAUTHORIZED = 401;
 const PAGE_SIZE = 2;
 const actor = { userId: OWNER_USER_ID };
-const defaults = { name: 'Guest', groupName: '', faceScanRequired: false, maxGuests: 1 };
+const defaults = { name: 'Guest', groupName: '', maxGuests: 1 };
 
 test('group pagination keeps exact groups together across boundaries and ungrouped guests last', async () => {
   const f = await fixture();

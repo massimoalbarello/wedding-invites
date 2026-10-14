@@ -14,7 +14,6 @@ export interface IListInvitationGuestsResult {
     token: string;
     name: string;
     group_name: string;
-    face_scan_required: number;
     max_guests: number;
     status: string;
     active: number;
@@ -31,7 +30,6 @@ export interface IInvitationGuestByIdResult {
     token: string;
     name: string;
     group_name: string;
-    face_scan_required: number;
     max_guests: number;
     status: string;
     active: number;
@@ -48,7 +46,6 @@ export interface IInvitationGuestByTokenResult {
     token: string;
     name: string;
     group_name: string;
-    face_scan_required: number;
     max_guests: number;
     status: string;
     active: number;
@@ -63,7 +60,6 @@ export interface ICreateInvitationGuestResult {
 
 /** Result of query `InvitationEditState`. */
 export interface IInvitationEditStateResult {
-    face_scan_required: number;
     companions: number;
     references_count: number;
     removed_count: number;

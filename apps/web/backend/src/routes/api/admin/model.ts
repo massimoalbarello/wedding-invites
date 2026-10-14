@@ -21,7 +21,6 @@ export const CompanionSchema = t.Object({ id: PublicIdSchema, name: t.String() }
 export const GuestSettingsSchema = t.Object({
   name: t.String({ minLength: 1, maxLength: MAX_GUEST_NAME_LENGTH }),
   groupName: t.String({ maxLength: MAX_GROUP_NAME_LENGTH, default: '' }),
-  faceScanRequired: t.BooleanString({ default: true }),
   maxGuests: t.Integer({ minimum: 0, maximum: MAX_COMPANIONS, default: 0 }),
 });
 const GuestPhotosSchema = t.Optional(

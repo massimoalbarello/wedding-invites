@@ -3,7 +3,6 @@ import { Input } from '@repo/ui/input';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
-import { requiresFaceScan } from '#backend/models/invitations/model.ts';
 import { AdminLayout } from '../components/admin-layout';
 import { CopyInvitationLink, invitationUrl } from '../components/copy-invitation-link';
 import { GuestAvatar } from '../components/guest-avatar';
@@ -73,7 +72,6 @@ function GuestDetail() {
             initial={{
               name: guest.name,
               groupName: guest.groupName,
-              faceScanRequired: guest.faceScanRequired,
               maxGuests: guest.maxGuests,
             }}
             references={guest.references.map((photo) => ({
@@ -145,12 +143,7 @@ function GuestIdentity({ guest }: { guest: Guest }) {
       <div>
         <dt className="text-muted-foreground">Invitation entry</dt>
         <dd className="mt-1.5">
-          {requiresFaceScan({
-            faceScanRequired: guest.faceScanRequired,
-            referenceCount: guest.references.length,
-          })
-            ? 'Face scan required'
-            : 'Direct access'}
+          {guest.faceScanRequired ? 'Face scan required' : 'Direct access'}
         </dd>
       </div>
       <div>
@@ -202,10 +195,7 @@ function GuestAccess({ guest, ownerId }: { guest: Guest; ownerId: string }) {
       </h2>
       <InvitationLink key={guest.token} token={guest.token} name={guest.name} />
       <p className="text-muted-foreground text-sm">
-        {requiresFaceScan({
-          faceScanRequired: guest.faceScanRequired,
-          referenceCount: guest.references.length,
-        })
+        {guest.faceScanRequired
           ? 'This link asks for their face before opening the invitation.'
           : 'This link opens the invitation directly, without a face scan.'}
       </p>

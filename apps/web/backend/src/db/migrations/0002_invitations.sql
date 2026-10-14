@@ -5,7 +5,6 @@ create table invitation_guest (
   token text not null unique,
   name text not null check (length(trim(name)) between 1 and 120),
   group_name text not null default '' check (length(group_name) <= 80),
-  face_scan_required integer not null default 1 check (face_scan_required in (0, 1)),
   max_guests integer not null default 0 check (max_guests between 0 and 20),
   status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
   active integer not null default 1 check (active in (0, 1)),
