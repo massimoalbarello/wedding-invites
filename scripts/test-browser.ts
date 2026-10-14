@@ -606,19 +606,19 @@ try {
     fullPage: true,
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
-  await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
-  assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
-  await guestBrowser.page.screenshot({
-    path: resolve(artifacts, 'verification-success-mobile.png'),
-    fullPage: true,
-  });
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await guestBrowser.page.getByTitle('Invitation', { exact: true }).waitFor();
+  assert.equal(guestBrowser.page.url(), `${link}/invitation`);
+  assert.equal(await guestBrowser.page.getByRole('button', { name: 'Open invitation' }).count(), 0);
+  assert.equal(
+    await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).count(),
+    0,
+  );
   console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
     .waitFor();
   await guestBrowser.page.screenshot({
-    path: resolve(artifacts, 'amalfi-envelope-mobile.png'),
+    path: resolve(artifacts, 'verification-success-mobile.png'),
     fullPage: true,
   });
   await openLetter(guestBrowser.page);
@@ -676,7 +676,7 @@ try {
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await guestBrowser.page.getByTitle('Invitation', { exact: true }).waitFor();
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;

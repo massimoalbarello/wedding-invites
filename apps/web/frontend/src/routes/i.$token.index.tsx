@@ -1,4 +1,3 @@
-import { Button } from '@repo/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import {
@@ -8,7 +7,7 @@ import {
   openInvitation,
   verifyFace,
 } from '../queries/invitations';
-import { SecretPaper, SecretScene, SecretStamp } from './-invitation/secret-paper';
+import { SecretScene } from './-invitation/secret-paper';
 import { SelfDestruct } from './-invitation/self-destruct';
 import { SelfieCamera } from './-invitation/selfie-camera';
 
@@ -31,33 +30,17 @@ function PersonalMessage() {
   const { token } = Route.useParams();
   const client = useQueryClient();
   const navigate = useNavigate();
-  const clearInvitations = () => client.removeQueries({ queryKey: invitationKeys.all });
   const verify = useMutation({
     mutationFn: verifyFace,
-    onSuccess: clearInvitations,
+    onSuccess: () => {
+      client.removeQueries({ queryKey: invitationKeys.all });
+      return navigate({ to: '/i/$token/invitation', params: { token }, replace: true });
+    },
   });
   if (verify.error instanceof FaceMismatchError) {
     return (
       <SecretScene>
         <SelfDestruct />
-      </SecretScene>
-    );
-  }
-  if (verify.isSuccess) {
-    return (
-      <SecretScene>
-        <SecretPaper className="secret-success">
-          <SecretStamp>VERIFIED</SecretStamp>
-          <h1 className="secret-result" aria-live="polite">
-            It’s you, {entry.name}.
-          </h1>
-        </SecretPaper>
-        <Button
-          size="lg"
-          onClick={() => navigate({ to: '/i/$token/invitation', params: { token } })}
-        >
-          Open invitation
-        </Button>
       </SecretScene>
     );
   }
