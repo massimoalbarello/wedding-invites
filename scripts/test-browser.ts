@@ -51,9 +51,7 @@ async function cameraVideo(name: string) {
 
 async function captureSelfie(page: Page) {
   await page.getByRole('button', { name: 'Take a selfie & open', exact: true }).click();
-  await page.getByRole('button', { name: 'Capture photo', exact: true }).click();
-  await page.getByRole('img', { name: 'Your captured selfie' }).waitFor();
-  await page.getByRole('button', { name: 'Use this photo', exact: true }).click();
+  await page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
 }
 
 async function checkInvitationCopy({
@@ -561,6 +559,13 @@ try {
   assert.equal(await stranger.page.getByRole('button').count(), 0);
   assert.equal(await stranger.page.locator('iframe').count(), 0);
   assert.equal((await stranger.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
+  await stranger.page.reload();
+  await stranger.page.getByRole('button', { name: 'Take a selfie & open', exact: true }).waitFor();
+  await captureSelfie(stranger.page);
+  await stranger.page
+    .getByRole('heading', { name: 'Sorry, this message isn’t for you.' })
+    .waitFor();
+  await stranger.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
 
   const guestBrowser = await browser({
     cameraFile: videos.genuine,
@@ -571,25 +576,19 @@ try {
   await guestBrowser.page
     .getByRole('button', { name: 'Take a selfie & open', exact: true })
     .click();
-  await guestBrowser.page.getByRole('button', { name: 'Capture photo', exact: true }).waitFor();
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).waitFor();
   await guestBrowser.page.getByRole('button', { name: 'Back', exact: true }).click();
   assert.equal(await guestBrowser.page.locator('video').count(), 0);
   await guestBrowser.page
     .getByRole('button', { name: 'Take a selfie & open', exact: true })
     .click();
-  await guestBrowser.page.getByRole('button', { name: 'Capture photo', exact: true }).waitFor();
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).waitFor();
   await guestBrowser.page.waitForFunction('document.querySelector("video")?.readyState >= 2');
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'verification-camera-mobile.png'),
     fullPage: true,
   });
-  await guestBrowser.page.getByRole('button', { name: 'Capture photo', exact: true }).click();
-  await guestBrowser.page.getByRole('img', { name: 'Your captured selfie' }).waitFor();
-  await guestBrowser.page.screenshot({
-    path: resolve(artifacts, 'verification-review-mobile.png'),
-    fullPage: true,
-  });
-  await guestBrowser.page.getByRole('button', { name: 'Use this photo', exact: true }).click();
+  await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
   await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
   assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
   await guestBrowser.page.screenshot({

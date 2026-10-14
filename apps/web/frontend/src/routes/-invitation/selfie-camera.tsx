@@ -17,24 +17,29 @@ export function SelfieCamera({
   error: string | undefined;
 }) {
   const camera = useLiveCamera();
-  const [capture, setCapture] = useState<{ file: File; url: string }>();
+  const [captureUrl, setCaptureUrl] = useState<string>();
   const [captureError, setCaptureError] = useState<string>();
   const [capturing, setCapturing] = useState(false);
   useEffect(
     () => () => {
-      if (capture) {
-        URL.revokeObjectURL(capture.url);
+      if (captureUrl) {
+        URL.revokeObjectURL(captureUrl);
       }
     },
-    [capture],
+    [captureUrl],
   );
   const takePhoto = async () => {
     setCapturing(true);
     setCaptureError(undefined);
     try {
-      const file = await captureFrame(camera.video.current);
-      setCapture({ file, url: URL.createObjectURL(file) });
+      const source = camera.video.current;
+      const file = await captureFrame(source);
+      if (camera.video.current !== source) {
+        return;
+      }
+      setCaptureUrl(URL.createObjectURL(file));
       camera.stop();
+      onVerify(file);
     } catch (cause) {
       setCaptureError(
         cause instanceof Error ? cause.message : 'Please try taking your photo again.',
@@ -46,44 +51,41 @@ export function SelfieCamera({
   const visibleError = captureError || camera.error || error;
   return (
     <>
-      {camera.active || capture ? (
-        <CameraPreview captureUrl={capture?.url} video={camera.video} />
+      {camera.active || captureUrl ? (
+        <CameraPreview captureUrl={captureUrl} video={camera.video} />
       ) : (
         <PersonalInvitationCover name={name} />
       )}
-      <p className="secret-details" role={pending ? 'status' : undefined}>
-        {capture
-          ? pending
+      {!visibleError && (
+        <p className="secret-details" role={pending ? 'status' : undefined}>
+          {captureUrl
             ? 'Checking it’s you…'
-            : 'Send this photo to open your invitation.'
-          : camera.active
-            ? 'Face the camera in good light.'
-            : 'A quick selfie confirms it’s you.'}
-      </p>
+            : camera.active
+              ? 'Face the camera in good light.'
+              : 'A quick selfie confirms it’s you.'}
+        </p>
+      )}
       {visibleError && (
         <p role="alert" className="secret-error">
           {visibleError}
         </p>
       )}
-      {capture ? (
-        <div className="secret-actions">
+      {captureUrl ? (
+        !pending &&
+        error && (
           <Button
-            variant="outline"
+            className="mt-5"
             size="lg"
-            disabled={pending}
             onClick={() => {
-              setCapture(undefined);
+              setCaptureUrl(undefined);
               setCaptureError(undefined);
               onRetake();
               camera.start();
             }}
           >
-            Retake photo
+            Try another photo
           </Button>
-          <Button size="lg" disabled={pending} onClick={() => onVerify(capture.file)}>
-            {pending ? 'Checking it’s you…' : 'Use this photo'}
-          </Button>
-        </div>
+        )
       ) : (
         <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />
       )}
@@ -106,7 +108,7 @@ function CaptureAction({
           Back
         </Button>
         <Button size="lg" disabled={!camera.ready || capturing} onClick={takePhoto}>
-          {camera.ready ? 'Capture photo' : 'Opening camera…'}
+          {camera.ready ? 'Capture & verify' : 'Opening camera…'}
         </Button>
       </div>
     );
@@ -127,9 +129,7 @@ function CameraPreview({
 }) {
   return (
     <SecretPaper className="secret-camera">
-      <h1 className="secret-camera-heading">
-        {captureUrl ? 'Review your photo' : 'A quick selfie'}
-      </h1>
+      <h1 className="secret-camera-heading">{captureUrl ? 'Your photo' : 'A quick selfie'}</h1>
       <div className="secret-camera-frame">
         {captureUrl ? (
           <img src={captureUrl} alt="Your captured selfie" />
