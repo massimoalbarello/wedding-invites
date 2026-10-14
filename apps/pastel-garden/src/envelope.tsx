@@ -1,5 +1,7 @@
 import { content } from './content';
 
+export const OPENING_DURATION_MS = 4200;
+
 export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: () => void }) {
   return (
     <div
@@ -12,12 +14,20 @@ export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: ()
       }}
     >
       <div className="envelope-back" />
+      <div className="envelope-glow" />
       <div className="envelope-letter">
         <span>{content.nameLabel}</span>
         <span>{content.dateLabel}</span>
       </div>
       <div className="envelope-body" />
       <div className="envelope-flap" />
+      <div className="envelope-sparkles">
+        <span className="envelope-glint" />
+        <span className="envelope-glint" />
+        <span className="envelope-glint" />
+        <span className="envelope-glint" />
+        <span className="envelope-glint" />
+      </div>
     </div>
   );
 }

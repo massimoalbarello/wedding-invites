@@ -23,7 +23,7 @@ function show(getContext: InvitationRuntime['getContext'] = async () => context)
   );
 }
 
-test('opening is gated by recipient context, can be skipped, and focuses live event text', async () => {
+test('opening is gated by recipient context and reveals live text without a skip control', async () => {
   let resolveContext!: (value: typeof context) => void;
   show(
     () =>
@@ -35,16 +35,25 @@ test('opening is gated by recipient context, can be skipped, and focuses live ev
   resolveContext(context);
   const open = await screen.findByRole('button', { name: 'Tap to open' });
   await userEvent.click(open);
-  await userEvent.click(screen.getByRole('button', { name: 'Skip opening' }));
+  expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
+  expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
+  fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
+    animationName: 'envelope-depart',
+  });
   const heading = screen.getByRole('heading', { name: 'Massimo & Lisa' });
   expect(document.activeElement).toBe(heading);
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(screen.getByRole('link', { name: 'Into the garden' }).getAttribute('href')).toBe('#venue');
 });
 
-test('the envelope animation completion reveals the letter', async () => {
+test('inner light animation does not finish the opening before the envelope', async () => {
   show();
   await userEvent.click(await screen.findByRole('button', { name: 'Tap to open' }));
+  fireEvent.animationEnd(document.querySelector('.envelope-glow')!, {
+    animationName: 'letter-glow',
+  });
+  expect(screen.queryByRole('heading', { name: 'Massimo & Lisa' })).toBeNull();
+  expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
   fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
     animationName: 'envelope-depart',
   });

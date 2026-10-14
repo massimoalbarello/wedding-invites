@@ -1,13 +1,13 @@
 import type { InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { FloralFrame, GardenScene, VenueArtwork } from './artwork';
 import { content } from './content';
 import { Countdown } from './countdown';
-import { Envelope } from './envelope';
+import { Envelope, OPENING_DURATION_MS } from './envelope';
 import { ReplySection } from './reply-section';
 
-const OPENING_TIMEOUT_MS = 3000;
+const OPENING_FALLBACK_MARGIN_MS = 1000;
 
 export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   const context = useQuery({
@@ -22,8 +22,22 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
     }
     if (stage === 'opening') {
       // Guarantee access even if a browser disables or interrupts CSS animation.
-      const timeout = window.setTimeout(() => setStage('open'), OPENING_TIMEOUT_MS);
-      return () => window.clearTimeout(timeout);
+      const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const finishWithReducedMotion = () => {
+        if (media.matches) {
+          setStage('open');
+        }
+      };
+      finishWithReducedMotion();
+      media.addEventListener('change', finishWithReducedMotion);
+      const timeout = window.setTimeout(
+        () => setStage('open'),
+        OPENING_DURATION_MS + OPENING_FALLBACK_MARGIN_MS,
+      );
+      return () => {
+        window.clearTimeout(timeout);
+        media.removeEventListener('change', finishWithReducedMotion);
+      };
     }
   }, [stage]);
 
@@ -42,7 +56,16 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   return (
     <div className="invitation">
       {stage !== 'open' ? (
-        <main className="sealed-letter" aria-label="Sealed invitation">
+        <main
+          className={stage === 'opening' ? 'sealed-letter is-revealing' : 'sealed-letter'}
+          aria-label="Sealed invitation"
+          style={{ '--opening-duration': `${OPENING_DURATION_MS}ms` } as CSSProperties}
+        >
+          <div className="opening-light" aria-hidden="true">
+            <span className="opening-halo" />
+            <span className="opening-rays" />
+            <span className="opening-wash" />
+          </div>
           <div className="envelope-greeting">
             <p className="eyebrow">You are invited</p>
             {context.data && <p>A letter for {context.data.recipient.name}</p>}
@@ -64,9 +87,9 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
                 {context.isPending ? 'Just a moment…' : 'Tap to open'}
               </button>
             ) : (
-              <button type="button" onClick={() => setStage('open')}>
-                Skip opening
-              </button>
+              <p className="opening-status" role="status">
+                Opening your invitation…
+              </p>
             )}
           </div>
         </main>
