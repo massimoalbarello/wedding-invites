@@ -1,4 +1,5 @@
 import { t } from 'elysia';
+import { ErrorResponseSchema } from '#backend/lib/errors.ts';
 import { MAX_COMPANIONS, MAX_GUEST_NAME_LENGTH } from '#backend/models/invitations/model.ts';
 import {
   CompanionSchema,
@@ -10,6 +11,10 @@ export const InvitationEntrySchema = t.Object({
   name: t.String(),
   faceScanRequired: t.Boolean(),
   authenticated: t.Boolean(),
+});
+export const FaceVerificationErrorSchema = t.Object({
+  ...ErrorResponseSchema.properties,
+  reason: t.Optional(t.Literal('face_mismatch')),
 });
 export const InvitationContentSchema = t.Object({
   name: t.String(),

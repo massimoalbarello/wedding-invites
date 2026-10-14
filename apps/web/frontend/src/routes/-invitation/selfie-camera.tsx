@@ -1,13 +1,16 @@
 import { Button } from '@repo/ui/button';
-import { useEffect, useState } from 'react';
+import { type RefObject, useEffect, useState } from 'react';
 import { captureFrame, useLiveCamera } from './camera';
+import { PersonalInvitationCover, SecretPaper } from './secret-paper';
 
 export function SelfieCamera({
+  name,
   onVerify,
   onRetake,
   pending,
   error,
 }: {
+  name: string;
   onVerify: (photo: File) => void;
   onRetake: () => void;
   pending: boolean;
@@ -42,34 +45,28 @@ export function SelfieCamera({
   };
   const visibleError = captureError || camera.error || error;
   return (
-    <div className="space-y-5">
-      {(camera.active || capture) && (
-        <div className="mx-auto aspect-[3/4] max-h-[55dvh] overflow-hidden rounded-2xl bg-muted">
-          {capture ? (
-            <img
-              src={capture.url}
-              alt="Your captured selfie"
-              className="size-full -scale-x-100 object-cover"
-            />
-          ) : (
-            <video
-              ref={camera.video}
-              autoPlay
-              playsInline
-              muted
-              aria-label="Live front camera preview"
-              className="size-full -scale-x-100 object-cover"
-            />
-          )}
-        </div>
+    <>
+      {camera.active || capture ? (
+        <CameraPreview captureUrl={capture?.url} video={camera.video} />
+      ) : (
+        <PersonalInvitationCover name={name} />
       )}
+      <p className="secret-details" role={pending ? 'status' : undefined}>
+        {capture
+          ? pending
+            ? 'Checking it’s you…'
+            : 'Send this photo to open your invitation.'
+          : camera.active
+            ? 'Face the camera in good light.'
+            : 'A quick selfie confirms it’s you.'}
+      </p>
       {visibleError && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="secret-error">
           {visibleError}
         </p>
       )}
       {capture ? (
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="secret-actions">
           <Button
             variant="outline"
             size="lg"
@@ -90,12 +87,7 @@ export function SelfieCamera({
       ) : (
         <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />
       )}
-      {camera.active && (
-        <p className="text-muted-foreground text-xs">
-          Face the camera with your face clearly in view.
-        </p>
-      )}
-    </div>
+    </>
   );
 }
 function CaptureAction({
@@ -109,14 +101,43 @@ function CaptureAction({
 }) {
   if (camera.active) {
     return (
-      <Button size="lg" disabled={!camera.ready || capturing} onClick={takePhoto}>
-        {camera.ready ? 'Capture photo' : 'Opening camera…'}
-      </Button>
+      <div className="secret-actions">
+        <Button variant="outline" size="lg" disabled={capturing} onClick={camera.stop}>
+          Back
+        </Button>
+        <Button size="lg" disabled={!camera.ready || capturing} onClick={takePhoto}>
+          {camera.ready ? 'Capture photo' : 'Opening camera…'}
+        </Button>
+      </div>
     );
   }
   return (
-    <Button size="lg" onClick={camera.start}>
-      {camera.error ? 'Try camera again' : 'Take a selfie'}
+    <Button className="mt-5" size="lg" onClick={camera.start}>
+      {camera.error ? 'Try camera again' : 'Take a selfie & open'}
     </Button>
+  );
+}
+
+function CameraPreview({
+  captureUrl,
+  video,
+}: {
+  captureUrl: string | undefined;
+  video: RefObject<HTMLVideoElement | null>;
+}) {
+  return (
+    <SecretPaper className="secret-camera">
+      <h1 className="secret-camera-heading">
+        {captureUrl ? 'Review your photo' : 'A quick selfie'}
+      </h1>
+      <div className="secret-camera-frame">
+        {captureUrl ? (
+          <img src={captureUrl} alt="Your captured selfie" />
+        ) : (
+          <video ref={video} autoPlay playsInline muted aria-label="Live front camera preview" />
+        )}
+        {!captureUrl && <div className="secret-face-guide" aria-hidden="true" />}
+      </div>
+    </SecretPaper>
   );
 }

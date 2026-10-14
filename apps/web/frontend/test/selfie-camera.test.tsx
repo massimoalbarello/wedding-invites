@@ -20,10 +20,16 @@ test('camera permission rejection offers a retry without a gallery picker', asyn
   );
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
   const view = render(
-    <SelfieCamera onVerify={() => {}} onRetake={() => {}} pending={false} error={undefined} />,
+    <SelfieCamera
+      name="Alex Morgan"
+      onVerify={() => {}}
+      onRetake={() => {}}
+      pending={false}
+      error={undefined}
+    />,
   );
   expect(view.container.querySelector('input[type="file"]')).toBeNull();
-  await user.click(screen.getByRole('button', { name: 'Take a selfie' }));
+  await user.click(screen.getByRole('button', { name: 'Take a selfie & open' }));
   await waitFor(() =>
     expect(screen.getByRole('alert').textContent).toContain('Allow camera access'),
   );
@@ -41,9 +47,15 @@ test('leaving the gate stops a camera stream even when permission resolves after
   Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia } });
   spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
   const view = render(
-    <SelfieCamera onVerify={() => {}} onRetake={() => {}} pending={false} error={undefined} />,
+    <SelfieCamera
+      name="Alex Morgan"
+      onVerify={() => {}}
+      onRetake={() => {}}
+      pending={false}
+      error={undefined}
+    />,
   );
-  await user.click(screen.getByRole('button', { name: 'Take a selfie' }));
+  await user.click(screen.getByRole('button', { name: 'Take a selfie & open' }));
   await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(1));
   view.unmount();
   resolvePermission({ getTracks: () => [{ stop }] } as unknown as MediaStream);
