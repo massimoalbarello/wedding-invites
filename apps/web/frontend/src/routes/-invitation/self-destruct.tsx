@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 import { SecretPaper, SecretStamp } from './secret-paper';
 
 const COUNTDOWN_SECONDS = 3;
 const SECOND_MS = 1000;
-const BURST_MS = 800;
+const BURST_MS = 1200;
 
 export function SelfDestruct() {
   const [seconds, setSeconds] = useState(COUNTDOWN_SECONDS);
@@ -33,7 +33,11 @@ export function SelfDestruct() {
     );
   }
   return (
-    <div className="secret-rejection" data-burst={seconds === 0}>
+    <div
+      className="secret-rejection"
+      data-burst={seconds === 0}
+      style={{ '--secret-burst-duration': `${BURST_MS}ms` } as CSSProperties}
+    >
       <div className="secret-burst" aria-hidden="true">
         <i />
         <i />

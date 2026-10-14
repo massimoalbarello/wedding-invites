@@ -10,6 +10,7 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const HTTP_BAD_REQUEST = 400;
 const PAGE_OVERFLOW_COUNT = 42;
+const BURST_FRAME_MS = 240;
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 1000 };
 const fixtures = resolve('apps/web/backend/test/fixtures/faces');
@@ -537,11 +538,21 @@ try {
     fullPage: true,
   });
   await stranger.page.locator('[data-burst=true]').waitFor();
+  await stranger.page.waitForTimeout(BURST_FRAME_MS);
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-burst-start.png'),
+    fullPage: true,
+  });
+  await stranger.page.waitForTimeout(BURST_FRAME_MS);
   await stranger.page.screenshot({
     path: resolve(artifacts, 'verification-burst.png'),
     fullPage: true,
   });
   await stranger.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
+  await stranger.page.screenshot({
+    path: resolve(artifacts, 'verification-blank.png'),
+    fullPage: true,
+  });
   console.log(`Denial recording: ${await stranger.page.video()!.path()}`);
   const reduced = await browser({ cameraFile: videos.stranger });
   await reduced.page.emulateMedia({ reducedMotion: 'reduce' });

@@ -56,13 +56,9 @@ export function SelfieCamera({
       ) : (
         <PersonalInvitationCover name={name} />
       )}
-      {!visibleError && (
+      {!visibleError && (!camera.active || captureUrl) && (
         <p className="secret-details" role={pending ? 'status' : undefined}>
-          {captureUrl
-            ? 'Checking it’s you…'
-            : camera.active
-              ? 'Face the camera in good light.'
-              : 'A quick selfie confirms it’s you.'}
+          {captureUrl ? 'Checking it’s you…' : 'A quick selfie confirms it’s you.'}
         </p>
       )}
       {visibleError && (
