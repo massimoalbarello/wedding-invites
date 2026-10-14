@@ -463,7 +463,7 @@ try {
   const page = admin.page;
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(app.origin);
-  await page.getByRole('button', { name: 'Create dashboard with a passkey', exact: true }).click();
+  await page.getByRole('button', { name: 'Get started', exact: true }).click();
   await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
   assert.equal(new URL(page.url()).pathname, '/design');
   const views = page.getByRole('navigation', { name: 'Dashboard views' });
@@ -486,13 +486,8 @@ try {
   const prefix = `${app.origin}/api/invitations/${token}`;
   const newcomer = await browser();
   await newcomer.page.goto(app.origin);
-  await newcomer.page
-    .getByRole('button', { name: 'Sign in with a passkey', exact: true })
-    .waitFor();
-  assert.equal(
-    await newcomer.page.getByRole('button', { name: 'Create dashboard with a passkey' }).count(),
-    0,
-  );
+  await newcomer.page.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
+  assert.equal(await newcomer.page.getByRole('button', { name: 'Get started' }).count(), 0);
   assert.equal(
     (await newcomer.page.request.get(`${app.origin}/api/admin/guests`)).status(),
     HTTP_UNAUTHORIZED,
@@ -670,7 +665,7 @@ try {
   assert((await rotation).ok());
   assert.equal((await newcomer.page.request.get(prefix)).status(), HTTP_NOT_FOUND);
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
     'Browser journey passed: passkeys, private invitation assets, owner-wide design selection and preview, and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',

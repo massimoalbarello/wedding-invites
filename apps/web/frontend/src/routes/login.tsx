@@ -35,19 +35,18 @@ function Login() {
       >
         ✉
       </span>
-      <p className="text-muted-foreground text-sm">Invitation dashboard</p>
-      <h1 className="mt-3 font-semibold text-3xl tracking-tight">Your people, in one place.</h1>
+      <h1 className="font-semibold text-3xl tracking-tight">Manage your wedding invitations.</h1>
       <p className="mt-4 text-muted-foreground">
-        Manage personal invitations, familiar faces, and who’s joining you.
+        Create a personal invitation link for each guest and track who’s coming.
       </p>
       <div className="mt-8 flex flex-col items-start gap-3">
         {!owner.hasOwner ? (
           <Button size="lg" disabled={pending} onClick={() => register.mutate()}>
-            {register.isPending ? 'Creating your dashboard…' : 'Create dashboard with a passkey'}
+            {register.isPending ? 'Setting up…' : 'Get started'}
           </Button>
         ) : (
           <Button size="lg" disabled={pending} onClick={() => login.mutate()}>
-            {login.isPending ? 'Signing in…' : 'Sign in with a passkey'}
+            {login.isPending ? 'Signing in…' : 'Sign in'}
           </Button>
         )}
       </div>
@@ -58,8 +57,8 @@ function Login() {
       )}
       <p className="mt-6 text-muted-foreground text-xs">
         {owner.hasOwner
-          ? 'Use the passkey you created for this dashboard.'
-          : 'Set up the owner’s passkey to get started.'}
+          ? 'Sign in with the passkey you created during setup.'
+          : 'You’ll create a passkey to sign in without a password.'}
       </p>
     </main>
   );
