@@ -81,7 +81,7 @@ function VerifiedMessage({ name, token }: { name: string; token: string }) {
     <SecretScene>
       <SecretPaper className="secret-success">
         <SecretStamp>VERIFIED</SecretStamp>
-        <h1 className="secret-result">It’s you, {name}.</h1>
+        <h1 className="secret-result">Nice to see you, {name}.</h1>
         <p className="secret-countdown" role="status" aria-live="polite">
           {seconds > 0 ? `Opening invitation in ${seconds}…` : 'Opening invitation…'}
         </p>

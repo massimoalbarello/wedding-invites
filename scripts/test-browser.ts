@@ -627,7 +627,7 @@ try {
     fullPage: true,
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
-  await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
+  await guestBrowser.page.getByRole('heading', { name: 'Nice to see you, Taylor Reed.' }).waitFor();
   const confirmedAt = Date.now();
   await guestBrowser.page
     .getByRole('status')
@@ -652,7 +652,7 @@ try {
   assert.equal(guestBrowser.page.url(), `${link}/invitation`);
   assert.equal(await guestBrowser.page.getByRole('button', { name: 'Open invitation' }).count(), 0);
   assert.equal(
-    await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).count(),
+    await guestBrowser.page.getByRole('heading', { name: 'Nice to see you, Taylor Reed.' }).count(),
     0,
   );
   console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);

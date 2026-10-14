@@ -164,7 +164,7 @@ test('successful verification counts down before opening the invitation and clea
   await screen.findByRole('status');
   expect(screen.queryByTitle('Invitation')).toBeNull();
   resolve(Response.json({ authenticated: true }));
-  await screen.findByRole('heading', { name: `It’s you, ${content.name}.` });
+  await screen.findByRole('heading', { name: `Nice to see you, ${content.name}.` });
   expect(screen.getByRole('status').textContent).toBe('Opening invitation in 3…');
   expect(view.router.state.location.pathname).toBe(`/i/${token}`);
   expect(screen.queryByTitle('Invitation')).toBeNull();
@@ -177,7 +177,7 @@ test('successful verification counts down before opening the invitation and clea
   await screen.findByTitle('Invitation', {}, { timeout: COUNTDOWN_TIMEOUT_MS });
   expect(view.router.state.location.pathname).toBe(`/i/${token}/invitation`);
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
-  expect(screen.queryByText(`It’s you, ${content.name}.`)).toBeNull();
+  expect(screen.queryByText(`Nice to see you, ${content.name}.`)).toBeNull();
   expect(view.sessionRequests()).toBe(0);
   expect(view.queryClient.getQueryData(invitationKeys.content('another-token'))).toBeUndefined();
   expect(view.queryClient.getQueryData<Content>(invitationKeys.content(token))).toEqual(content);
@@ -189,7 +189,7 @@ test('opening another personal link during the success countdown cancels automat
     verify: () => Promise.resolve(Response.json({ authenticated: true })),
   });
   await captureSelfie();
-  await screen.findByRole('heading', { name: `It’s you, ${content.name}.` });
+  await screen.findByRole('heading', { name: `Nice to see you, ${content.name}.` });
   const otherToken = 'b'.repeat(TOKEN_LENGTH);
   await Promise.resolve(
     act(async () => {
