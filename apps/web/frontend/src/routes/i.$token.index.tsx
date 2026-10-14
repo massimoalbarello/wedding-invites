@@ -8,19 +8,18 @@ import {
   openInvitation,
   verifyFace,
 } from '../queries/invitations';
-import {
-  PersonalInvitationCover,
-  SecretPaper,
-  SecretScene,
-  SecretStamp,
-} from './-invitation/secret-paper';
+import { SecretPaper, SecretScene, SecretStamp } from './-invitation/secret-paper';
 import { SelfDestruct } from './-invitation/self-destruct';
 import { SelfieCamera } from './-invitation/selfie-camera';
 
 export const Route = createFileRoute('/i/$token/')({
   loader: async ({ context, params }) => {
     const entry = await context.queryClient.fetchQuery(invitationEntryOptions(params.token));
-    if (entry.authenticated) {
+    if (!entry.faceScanRequired && !entry.authenticated) {
+      await openInvitation(params.token);
+      context.queryClient.removeQueries({ queryKey: invitationKeys.all });
+    }
+    if (entry.authenticated || !entry.faceScanRequired) {
       throw redirect({ to: '/i/$token/invitation', params: { token: params.token } });
     }
     return entry;
@@ -36,13 +35,6 @@ function PersonalMessage() {
   const verify = useMutation({
     mutationFn: verifyFace,
     onSuccess: clearInvitations,
-  });
-  const open = useMutation({
-    mutationFn: openInvitation,
-    onSuccess: async () => {
-      clearInvitations();
-      await navigate({ to: '/i/$token/invitation', params: { token } });
-    },
   });
   if (verify.error instanceof FaceMismatchError) {
     return (
@@ -65,21 +57,6 @@ function PersonalMessage() {
           onClick={() => navigate({ to: '/i/$token/invitation', params: { token } })}
         >
           Open invitation
-        </Button>
-      </SecretScene>
-    );
-  }
-  if (!entry.faceScanRequired) {
-    return (
-      <SecretScene>
-        <PersonalInvitationCover name={entry.name} />
-        {open.error && (
-          <p role="alert" className="secret-error">
-            {open.error.message}
-          </p>
-        )}
-        <Button size="lg" disabled={open.isPending} onClick={() => open.mutate(token)}>
-          {open.isPending ? 'Opening invitation…' : 'Open invitation'}
         </Button>
       </SecretScene>
     );

@@ -79,6 +79,13 @@ async function checkInvitationCopy({
 function invitationFrame(page: Page) {
   return page.frameLocator('iframe[title="Invitation"]');
 }
+async function openDirectInvitation({ page, link }: { page: Page; link: string }) {
+  await page.goto(link);
+  await page.getByTitle('Invitation', { exact: true }).waitFor();
+  assert.equal(page.url(), `${link}/invitation`);
+  assert.equal(await page.getByRole('button', { name: 'Open invitation' }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Take a selfie & open' }).count(), 0);
+}
 async function openLetter(page: Page) {
   const frame = invitationFrame(page);
   await frame.getByRole('button', { name: 'Tap to open', exact: true }).click();
@@ -169,8 +176,10 @@ async function checkDesignSelection(input: {
     0,
   );
   const noAllowance = await browser();
-  await noAllowance.page.goto(`${origin}/i/${input.noAllowance.token}`);
-  await noAllowance.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({
+    page: noAllowance.page,
+    link: `${origin}/i/${input.noAllowance.token}`,
+  });
   const noAllowanceFrame = invitationFrame(noAllowance.page);
   await noAllowanceFrame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
   assert.equal(await noAllowanceFrame.getByRole('button', { name: 'Add a guest' }).count(), 0);
@@ -281,10 +290,7 @@ async function checkGuestPhotoEditing({
   await row.getByText('TR', { exact: true }).waitFor();
   assert.equal(await row.locator('img').count(), 0);
   const previouslyBypassed = await browser();
-  await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
-  await previouslyBypassed.page
-    .getByRole('button', { name: 'Open invitation', exact: true })
-    .click();
+  await openDirectInvitation({ page: previouslyBypassed.page, link: `${origin}/i/${guest.token}` });
   await openLetter(previouslyBypassed.page);
   assert.equal(
     await previouslyBypassed.page
@@ -364,10 +370,10 @@ async function checkGuestGrouping({ page, origin }: { page: Page; origin: string
   };
   assert.equal(await savedGroup(), 'Friends');
   const noReference = await browser();
-  await noReference.page.goto(
-    await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
-  );
-  await noReference.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({
+    page: noReference.page,
+    link: await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
+  });
   await openLetter(noReference.page);
   assert.equal(
     await noReference.page
@@ -674,8 +680,7 @@ try {
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
-  await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
-  await newcomer.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({ page: newcomer.page, link: `${app.origin}/i/${bypass.token}` });
   await openLetter(newcomer.page);
   assert.equal(
     await newcomer.page.getByRole('button', { name: 'Take a selfie & open' }).count(),
