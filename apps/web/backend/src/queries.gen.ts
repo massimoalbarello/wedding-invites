@@ -6,6 +6,15 @@ export interface IFindOwnerResult {
     id: string;
 }
 
+/** Result of query `GetInvitationDesign`. */
+export interface IGetInvitationDesignResult {
+    package_id: string;
+}
+
+/** Result of query `SaveInvitationDesign`. */
+export interface ISaveInvitationDesignResult {
+}
+
 /** Result of query `SaveInvitationCapture`. */
 export interface ISaveInvitationCaptureResult {
     id: string | null;
@@ -173,18 +182,10 @@ export interface ICreateInvitationCompanionResult {
 export interface IInsertGuestReferenceResult {
 }
 
-/** Result of query `GetWeddingSettings`. */
-export interface IGetWeddingSettingsResult {
-    coupleNames: string;
-    date: string;
-}
-
-/** Result of query `SaveWeddingSettings`. */
-export interface ISaveWeddingSettingsResult {
-}
-
 export interface Queries {
     FindOwner: IFindOwnerResult;
+    GetInvitationDesign: IGetInvitationDesignResult;
+    SaveInvitationDesign: ISaveInvitationDesignResult;
     SaveInvitationCapture: ISaveInvitationCaptureResult;
     ListInvitationGuests: IListInvitationGuestsResult;
     InvitationGuestById: IInvitationGuestByIdResult;
@@ -213,8 +214,6 @@ export interface Queries {
     ClearInvitationCompanions: IClearInvitationCompanionsResult;
     CreateInvitationCompanion: ICreateInvitationCompanionResult;
     InsertGuestReference: IInsertGuestReferenceResult;
-    GetWeddingSettings: IGetWeddingSettingsResult;
-    SaveWeddingSettings: ISaveWeddingSettingsResult;
 }
 
 declare module "@ilbertt/bun-sqlgen" {

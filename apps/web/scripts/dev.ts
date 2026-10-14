@@ -1,6 +1,12 @@
 import { buildFaceRuntime } from './build-faces.ts';
 
 await buildFaceRuntime();
+const invitations = Bun.spawn(['bun', 'run', 'build:invitations'], {
+  stdio: ['inherit', 'inherit', 'inherit'],
+});
+if ((await invitations.exited) !== 0) {
+  throw new Error('Could not build the private invitation package.');
+}
 
 // Vite owns the frontend during development. Pointing the backend at a deliberately absent folder
 // prevents an old production build in `public` from exposing a second, stale application origin.

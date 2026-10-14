@@ -1,6 +1,10 @@
-import { chromium } from 'playwright';
+import { type BrowserContextOptions, chromium } from 'playwright';
 import { enableVirtualPasskey } from './auth';
-export async function virtualPasskeyBrowser(input: { headless: boolean; cameraFile?: string }) {
+export async function virtualPasskeyBrowser(input: {
+  headless: boolean;
+  cameraFile?: string;
+  recordVideo?: BrowserContextOptions['recordVideo'];
+}) {
   const browser = await chromium.launch({
     headless: input.headless,
     handleSIGINT: false,
@@ -14,7 +18,7 @@ export async function virtualPasskeyBrowser(input: { headless: boolean; cameraFi
       : [],
   });
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ recordVideo: input.recordVideo });
     const page = await context.newPage();
     await enableVirtualPasskey(page);
     return { page, close: () => browser.close() };

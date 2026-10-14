@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { signOut } from '../queries/session';
+import { DashboardViews } from './dashboard-views';
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const client = useQueryClient();
@@ -16,10 +17,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   });
   return (
     <div className="min-h-dvh">
-      <header className="flex h-18 items-center justify-between border-border border-b px-5 sm:px-10">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-border border-b px-5 py-3 sm:h-18 sm:flex-nowrap sm:px-10 sm:py-0">
         <Link
           to="/"
-          aria-label="Guest list"
+          aria-label="Invitation dashboard"
           className="flex items-center gap-3 font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary font-serif text-primary-foreground">
@@ -27,10 +28,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </span>
           <span className="hidden sm:inline">Invitation dashboard</span>
         </Link>
-        <div className="flex items-center gap-1 sm:gap-3">
-          <Button variant="ghost" render={<Link to="/settings" />}>
-            Wedding settings
-          </Button>
+        <div className="order-3 flex w-full justify-center sm:order-none sm:w-auto">
+          <DashboardViews />
+        </div>
+        <div className="flex items-center">
           <Button variant="ghost" disabled={logout.isPending} onClick={() => logout.mutate()}>
             Sign out
           </Button>

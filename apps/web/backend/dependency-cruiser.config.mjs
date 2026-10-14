@@ -3,6 +3,25 @@ const backend = '^apps/web/backend/src/';
 export default {
   forbidden: [
     {
+      name: 'invitation-packages-use-only-the-runtime',
+      severity: 'error',
+      comment: 'An authored invitation must not depend on application implementation details.',
+      from: { path: '^apps/(amalfi|minimal)/src/' },
+      to: { path: '^apps/web/' },
+    },
+    {
+      name: 'invitation-runtime-stays-application-independent',
+      severity: 'error',
+      from: { path: '^packages/invitation-runtime/src/' },
+      to: { path: '^apps/' },
+    },
+    {
+      name: 'host-does-not-import-invitation-content',
+      severity: 'error',
+      from: { path: '^apps/web/' },
+      to: { path: '^apps/(amalfi|minimal)/src/' },
+    },
+    {
       name: 'resolve-backend-imports',
       severity: 'error',
       comment: 'Fix the internal import so architecture checks can resolve its owner.',

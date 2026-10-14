@@ -13,8 +13,7 @@ export const InvitationEntrySchema = t.Object({
 });
 export const InvitationContentSchema = t.Object({
   name: t.String(),
-  date: t.String(),
-  coupleNames: t.String(),
+  assetUrl: t.String(),
   status: RsvpStatusSchema,
   maxGuests: t.Number(),
   companions: t.Array(CompanionSchema),

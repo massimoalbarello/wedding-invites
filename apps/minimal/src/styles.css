@@ -1,0 +1,142 @@
+:root {
+  color-scheme: light;
+  font-family: Georgia, serif;
+  color: #294338;
+  background: #f1eee5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 32px 16px;
+}
+main {
+  max-width: 620px;
+  margin: auto;
+  padding: 64px 36px;
+  background: #fffef9;
+  border: 1px solid #d5dbce;
+  box-shadow: 0 12px 70px #2740330a;
+  text-align: center;
+}
+h1 {
+  font-size: clamp(44px, 10vw, 64px);
+  font-weight: 400;
+  margin: 28px 0;
+  line-height: 1.1;
+}
+h1 span {
+  color: #a89464;
+  font-style: italic;
+}
+h2 {
+  font-size: 29px;
+  font-weight: 400;
+  margin: 35px 0 24px;
+}
+p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.eyebrow {
+  font:
+    11px / 1.5 system-ui,
+    sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.invitation-copy {
+  max-width: 340px;
+  margin: auto;
+  font-size: 21px;
+}
+.date {
+  margin-top: 36px;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #d7ddcf;
+  margin: 42px 0;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin-bottom: 25px;
+}
+legend {
+  width: 100%;
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  text-align: left;
+  margin: 12px 0;
+  line-height: 1.5;
+}
+input[type="radio"] {
+  accent-color: #294338;
+  margin-right: 10px;
+}
+input:not([type="radio"]) {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border: 1px solid #cbd4c5;
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  background: #fffef9;
+}
+button {
+  cursor: pointer;
+  font:
+    14px / 1.5 system-ui,
+    sans-serif;
+  padding: 12px 18px;
+  border: 1px solid #b9c7b6;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+button[type="submit"] {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  background: #294338;
+  color: #fffef9;
+  border-color: #294338;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+:focus-visible {
+  outline: 2px solid #ab9158;
+  outline-offset: 4px;
+}
+.companion {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  text-align: left;
+}
+.companion label {
+  flex: 1;
+  margin-bottom: 0;
+}
+#error {
+  color: #9a3026;
+}
+#confirmation {
+  color: #294338;
+}
+[hidden] {
+  display: none;
+}
+@media (max-width: 400px) {
+  main {
+    padding: 44px 24px;
+  }
+}

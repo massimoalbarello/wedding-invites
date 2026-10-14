@@ -1,0 +1,16 @@
+{
+  "name": "@repo/minimal-invitation",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "check:types": "bun run --bun tsc"
+  },
+  "dependencies": {
+    "@repo/invitation-runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "^8.2.2"
+  }
+}

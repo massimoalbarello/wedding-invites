@@ -15,11 +15,10 @@ afterEach(() => {
   cleanup();
   mock.restore();
 });
-test('background revocation removes protected invitation content and its RSVP form from view and cache', async () => {
+test('background revocation removes the private iframe from view and clears its cached context', async () => {
   const content: Invitation = {
     name: 'Alex Morgan',
-    coupleNames: 'Avery & Jordan',
-    date: '2030-09-21',
+    assetUrl: 'about:blank',
     status: 'pending',
     maxGuests: 1,
     companions: [],
@@ -47,27 +46,26 @@ test('background revocation removes protected invitation content and its RSVP fo
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  await screen.findByRole('heading', { name: 'Avery & Jordan' });
-  expect(screen.getByRole('button', { name: 'Send reply' })).toBeTruthy();
+  await screen.findByTitle('Invitation');
   revoked = true;
   await Promise.resolve(
     act(async () => {
       await queryClient.invalidateQueries({ queryKey: invitationKeys.content(token) });
     }),
   );
-  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Avery & Jordan' })).toBeNull());
+  await waitFor(() => expect(screen.queryByTitle('Invitation')).toBeNull());
   expect(screen.queryByRole('button', { name: 'Send reply' })).toBeNull();
   expect(screen.getByRole('link', { name: 'Open personal link' })).toBeTruthy();
   expect(queryClient.getQueryData(invitationKeys.content(token))).toBeNull();
   queryClient.clear();
 });
 
-test('an unconfigured wedding shows a neutral not-ready page without RSVP controls', async () => {
+test('a missing invitation package shows a neutral not-ready page without an iframe', async () => {
   const CONFLICT = 409;
   const fetchResponse = Object.assign(
     () =>
       Promise.resolve(
-        Response.json({ error: 'Wedding details have not been set.' }, { status: CONFLICT }),
+        Response.json({ error: 'Invitation package is unavailable.' }, { status: CONFLICT }),
       ),
     { preconnect: globalThis.fetch.preconnect },
   );

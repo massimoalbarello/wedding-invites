@@ -2,6 +2,11 @@ import { Elysia, t } from 'elysia';
 import type { Auth } from '#backend/lib/auth/better-auth.ts';
 import { ForbiddenError, UnauthorizedError } from '#backend/lib/errors.ts';
 import {
+  DesignCatalogSchema,
+  PackageIdSchema,
+  PackageSelectionSchema,
+} from '#backend/routes/api/admin/designs/model.ts';
+import {
   CreateGuestSchema,
   EditGuestSchema,
   GuestListQuerySchema,
@@ -11,14 +16,16 @@ import {
   PhotoUploadSchema,
   StatsSchema,
 } from '#backend/routes/api/admin/model.ts';
-import { WeddingSettingsSchema } from '#backend/routes/api/admin/wedding/model.ts';
+import { assetResponse } from '#backend/routes/api/invitations/asset-response.ts';
 import { apiResponse } from '#backend/routes/api/response.ts';
+import type { InvitationDesignServiceContract } from '#backend/services/invitation-designs/service.ts';
 import type { GuestManagementServiceContract } from '#backend/services/invitations/guest-management.ts';
-import type { WeddingServiceContract } from '#backend/services/wedding/service.ts';
+
+const MAX_ASSET_PATH_LENGTH = 1024;
 export function createAdminController(input: {
   auth: Auth;
   management: GuestManagementServiceContract;
-  wedding: WeddingServiceContract;
+  designs: InvitationDesignServiceContract;
   origin: string;
 }) {
   return new Elysia({ prefix: '/admin' })
@@ -37,20 +44,33 @@ export function createAdminController(input: {
           }
           return { actor: { userId: session.user.id } };
         })
+        .get('/designs', ({ actor }) => input.designs.list({ actor }), {
+          response: apiResponse(DesignCatalogSchema),
+        })
+        .put('/designs', ({ actor, body }) => input.designs.select({ actor, ...body }), {
+          body: PackageSelectionSchema,
+          response: apiResponse(DesignCatalogSchema),
+        })
         .get(
-          '/wedding',
-          async ({ actor }) => {
-            const settings = await input.wedding.get({ actor });
-            return Response.json(settings);
-          },
+          '/designs/:packageId/assets/*',
+          ({ actor, params, request }) =>
+            assetResponse({
+              asset: input.designs.asset({
+                actor,
+                packageId: params.packageId,
+                path: (params as Record<string, string>)['*']!,
+              }),
+              range: request.headers.get('range'),
+            }),
           {
-            response: apiResponse(t.Union([WeddingSettingsSchema, t.Null()])),
+            params: t.Object(
+              { packageId: PackageIdSchema },
+              {
+                additionalProperties: t.String({ minLength: 1, maxLength: MAX_ASSET_PATH_LENGTH }),
+              },
+            ),
           },
         )
-        .put('/wedding', ({ actor, body }) => input.wedding.save({ actor, settings: body }), {
-          body: WeddingSettingsSchema,
-          response: apiResponse(WeddingSettingsSchema),
-        })
         .get('/stats', ({ actor }) => input.management.stats({ actor }), {
           response: apiResponse(StatsSchema),
         })

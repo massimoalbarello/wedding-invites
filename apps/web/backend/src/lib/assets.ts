@@ -5,6 +5,7 @@ import type { BunFile } from 'bun';
 /* Substituted at build time */
 declare const PUBLIC_FRONTEND_DIR_NAME: string;
 declare const DB_MIGRATIONS_DIR_NAME: string;
+declare const INVITATION_ASSETS_DIR_NAME: string;
 
 const publicFrontendFolderName =
   typeof PUBLIC_FRONTEND_DIR_NAME === 'undefined' ? 'public' : PUBLIC_FRONTEND_DIR_NAME;
@@ -21,6 +22,12 @@ export type AssetFiles = Map<string, Blob>;
 
 export function getPublicAssets(): AssetFiles {
   return readAssets({ folderName: publicFrontendFolderName, folder: PUBLIC_FRONTEND_DIR });
+}
+
+export function getInvitationAssets(): AssetFiles {
+  const folderName =
+    typeof INVITATION_ASSETS_DIR_NAME === 'undefined' ? 'invitations' : INVITATION_ASSETS_DIR_NAME;
+  return readAssets({ folderName, folder: resolve(import.meta.dir, '../../../dist/invitations') });
 }
 
 export function getMigrations(): AssetFiles {

@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import { virtualPasskeyBrowser } from '@repo/browser-testing/browser';
 import { startIsolatedApp } from './isolated-app';
 import { seedGuests } from './seed-guests';
-import { EXAMPLE_WEDDING } from './seed-wedding';
 
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
@@ -78,30 +77,72 @@ async function checkInvitationCopy({
   assert.equal(page.url(), location, 'Copying an invitation must not navigate away from the list.');
 }
 
-async function configureWedding({ page, origin }: { page: Page; origin: string }) {
-  const empty = await page.request.get(`${origin}/api/admin/wedding`);
-  assert(empty.ok());
-  assert.equal(await empty.json(), null);
-  await page.getByRole('link', { name: 'Add wedding details', exact: true }).click();
-  await page.getByRole('button', { name: 'Save wedding', exact: true }).click();
-  await page.getByRole('alert').first().waitFor();
-  await page.getByLabel('Couple names', { exact: true }).fill(EXAMPLE_WEDDING.coupleNames);
-  await page.getByLabel('Ceremony date', { exact: true }).fill(EXAMPLE_WEDDING.date);
-  await page.getByRole('button', { name: 'Save wedding', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit wedding', exact: true }).waitFor();
-  await page.reload();
-  await page.getByText(EXAMPLE_WEDDING.coupleNames, { exact: true }).waitFor();
-  assert.deepEqual(
-    await (await page.request.get(`${origin}/api/admin/wedding`)).json(),
-    EXAMPLE_WEDDING,
+function invitationFrame(page: Page) {
+  return page.frameLocator('iframe[title="Invitation"]');
+}
+async function openLetter(page: Page) {
+  const frame = invitationFrame(page);
+  await frame.getByRole('button', { name: 'Tap to open', exact: true }).click();
+  await frame.getByRole('heading', { name: 'Elena & Marco', exact: true }).waitFor();
+  await frame.locator('main.letter').evaluate(async (element) => {
+    await Promise.all(
+      element
+        .getAnimations()
+        .map((animation: { finished: Promise<unknown> }) => animation.finished),
+    );
+  });
+}
+
+async function checkDesignSelection(input: {
+  page: Page;
+  origin: string;
+  guestPage: Page;
+  bypassPage: Page;
+  guest: Guest;
+  bypass: Guest;
+  noAllowance: Guest;
+}) {
+  const { page, origin } = input;
+  const before = await (await page.request.get(`${origin}/api/admin/stats`)).json();
+  await page.getByRole('link', { name: 'Invitation design', exact: true }).click();
+  await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
+  const chooseSimple = async () => {
+    await page.getByRole('button', { name: 'Select design', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Design for every invitation', exact: true }).click();
+    await page.getByRole('option', { name: 'Simple letter', exact: true }).waitFor();
+    await page.screenshot({
+      path: resolve(artifacts, 'design-choice-desktop.png'),
+      fullPage: true,
+    });
+    await page.getByRole('option', { name: 'Simple letter', exact: true }).click();
+    await page
+      .frameLocator('iframe[title="Design preview"]')
+      .getByRole('heading', { name: 'Elena & Marco', exact: true })
+      .waitFor();
+  };
+  await chooseSimple();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  assert.equal(
+    (await (await page.request.get(`${origin}/api/admin/designs`)).json()).selectedPackageId,
+    'amalfi',
   );
+  await chooseSimple();
+  const preview = page.frameLocator('iframe[title="Design preview"]');
+  await preview.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
+  await preview.getByRole('button', { name: 'Send reply', exact: true }).click();
+  await preview.getByRole('status').filter({ hasText: 'Your reply is saved' }).waitFor();
+  assert.deepEqual(await (await page.request.get(`${origin}/api/admin/stats`)).json(), before);
+  await page.getByRole('button', { name: 'Save design', exact: true }).click();
+  await page.getByRole('button', { name: 'Select design', exact: true }).waitFor();
+  await page.reload();
+  await page.getByRole('heading', { name: 'Simple letter', exact: true }).waitFor();
   await page.screenshot({
-    path: resolve(artifacts, 'wedding-settings-desktop.png'),
+    path: resolve(artifacts, 'design-selection-desktop.png'),
     fullPage: true,
   });
   await page.setViewportSize(MOBILE_VIEWPORT);
   await page.screenshot({
-    path: resolve(artifacts, 'wedding-settings-mobile.png'),
+    path: resolve(artifacts, 'design-selection-mobile.png'),
     fullPage: true,
   });
   assert.ok(
@@ -109,12 +150,33 @@ async function configureWedding({ page, origin }: { page: Page; origin: string }
       MOBILE_VIEWPORT.width,
   );
   await page.setViewportSize(DESKTOP_VIEWPORT);
-  await page.goto(origin);
-  await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+  await input.guestPage.goto(`${origin}/i/${input.guest.token}`);
+  const guest = invitationFrame(input.guestPage);
+  await guest.getByRole('heading', { name: 'Elena & Marco', exact: true }).waitFor();
+  assert.equal(await guest.getByRole('button', { name: 'Tap to open' }).count(), 0);
+  assert.equal(await guest.getByLabel('Guest name', { exact: true }).inputValue(), 'Jordan Reed');
+  await guest.getByRole('button', { name: 'Update reply', exact: true }).click();
+  await guest.getByRole('status').filter({ hasText: 'Your reply is saved' }).waitFor();
+  await input.guestPage.screenshot({
+    path: resolve(artifacts, 'simple-letter-mobile.png'),
+    fullPage: true,
+  });
+  await input.bypassPage.goto(`${origin}/i/${input.bypass.token}`);
+  await invitationFrame(input.bypassPage)
+    .getByRole('heading', { name: 'Elena & Marco', exact: true })
+    .waitFor();
   assert.equal(
-    await page.getByRole('link', { name: 'Add wedding details', exact: true }).count(),
+    await invitationFrame(input.bypassPage).getByRole('button', { name: 'Tap to open' }).count(),
     0,
   );
+  const noAllowance = await browser();
+  await noAllowance.page.goto(`${origin}/i/${input.noAllowance.token}`);
+  const noAllowanceFrame = invitationFrame(noAllowance.page);
+  await noAllowanceFrame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
+  assert.equal(await noAllowanceFrame.getByRole('button', { name: 'Add a guest' }).count(), 0);
+  assert.deepEqual(await (await page.request.get(`${origin}/api/admin/stats`)).json(), before);
+  await page.goto(origin);
+  await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
 }
 
 async function createGuestInDashboard(page: Page) {
@@ -220,9 +282,7 @@ async function checkGuestPhotoEditing({
   assert.equal(await row.locator('img').count(), 0);
   const previouslyBypassed = await browser();
   await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
-  await previouslyBypassed.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
-    .waitFor();
+  await openLetter(previouslyBypassed.page);
   assert.equal(
     await previouslyBypassed.page
       .getByRole('button', { name: 'Take a selfie', exact: true })
@@ -273,11 +333,12 @@ async function checkAvatar({
 }
 
 async function saveReply(page: Page) {
-  await page.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
-  await page.getByRole('button', { name: 'Add a guest' }).click();
-  await page.getByLabel('Guest 1 name', { exact: true }).fill('Jordan Reed');
-  await page.getByRole('button', { name: 'Send reply', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'You’re on the list' }).waitFor();
+  const frame = invitationFrame(page);
+  await frame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
+  await frame.getByRole('button', { name: 'Add a guest' }).click();
+  await frame.getByLabel('Guest 1 name', { exact: true }).fill('Jordan Reed');
+  await frame.getByRole('button', { name: 'Send reply', exact: true }).click();
+  await frame.getByRole('status').filter({ hasText: 'You’re on the list' }).waitFor();
 }
 
 async function checkGuestGrouping({ page, origin }: { page: Page; origin: string }) {
@@ -303,9 +364,7 @@ async function checkGuestGrouping({ page, origin }: { page: Page; origin: string
   await noReference.page.goto(
     await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
   );
-  await noReference.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
-    .waitFor();
+  await openLetter(noReference.page);
   assert.equal(
     await noReference.page.getByRole('button', { name: 'Take a selfie', exact: true }).count(),
     0,
@@ -385,10 +444,15 @@ const videos = {
 };
 const app = await startIsolatedApp();
 const browsers: TestBrowser[] = [];
-async function browser(cameraFile?: string) {
-  const instance = await virtualPasskeyBrowser({ headless: true, cameraFile });
+async function browser(
+  input: {
+    cameraFile?: string;
+    recordVideo?: Parameters<typeof virtualPasskeyBrowser>[0]['recordVideo'];
+  } = {},
+) {
+  const instance = await virtualPasskeyBrowser({ headless: true, ...input });
   browsers.push(instance);
-  if (cameraFile) {
+  if (input.cameraFile) {
     await instance.page.context().grantPermissions(['camera'], { origin: app.origin });
   }
   instance.page.on('pageerror', (error) => console.error(error));
@@ -400,8 +464,21 @@ try {
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(app.origin);
   await page.getByRole('button', { name: 'Create dashboard with a passkey', exact: true }).click();
+  await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
+  assert.equal(new URL(page.url()).pathname, '/design');
+  const views = page.getByRole('navigation', { name: 'Dashboard views' });
+  assert.equal(
+    await views
+      .getByRole('link', { name: 'Invitation design', exact: true })
+      .getAttribute('aria-current'),
+    'page',
+  );
+  await views.getByRole('link', { name: 'Guest list', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
-  await configureWedding({ page, origin: app.origin });
+  assert.equal(
+    await views.getByRole('link', { name: 'Guest list', exact: true }).getAttribute('aria-current'),
+    'page',
+  );
   const link = await createGuestInDashboard(page);
   const token = new URL(link).pathname.split('/').at(-1)!;
   const guestsResponse = await page.request.get(`${app.origin}/api/admin/guests`);
@@ -433,7 +510,7 @@ try {
     .waitFor();
   assert.equal(await newcomer.page.locator('input[type=file]').count(), 0);
   const anonymousMessage = await newcomer.page.locator('body').innerText();
-  assert(!anonymousMessage.includes(EXAMPLE_WEDDING.coupleNames));
+  assert(!anonymousMessage.includes('Elena'));
   assert(!anonymousMessage.includes('September'));
   await newcomer.page.setViewportSize(MOBILE_VIEWPORT);
   await newcomer.page.screenshot({
@@ -441,34 +518,73 @@ try {
     fullPage: true,
   });
 
-  const duplicate = await browser(videos.duplicate);
+  const duplicate = await browser({ cameraFile: videos.duplicate });
   await duplicate.page.goto(link);
   await captureSelfie(duplicate.page);
   await duplicate.page.getByRole('alert').filter({ hasText: 'reference photo' }).waitFor();
   assert.equal((await duplicate.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
-  const stranger = await browser(videos.stranger);
+  const stranger = await browser({ cameraFile: videos.stranger });
   await stranger.page.goto(link);
   await captureSelfie(stranger.page);
   await stranger.page.getByRole('alert').filter({ hasText: 'could not match your face' }).waitFor();
   assert.equal((await stranger.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
 
-  const guestBrowser = await browser(videos.genuine);
+  const guestBrowser = await browser({
+    cameraFile: videos.genuine,
+    recordVideo: { dir: resolve(artifacts, 'recordings'), size: MOBILE_VIEWPORT },
+  });
   await guestBrowser.page.setViewportSize(MOBILE_VIEWPORT);
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+  console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);
+  await invitationFrame(guestBrowser.page)
+    .getByRole('button', { name: 'Tap to open', exact: true })
     .waitFor();
-  await guestBrowser.page.getByText('21 September 2030', { exact: true }).waitFor();
+  await guestBrowser.page.screenshot({
+    path: resolve(artifacts, 'amalfi-envelope-mobile.png'),
+    fullPage: true,
+  });
+  await openLetter(guestBrowser.page);
+  await guestBrowser.page.screenshot({
+    path: resolve(artifacts, 'amalfi-letter-mobile.png'),
+    fullPage: true,
+  });
+  await invitationFrame(guestBrowser.page)
+    .getByText('June 29, 2027', { exact: true })
+    .first()
+    .waitFor();
   await saveReply(guestBrowser.page);
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'invitation-mobile.png'),
     fullPage: true,
   });
   await guestBrowser.page.goto(link);
-  await guestBrowser.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+  await guestBrowser.page.emulateMedia({ reducedMotion: 'reduce' });
+  await openLetter(guestBrowser.page);
+  await invitationFrame(guestBrowser.page)
+    .getByLabel('Guest 1 name', { exact: true })
+    .fill('Jordan Reed');
+  await invitationFrame(guestBrowser.page)
+    .getByRole('button', { name: 'Update reply', exact: true })
+    .click();
+  await invitationFrame(guestBrowser.page)
+    .getByRole('status')
+    .filter({ hasText: 'You’re on the list' })
     .waitFor();
+  await guestBrowser.page.setViewportSize(DESKTOP_VIEWPORT);
+  await invitationFrame(guestBrowser.page)
+    .getByRole('heading', { name: 'Elena & Marco', exact: true })
+    .scrollIntoViewIfNeeded();
+  await guestBrowser.page.screenshot({
+    path: resolve(artifacts, 'amalfi-letter-desktop.png'),
+    fullPage: true,
+  });
+  const photo = invitationFrame(guestBrowser.page).getByRole('button', {
+    name: 'Enlarge: An embrace above the sea',
+    exact: true,
+  });
+  await photo.click();
+  await invitationFrame(guestBrowser.page).getByRole('button', { name: 'Close photo' }).click();
   const excess = await guestBrowser.page.request.put(`${prefix}/rsvp`, {
     headers: { origin: app.origin },
     data: { status: 'accepted', companions: ['One', 'Two'] },
@@ -483,15 +599,11 @@ try {
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
-    .waitFor();
+  await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
-  await newcomer.page
-    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
-    .waitFor();
+  await openLetter(newcomer.page);
   assert.equal(await newcomer.page.getByRole('button', { name: 'Take a selfie' }).count(), 0);
   await page.goto(app.origin);
   await page.getByText('Jordan Reed', { exact: true }).waitFor();
@@ -529,6 +641,15 @@ try {
   );
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await checkPagination({ page, origin: app.origin });
+  await checkDesignSelection({
+    page,
+    origin: app.origin,
+    guestPage: guestBrowser.page,
+    bypassPage: newcomer.page,
+    guest,
+    bypass,
+    noAllowance: seeded[5]!,
+  });
 
   const csrf = await page.request.post(`${app.origin}/api/admin/guests`, {
     headers: { origin: 'https://untrusted.invalid' },
@@ -552,7 +673,7 @@ try {
   await page.getByRole('button', { name: 'Sign in with a passkey', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, wedding setup, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, private invitation assets, owner-wide design selection and preview, and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
   );
 } catch (error) {
   for (const instance of browsers) {

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Elena &amp; Marco · A simple letter</title>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Together with our families</p>
+      <h1>Elena <span>&amp;</span> Marco</h1>
+      <p class="invitation-copy">
+        We would love you to join us for our wedding celebration.
+      </p>
+      <p class="date">Tuesday, 29 June 2027</p>
+      <p>Positano · Amalfi Coast, Italy</p>
+      <hr>
+      <p id="greeting">Opening your personal invitation…</p>
+      <section aria-labelledby="reply-heading">
+        <h2 id="reply-heading">Will you join us?</h2>
+        <form id="reply" hidden>
+          <fieldset>
+            <legend>Your reply</legend>
+            <label
+              ><input type="radio" name="status" value="accepted" required>
+              Yes, I’ll be there</label
+            ><label
+              ><input type="radio" name="status" value="declined" required>
+              Sorry, I can’t make it</label
+            >
+          </fieldset>
+          <div id="companions" hidden>
+            <p id="allowance"></p>
+            <div id="names"></div>
+            <button id="add-guest" type="button">+ Add a guest</button>
+          </div>
+          <button id="save" type="submit">Send reply</button>
+        </form>
+        <p id="confirmation" role="status"></p>
+        <p id="error" role="alert"></p>
+      </section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

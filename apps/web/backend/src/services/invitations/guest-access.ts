@@ -15,21 +15,21 @@ import {
   type RsvpStatus,
   SESSION_MAX_AGE_SECONDS,
 } from '#backend/models/invitations/model.ts';
-import type { WeddingSettings } from '#backend/models/wedding/model.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
+import type { InvitationAssetsRepositoryContract } from '#backend/repositories/invitation-assets/repository.ts';
+import type { InvitationDesignsRepositoryContract } from '#backend/repositories/invitation-designs/repository.ts';
 import type { InvitationCapturesRepositoryContract } from '#backend/repositories/invitations/captures.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
-import type { WeddingRepositoryContract } from '#backend/repositories/wedding/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
 
 function hashSession(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
-function invitationContent({ guest, wedding }: { guest: Guest; wedding: WeddingSettings }) {
+function invitationContent(input: { guest: Guest; packageId: string }) {
+  const { guest, packageId } = input;
   return {
     name: guest.name,
-    date: wedding.date,
-    coupleNames: wedding.coupleNames,
+    assetUrl: `/api/invitations/${guest.token}/assets/${packageId}/index.html`,
     status: guest.status,
     maxGuests: guest.maxGuests,
     companions: guest.companions,
@@ -41,7 +41,8 @@ export class GuestAccessService {
       guests: InvitationsRepositoryContract;
       captures: InvitationCapturesRepositoryContract;
       faces: FaceAnalyzer;
-      wedding: WeddingRepositoryContract;
+      assets: InvitationAssetsRepositoryContract;
+      designs: InvitationDesignsRepositoryContract;
     },
   ) {}
   private async guest(token: string) {
@@ -139,17 +140,29 @@ export class GuestAccessService {
     }
     return this.session({ guest, faceVerified: true });
   }
-  private async weddingDetails(ownerId: string) {
-    const wedding = await this.input.wedding.get({ ownerId });
-    if (!wedding) {
+  private async selectedPackage(ownerId: string) {
+    const packageId = await this.input.designs.get({ ownerId });
+    if (!this.input.assets.list().some((entry) => entry.id === packageId)) {
       throw new ConflictError('This invitation is not ready yet. Please try again later.');
     }
-    return wedding;
+    return packageId;
+  }
+  async asset(input: { token: string; session?: string; packageId: string; path: string }) {
+    const guest = await this.authorized(input);
+    const packageId = await this.selectedPackage(guest.ownerId);
+    if (packageId !== input.packageId) {
+      throw new NotFoundError();
+    }
+    const asset = this.input.assets.get(input);
+    if (!asset) {
+      throw new NotFoundError();
+    }
+    return asset;
   }
   async content(input: { token: string; session?: string }) {
     const guest = await this.authorized(input);
-    const wedding = await this.weddingDetails(guest.ownerId);
-    return invitationContent({ guest, wedding });
+    const packageId = await this.selectedPackage(guest.ownerId);
+    return invitationContent({ guest, packageId });
   }
   async rsvp(input: {
     token: string;
@@ -158,7 +171,7 @@ export class GuestAccessService {
     companions: string[];
   }) {
     const guest = await this.authorized(input);
-    await this.weddingDetails(guest.ownerId);
+    await this.selectedPackage(guest.ownerId);
     const names = input.status === 'accepted' ? input.companions.map((name) => name.trim()) : [];
     if (names.some((name) => !name || name.length > MAX_GUEST_NAME_LENGTH)) {
       throw new BadRequestError('Enter a name for each guest.');
@@ -184,5 +197,5 @@ export class GuestAccessService {
 }
 export type GuestAccessServiceContract = Pick<
   GuestAccessService,
-  'entry' | 'bypass' | 'verify' | 'content' | 'rsvp'
+  'entry' | 'bypass' | 'verify' | 'content' | 'rsvp' | 'asset'
 >;

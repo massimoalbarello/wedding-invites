@@ -8,13 +8,14 @@ import { MAX_PHOTO_BYTES, MAX_REFERENCE_PHOTOS } from '#backend/models/invitatio
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import { createLocalFaceAnalyzer } from '#backend/repositories/faces/local-analyzer.ts';
 import { FrontendAssetsRepository } from '#backend/repositories/frontend-assets/repository.ts';
+import { InvitationAssetsRepository } from '#backend/repositories/invitation-assets/repository.ts';
+import { InvitationDesignsRepository } from '#backend/repositories/invitation-designs/repository.ts';
 import { InvitationCapturesRepository } from '#backend/repositories/invitations/captures.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
-import { WeddingRepository } from '#backend/repositories/wedding/repository.ts';
 import { FrontendAssetsService } from '#backend/services/frontend-assets/service.ts';
+import { InvitationDesignService } from '#backend/services/invitation-designs/service.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
 import { GuestManagementService } from '#backend/services/invitations/guest-management.ts';
-import { WeddingService } from '#backend/services/wedding/service.ts';
 
 const MULTIPART_OVERHEAD_BYTES = 65_536;
 const env = loadEnv();
@@ -27,7 +28,11 @@ const faces = createLocalFaceAnalyzer({ dataFolder: env.DATA_FOLDER });
 try {
   await runMigrations({ db: database });
   const guests = new InvitationsRepository(database);
-  const wedding = new WeddingRepository(database);
+  const assets = await new InvitationAssetsRepository().load();
+  const designs = new InvitationDesignsRepository({
+    database,
+    defaultPackageId: env.INVITATION_PACKAGE,
+  });
   const app = createApp({
     auth: createAuth({
       database,
@@ -35,14 +40,15 @@ try {
       nibrunHostname: env.NIBRUN_HOSTNAME,
       secret: secret.value,
     }),
+    designs: new InvitationDesignService({ assets, designs }),
     management: new GuestManagementService({ guests, admin: new AdminRepository(database), faces }),
     access: new GuestAccessService({
       guests,
       captures: new InvitationCapturesRepository(database),
       faces,
-      wedding,
+      assets,
+      designs,
     }),
-    wedding: new WeddingService(wedding),
     frontend: new FrontendAssetsService(new FrontendAssetsRepository()),
     origin: env.BASE_URL.origin,
   }).listen({
