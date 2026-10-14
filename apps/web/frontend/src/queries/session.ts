@@ -11,7 +11,10 @@ export const sessionOptions = queryOptions({
   },
 });
 export async function registerAccount() {
-  const result = await authClient.passkey.addPasskey({ name: 'My passkey', createSession: true });
+  const result = await authClient.passkey.addPasskey({
+    name: 'Wedding dashboard',
+    createSession: true,
+  });
   if (result.error) {
     throw new Error(result.error.message ?? 'Could not create your passkey.');
   }

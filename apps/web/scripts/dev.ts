@@ -1,3 +1,7 @@
+import { buildFaceRuntime } from './build-faces.ts';
+
+await buildFaceRuntime();
+
 // Vite owns the frontend during development. Pointing the backend at a deliberately absent folder
 // prevents an old production build in `public` from exposing a second, stale application origin.
 const DEV_PUBLIC_FRONTEND_DIR_NAME = '.frontend-served-by-vite';

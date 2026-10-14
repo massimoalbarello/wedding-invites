@@ -13,6 +13,14 @@ function availablePort() {
   return port;
 }
 export async function startIsolatedApp() {
+  const build = Bun.spawn(['bun', '--filter', '@repo/web', 'build:faces'], {
+    cwd: join(import.meta.dir, '..'),
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
+  if ((await build.exited) !== 0) {
+    throw new Error('Could not prepare face recognition for the isolated application.');
+  }
   const port = availablePort();
   let frontendPort = availablePort();
   while (port === frontendPort) {

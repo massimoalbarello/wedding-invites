@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "build:client"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/LICENSE"],
       "env": ["BUILD_TARGET"],
       "outputs": ["dist/app"]
     },
