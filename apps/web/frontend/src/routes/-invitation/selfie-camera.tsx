@@ -6,15 +6,11 @@ import { PersonalInvitationCover, SecretPaper } from './secret-paper';
 export function SelfieCamera({
   name,
   onVerify,
-  onRetake,
   pending,
-  error,
 }: {
   name: string;
   onVerify: (photo: File) => void;
-  onRetake: () => void;
   pending: boolean;
-  error: string | undefined;
 }) {
   const camera = useLiveCamera();
   const [captureUrl, setCaptureUrl] = useState<string>();
@@ -48,7 +44,7 @@ export function SelfieCamera({
       setCapturing(false);
     }
   };
-  const visibleError = captureError || camera.error || error;
+  const visibleError = captureError || camera.error;
   return (
     <>
       {camera.active || captureUrl ? (
@@ -66,25 +62,7 @@ export function SelfieCamera({
           {visibleError}
         </p>
       )}
-      {captureUrl ? (
-        !pending &&
-        error && (
-          <Button
-            className="mt-5"
-            size="lg"
-            onClick={() => {
-              setCaptureUrl(undefined);
-              setCaptureError(undefined);
-              onRetake();
-              camera.start();
-            }}
-          >
-            Try another photo
-          </Button>
-        )
-      ) : (
-        <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />
-      )}
+      {!captureUrl && <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />}
     </>
   );
 }

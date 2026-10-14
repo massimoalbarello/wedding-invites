@@ -11,7 +11,6 @@ const FORBIDDEN = 403;
 const NOT_FOUND = 404;
 const CONFLICT = 409;
 export class InvitationAccessError extends Error {}
-export class FaceMismatchError extends Error {}
 export function invitationEntryOptions(token: string) {
   return queryOptions({
     queryKey: [...invitationKeys.token(token), 'entry'],
@@ -60,15 +59,6 @@ export async function verifyFace({ token, photo }: { token: string; photo: File 
   const result = await api.api.invitations({ token }).verify.post({ photo });
   if (result.error) {
     const value = result.error.value;
-    if (
-      result.error.status === FORBIDDEN &&
-      typeof value === 'object' &&
-      value !== null &&
-      'reason' in value &&
-      value.reason === 'face_mismatch'
-    ) {
-      throw new FaceMismatchError(value.error);
-    }
     throw new Error(
       typeof value === 'object' && value !== null && 'error' in value
         ? String(value.error)

@@ -9,8 +9,11 @@ const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const HTTP_BAD_REQUEST = 400;
+const HTTP_UNAVAILABLE = 503;
 const PAGE_OVERFLOW_COUNT = 42;
 const BURST_FRAME_MS = 240;
+const SUCCESS_COUNTDOWN_MS = 3000;
+const COUNTDOWN_TOLERANCE_MS = 100;
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 1000 };
 const fixtures = resolve('apps/web/backend/test/fixtures/faces');
@@ -526,8 +529,26 @@ try {
   const duplicate = await browser({ cameraFile: videos.duplicate });
   await duplicate.page.goto(link);
   await captureSelfie(duplicate.page);
-  await duplicate.page.getByRole('alert').filter({ hasText: 'reference photo' }).waitFor();
+  await duplicate.page.getByRole('status').filter({ hasText: 'Self-destructing in 3' }).waitFor();
+  await duplicate.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
   assert.equal((await duplicate.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
+  const unavailable = await browser({ cameraFile: videos.genuine });
+  await unavailable.page.route(`${prefix}/verify`, (route) =>
+    route.fulfill({
+      status: HTTP_UNAVAILABLE,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Please try again later.' }),
+    }),
+  );
+  await unavailable.page.goto(link);
+  await captureSelfie(unavailable.page);
+  await unavailable.page.getByRole('status').filter({ hasText: 'Self-destructing in 3' }).waitFor();
+  await unavailable.page.getByRole('status').filter({ hasText: 'Message destroyed.' }).waitFor();
+  assert.equal(await unavailable.page.getByRole('button').count(), 0);
+  assert.equal(
+    (await unavailable.page.request.get(`${prefix}/content`)).status(),
+    HTTP_UNAUTHORIZED,
+  );
   const stranger = await browser({
     cameraFile: videos.stranger,
     recordVideo: { dir: resolve(artifacts, 'recordings'), size: MOBILE_VIEWPORT },
@@ -606,19 +627,40 @@ try {
     fullPage: true,
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
-  await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
-  assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
+  await guestBrowser.page.getByRole('heading', { name: 'Nice to see you, Taylor Reed.' }).waitFor();
+  const confirmedAt = Date.now();
+  await guestBrowser.page
+    .getByRole('status')
+    .filter({ hasText: 'Opening invitation in 3' })
+    .waitFor();
+  assert.equal(guestBrowser.page.url(), link);
+  assert.equal(await guestBrowser.page.getByTitle('Invitation', { exact: true }).count(), 0);
   await guestBrowser.page.screenshot({
-    path: resolve(artifacts, 'verification-success-mobile.png'),
+    path: resolve(artifacts, 'verification-confirmation-mobile.png'),
     fullPage: true,
   });
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await guestBrowser.page
+    .getByRole('status')
+    .filter({ hasText: 'Opening invitation in 2' })
+    .waitFor();
+  await guestBrowser.page
+    .getByRole('status')
+    .filter({ hasText: 'Opening invitation in 1' })
+    .waitFor();
+  await guestBrowser.page.getByTitle('Invitation', { exact: true }).waitFor();
+  assert.ok(Date.now() - confirmedAt >= SUCCESS_COUNTDOWN_MS - COUNTDOWN_TOLERANCE_MS);
+  assert.equal(guestBrowser.page.url(), `${link}/invitation`);
+  assert.equal(await guestBrowser.page.getByRole('button', { name: 'Open invitation' }).count(), 0);
+  assert.equal(
+    await guestBrowser.page.getByRole('heading', { name: 'Nice to see you, Taylor Reed.' }).count(),
+    0,
+  );
   console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
     .waitFor();
   await guestBrowser.page.screenshot({
-    path: resolve(artifacts, 'amalfi-envelope-mobile.png'),
+    path: resolve(artifacts, 'verification-success-mobile.png'),
     fullPage: true,
   });
   await openLetter(guestBrowser.page);
@@ -676,7 +718,7 @@ try {
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await guestBrowser.page.getByTitle('Invitation', { exact: true }).waitFor();
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
