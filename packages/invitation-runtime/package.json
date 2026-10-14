@@ -1,0 +1,21 @@
+{
+  "name": "@repo/invitation-runtime",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./contract": "./src/contract.ts",
+    "./client": "./src/client.ts",
+    "./host": "./src/host.ts"
+  },
+  "scripts": {
+    "check:types": "bun run --bun tsc",
+    "test": "bun test test"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

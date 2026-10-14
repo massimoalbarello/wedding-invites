@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia';
 import { ForbiddenError } from '#backend/lib/errors.ts';
 import { SESSION_MAX_AGE_SECONDS } from '#backend/models/invitations/model.ts';
 import { PhotoUploadSchema, PublicIdSchema } from '#backend/routes/api/admin/model.ts';
+import { assetResponse } from '#backend/routes/api/invitations/asset-response.ts';
 import {
   InvitationContentSchema,
   InvitationEntrySchema,
@@ -10,6 +11,8 @@ import {
 } from '#backend/routes/api/invitations/model.ts';
 import { apiResponse } from '#backend/routes/api/response.ts';
 import type { GuestAccessServiceContract } from '#backend/services/invitations/guest-access.ts';
+
+const MAX_ASSET_PATH_LENGTH = 1024;
 export const GUEST_COOKIE_NAME = 'invitation_session';
 export function createInvitationsController(input: {
   access: GuestAccessServiceContract;
@@ -71,6 +74,23 @@ export function createInvitationsController(input: {
           session: cookie[GUEST_COOKIE_NAME]?.value as string | undefined,
         }),
       { params: InvitationParamsSchema, response: apiResponse(InvitationContentSchema) },
+    )
+    .get(
+      '/:token/assets/*',
+      async ({ params, cookie, request }) =>
+        assetResponse({
+          asset: await input.access.asset({
+            token: params.token,
+            session: cookie[GUEST_COOKIE_NAME]?.value as string | undefined,
+            path: (params as Record<string, string>)['*']!,
+          }),
+          range: request.headers.get('range'),
+        }),
+      {
+        params: t.Object(InvitationParamsSchema.properties, {
+          additionalProperties: t.String({ minLength: 1, maxLength: MAX_ASSET_PATH_LENGTH }),
+        }),
+      },
     )
     .put(
       '/:token/rsvp',

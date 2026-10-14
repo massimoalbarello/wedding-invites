@@ -31,6 +31,7 @@ function optional({
 type Environment = Readonly<Record<string, string | undefined>>;
 
 type Env = {
+  INVITATION_PACKAGE: string;
   PORT: number;
   BASE_URL: URL;
   NIBRUN_HOSTNAME: string | undefined;
@@ -68,7 +69,12 @@ export function loadEnv({
   environment = process.env,
   workingDirectory = process.cwd(),
 }: Partial<LoadEnvInput> = {}): Env {
+  const invitationPackage = environment.INVITATION_PACKAGE || 'amalfi';
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(invitationPackage)) {
+    throw new Error('INVITATION_PACKAGE must be a package identifier.');
+  }
   return {
+    INVITATION_PACKAGE: invitationPackage,
     PORT: Number(
       optional({
         environment,

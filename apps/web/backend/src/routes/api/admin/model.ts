@@ -7,15 +7,17 @@ import {
   MAX_PAGE_SIZE,
   MAX_PHOTO_BYTES,
   MAX_REFERENCE_PHOTOS,
+  RSVP_STATUSES,
 } from '#backend/models/invitations/model.ts';
 export const PublicIdSchema = t.String({ pattern: '^[a-f0-9]{48}$' });
 export const GuestPublicIdSchema = t.String({ format: 'uuid' });
 export const GuestParamsSchema = t.Object({ id: GuestPublicIdSchema });
 export const PhotoParamsSchema = t.Object({ id: GuestPublicIdSchema, photoId: PublicIdSchema });
+const [pending, accepted, declined] = RSVP_STATUSES;
 export const RsvpStatusSchema = t.Union([
-  t.Literal('pending'),
-  t.Literal('accepted'),
-  t.Literal('declined'),
+  t.Literal(pending),
+  t.Literal(accepted),
+  t.Literal(declined),
 ]);
 export const CompanionSchema = t.Object({ id: PublicIdSchema, name: t.String() });
 export const GuestSettingsSchema = t.Object({

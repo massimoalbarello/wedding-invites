@@ -1,3 +1,4 @@
+import { MAX_NAME_LENGTH, type RsvpReply, type RsvpState } from '@repo/invitation-runtime/contract';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { useForm } from '@tanstack/react-form';
@@ -8,10 +9,10 @@ export function RsvpForm({
   maxGuests,
   onSave,
 }: {
-  status: 'pending' | 'accepted' | 'declined';
+  status: RsvpState['status'];
   companions: { name: string }[];
   maxGuests: number;
-  onSave: (reply: { status: 'accepted' | 'declined'; companions: string[] }) => Promise<void>;
+  onSave: (reply: RsvpReply) => Promise<void>;
 }) {
   const form = useForm({
     defaultValues: {
@@ -76,7 +77,7 @@ export function RsvpForm({
         )}
       </form.Field>
       <form.Subscribe selector={(state) => state.values.status}>
-        {(reply: 'pending' | 'accepted' | 'declined') =>
+        {(reply: RsvpState['status']) =>
           reply === 'accepted' && maxGuests > 0 ? (
             <form.Field
               name="companions"
@@ -110,7 +111,7 @@ export function RsvpForm({
                               value={nameField.state.value}
                               onValueChange={nameField.handleChange}
                               onBlur={nameField.handleBlur}
-                              maxLength={120}
+                              maxLength={MAX_NAME_LENGTH}
                             />
                           </div>
                           <Button

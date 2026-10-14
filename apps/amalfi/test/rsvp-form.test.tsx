@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'bun:test';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RsvpForm } from '../src/routes/-invitation/rsvp-form';
+import { RsvpForm } from '../src/rsvp-form';
 
 afterEach(cleanup);
 test('RSVP requires a reply and names each additional guest within the allowance', async () => {

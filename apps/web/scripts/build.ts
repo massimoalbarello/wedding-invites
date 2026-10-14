@@ -14,6 +14,7 @@ const result = await Bun.build({
     ...(target ? { target: 'bun-linux-x64' as const } : {}),
     assets: [
       join(import.meta.dir, '../dist/public'),
+      join(import.meta.dir, '../dist/invitations'),
       faceAssets,
       join(import.meta.dir, '../../../LICENSE'),
       join(import.meta.dir, '../backend/src/db/migrations'),
@@ -23,6 +24,7 @@ const result = await Bun.build({
   format: 'esm',
   naming: { asset: '[dir]/[name].[ext]' },
   define: {
+    INVITATION_ASSETS_DIR_NAME: JSON.stringify('invitations'),
     PUBLIC_FRONTEND_DIR_NAME: JSON.stringify('public'),
     DB_MIGRATIONS_DIR_NAME: JSON.stringify('migrations'),
   },

@@ -17,7 +17,8 @@
     "test:frontend": "bun test --preload ./frontend/test/dom.ts frontend/test",
     "test:binary": "bun test test/binary.test.ts",
     "build:faces": "bun run scripts/build-faces.ts",
-    "test:faces": "bun run build:faces && bun test test/faces-native.test.ts"
+    "test:faces": "bun run build:faces && bun test test/faces-native.test.ts",
+    "build:invitations": "vite build --config ../amalfi/vite.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -37,7 +38,9 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@repo/invitation-runtime": "workspace:*",
+    "range-parser": "^1.2.1"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.14.0",
@@ -51,7 +54,8 @@
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "catalog:",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "@types/range-parser": "^1.2.7"
   },
   "imports": {
     "#backend/*": "./backend/src/*",
