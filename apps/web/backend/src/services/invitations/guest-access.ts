@@ -17,6 +17,7 @@ import {
 } from '#backend/models/invitations/model.ts';
 import type { WeddingSettings } from '#backend/models/wedding/model.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
+import type { InvitationCapturesRepositoryContract } from '#backend/repositories/invitations/captures.ts';
 import type { InvitationsRepositoryContract } from '#backend/repositories/invitations/repository.ts';
 import type { WeddingRepositoryContract } from '#backend/repositories/wedding/repository.ts';
 import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts';
@@ -38,6 +39,7 @@ export class GuestAccessService {
   constructor(
     private readonly input: {
       guests: InvitationsRepositoryContract;
+      captures: InvitationCapturesRepositoryContract;
       faces: FaceAnalyzer;
       wedding: WeddingRepositoryContract;
     },
@@ -112,7 +114,19 @@ export class GuestAccessService {
     if (!references.length) {
       return this.bypass(input.token);
     }
-    const { image } = await readPhoto(input.photo);
+    const { image, mediaType } = await readPhoto(input.photo);
+    const saved = await this.input.captures.save({
+      id: opaqueId(),
+      ownerId: guest.ownerId,
+      guestId: guest.id,
+      linkToken: input.token,
+      image,
+      mediaType,
+      createdAt: new Date().toISOString(),
+    });
+    if (!saved) {
+      throw new NotFoundError();
+    }
     const capture = await analyzePhoto({ faces: this.input.faces, ownerId: guest.ownerId, image });
     const comparisons = references.map(({ observation }) =>
       compareFace({ reference: observation, capture }),

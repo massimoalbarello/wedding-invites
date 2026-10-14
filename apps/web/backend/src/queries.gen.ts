@@ -6,6 +6,11 @@ export interface IFindOwnerResult {
     id: string;
 }
 
+/** Result of query `SaveInvitationCapture`. */
+export interface ISaveInvitationCaptureResult {
+    id: string | null;
+}
+
 /** Result of query `ListInvitationGuests`. */
 export interface IListInvitationGuestsResult {
     id: string;
@@ -180,6 +185,7 @@ export interface ISaveWeddingSettingsResult {
 
 export interface Queries {
     FindOwner: IFindOwnerResult;
+    SaveInvitationCapture: ISaveInvitationCaptureResult;
     ListInvitationGuests: IListInvitationGuestsResult;
     InvitationGuestById: IInvitationGuestByIdResult;
     InvitationGuestByToken: IInvitationGuestByTokenResult;

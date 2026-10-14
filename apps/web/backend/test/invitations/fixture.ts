@@ -16,6 +16,7 @@ import {
 } from '#backend/models/faces/models.ts';
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
+import { InvitationCapturesRepository } from '#backend/repositories/invitations/captures.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
 import { WeddingRepository } from '#backend/repositories/wedding/repository.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
@@ -67,13 +68,14 @@ export function cookies(response: Response) {
 export async function fixture(
   input: {
     createInvitationsRepository?: (database: SQL) => InvitationsRepository;
+    faces?: FaceAnalyzer;
     weddingConfigured?: boolean;
   } = {},
 ) {
   const folder = await mkdtemp(join(tmpdir(), 'wedding-api-test-'));
   const database = await createSqliteDatabase({ dataFolder: folder });
   await runMigrations({ db: database });
-  const faces: FaceAnalyzer = {
+  const faces: FaceAnalyzer = input.faces ?? {
     analyze: (input) => Promise.resolve(observation(input.image[FACE_ID_OFFSET]!)),
   };
   const guests =
@@ -90,7 +92,12 @@ export async function fixture(
     auth,
     management,
     wedding,
-    access: new GuestAccessService({ guests, faces, wedding: weddingRepository }),
+    access: new GuestAccessService({
+      guests,
+      captures: new InvitationCapturesRepository(database),
+      faces,
+      wedding: weddingRepository,
+    }),
     origin: ORIGIN,
     frontend: { routes: () => new Map(), fallback: () => null },
   });

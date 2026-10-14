@@ -8,6 +8,7 @@ import { MAX_PHOTO_BYTES, MAX_REFERENCE_PHOTOS } from '#backend/models/invitatio
 import { AdminRepository } from '#backend/repositories/admin/repository.ts';
 import { createLocalFaceAnalyzer } from '#backend/repositories/faces/local-analyzer.ts';
 import { FrontendAssetsRepository } from '#backend/repositories/frontend-assets/repository.ts';
+import { InvitationCapturesRepository } from '#backend/repositories/invitations/captures.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
 import { WeddingRepository } from '#backend/repositories/wedding/repository.ts';
 import { FrontendAssetsService } from '#backend/services/frontend-assets/service.ts';
@@ -35,7 +36,12 @@ try {
       secret: secret.value,
     }),
     management: new GuestManagementService({ guests, admin: new AdminRepository(database), faces }),
-    access: new GuestAccessService({ guests, faces, wedding }),
+    access: new GuestAccessService({
+      guests,
+      captures: new InvitationCapturesRepository(database),
+      faces,
+      wedding,
+    }),
     wedding: new WeddingService(wedding),
     frontend: new FrontendAssetsService(new FrontendAssetsRepository()),
     origin: env.BASE_URL.origin,
