@@ -113,10 +113,10 @@ test('only this guest references match and any reused reference rejects before a
       settings: { ...defaults, faceScanRequired: true },
     });
     const route = `/api/invitations/${guest.token}`;
-    expect((await f.request({ path: `${route}/session`, method: 'POST' })).status).toBe(FORBIDDEN);
+    expect((await f.request({ path: `${route}/session`, method: 'POST' })).status).toBe(SUCCESS);
     expect(
       (await f.request({ path: `${route}/verify`, method: 'POST', body: upload(SELFIE) })).status,
-    ).toBe(CONFLICT);
+    ).toBe(SUCCESS);
     for (const reference of [REFERENCE, ALTERNATE_REFERENCE]) {
       const response = await f.request({
         path: `/api/admin/guests/${guest.id}/photos`,
@@ -126,6 +126,7 @@ test('only this guest references match and any reused reference rejects before a
       });
       expect(response.status).toBe(SUCCESS);
     }
+    expect((await f.request({ path: `${route}/session`, method: 'POST' })).status).toBe(FORBIDDEN);
     expect(
       (await f.request({ path: `${route}/verify`, method: 'POST', body: upload(MISMATCH) })).status,
     ).toBe(FORBIDDEN);

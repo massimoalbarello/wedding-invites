@@ -8,6 +8,7 @@ import {
   type InvitationStats,
   MAX_REFERENCE_PHOTOS,
   type RsvpStatus,
+  requiresFaceScan,
 } from '#backend/models/invitations/model.ts';
 import type { Queries } from '#backend/queries.gen.ts';
 
@@ -191,16 +192,26 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       if (current.removed_count !== input.removedPhotoIds.length) {
         return 'reference_missing';
       }
-      if (
-        current.references_count - current.removed_count + input.references.length >
-        MAX_REFERENCE_PHOTOS
-      ) {
+      const referenceCount =
+        current.references_count - current.removed_count + input.references.length;
+      if (referenceCount > MAX_REFERENCE_PHOTOS) {
         return 'reference_limit';
       }
       if (current.companions > input.settings.maxGuests) {
         return 'companion_limit';
       }
-      if (Boolean(current.face_scan_required) !== input.settings.faceScanRequired) {
+      const previousFaceScanRequired = requiresFaceScan({
+        faceScanRequired: Boolean(current.face_scan_required),
+        referenceCount: current.references_count,
+      });
+      const nextFaceScanRequired = requiresFaceScan({
+        faceScanRequired: input.settings.faceScanRequired,
+        referenceCount,
+      });
+      if (
+        Boolean(current.face_scan_required) !== input.settings.faceScanRequired ||
+        previousFaceScanRequired !== nextFaceScanRequired
+      ) {
         await sql.RevokeChangedInvitationMode`delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
       }
       await sql.UpdateInvitationGuest`
@@ -265,7 +276,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     await this.sql
       .RevokeInvitationSessions`delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
   }
-  async addReference(
+  addReference(
     input: GuestScope & {
       id: string;
       image: Uint8Array;
@@ -274,13 +285,24 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       createdAt: string;
     },
   ) {
-    const rows = await this.sql.AddInvitationReference`
-      insert into invitation_reference (id, owner_id, guest_id, image, media_type, observation, created_at)
-      select ${input.id}, ${input.ownerId}, ${input.guestId}, ${input.image}, ${input.mediaType}, ${JSON.stringify(input.observation)}, ${input.createdAt}
-      where (select count(*) from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}) < ${MAX_REFERENCE_PHOTOS}
-      returning id
-    `;
-    return rows.length > 0;
+    return this.database.begin(async (tx) => {
+      const sql = withTypes<Queries>(tx);
+      const rows = await sql.AddInvitationReference`
+        insert into invitation_reference (id, owner_id, guest_id, image, media_type, observation, created_at)
+        select ${input.id}, ${input.ownerId}, ${input.guestId}, ${input.image}, ${input.mediaType}, ${JSON.stringify(input.observation)}, ${input.createdAt}
+        where (select count(*) from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}) < ${MAX_REFERENCE_PHOTOS}
+        returning id
+      `;
+      if (rows.length === 0) {
+        return false;
+      }
+      await sql.RevokeFirstReferenceSessions`
+        delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
+          and exists (select 1 from invitation_guest where owner_id = ${input.ownerId} and id = ${input.guestId} and face_scan_required = 1)
+          and (select count(*) from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId}) = 1
+      `;
+      return true;
+    });
   }
   async references(input: GuestScope) {
     const rows = await this.sql
@@ -298,10 +320,21 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     const row = rows[0];
     return row ? { image: row.image, mediaType: row.media_type } : null;
   }
-  async removeReference(input: GuestScope & { id: string }) {
-    const rows = await this.sql
-      .RemoveInvitationReference`delete from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.id} returning id`;
-    return rows.length > 0;
+  removeReference(input: GuestScope & { id: string }) {
+    return this.database.begin(async (tx) => {
+      const sql = withTypes<Queries>(tx);
+      const rows =
+        await sql.RemoveInvitationReference`delete from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.id} returning id`;
+      if (rows.length === 0) {
+        return false;
+      }
+      await sql.RevokeLastReferenceSessions`
+        delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
+          and exists (select 1 from invitation_guest where owner_id = ${input.ownerId} and id = ${input.guestId} and face_scan_required = 1)
+          and not exists (select 1 from invitation_reference where owner_id = ${input.ownerId} and guest_id = ${input.guestId})
+      `;
+      return true;
+    });
   }
   async createSession(
     input: GuestScope & {
@@ -313,8 +346,11 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
   ) {
     const rows = await this.sql.CreateInvitationSession`
       insert into invitation_session (token_hash, owner_id, guest_id, expires_at)
-      select ${input.tokenHash}, owner_id, id, ${input.expiresAt} from invitation_guest
-      where owner_id = ${input.ownerId} and id = ${input.guestId} and token = ${input.linkToken} and active = 1 and face_scan_required = ${Number(input.faceScanRequired)}
+      select ${input.tokenHash}, g.owner_id, g.id, ${input.expiresAt} from invitation_guest g
+      where g.owner_id = ${input.ownerId} and g.id = ${input.guestId} and g.token = ${input.linkToken} and g.active = 1
+        and (g.face_scan_required = 1 and exists (
+          select 1 from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id
+        )) = ${Number(input.faceScanRequired)}
       returning token_hash
     `;
     return rows.length > 0;

@@ -19,6 +19,46 @@ function mockPreviews() {
   spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:${crypto.randomUUID()}`);
   return spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 }
+test('draft photo changes update entry instructions without changing the face scan preference', async () => {
+  mockPreviews();
+  const user = userEvent.setup();
+  const saves: GuestDraft[] = [];
+  const noPhotosDescription =
+    'Without reference photos, this link opens the invitation directly. Add a photo to enable the face scan.';
+  const directDescription = 'Anyone with this personal link can open the invitation directly.';
+  const scanDescription = 'A selfie unlocks this person’s invitation.';
+  render(
+    <GuestForm
+      initial={initial}
+      references={references}
+      onCancel={() => {}}
+      onSave={(value) => {
+        saves.push(value);
+        return Promise.resolve();
+      }}
+    />,
+  );
+  expect(screen.getByText(scanDescription)).toBeTruthy();
+  await user.click(screen.getByRole('button', { name: 'Remove reference photo 1' }));
+  expect(screen.getByText(noPhotosDescription)).toBeTruthy();
+  expect(screen.getByRole('switch', { name: 'Require a face scan', checked: true })).toBeTruthy();
+  await user.upload(
+    screen.getByLabelText('Upload reference photos'),
+    new File(['replacement'], 'replacement.png', { type: 'image/png' }),
+  );
+  expect(screen.getByText(scanDescription)).toBeTruthy();
+  await user.click(screen.getByRole('switch', { name: 'Require a face scan' }));
+  expect(screen.getByText(directDescription)).toBeTruthy();
+  await user.click(screen.getByRole('button', { name: 'Remove reference photo 1' }));
+  expect(screen.getByText(directDescription)).toBeTruthy();
+  await user.click(screen.getByRole('switch', { name: 'Require a face scan' }));
+  expect(screen.getByText(noPhotosDescription)).toBeTruthy();
+  expect(saves).toEqual([]);
+  await user.click(screen.getByRole('button', { name: 'Save guest' }));
+  await waitFor(() =>
+    expect(saves).toEqual([{ ...initial, photos: [], removedPhotoIds: [references[0]!.id] }]),
+  );
+});
 test('photo additions and removals stay in the draft until one Save guest submits them together', async () => {
   mockPreviews();
   const user = userEvent.setup();

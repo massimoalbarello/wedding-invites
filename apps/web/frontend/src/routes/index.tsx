@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
+import { requiresFaceScan } from '#backend/models/invitations/model.ts';
 import { AdminLayout } from '../components/admin-layout';
 import { CopyInvitationLink } from '../components/copy-invitation-link';
 import { GuestAvatar } from '../components/guest-avatar';
@@ -264,7 +265,12 @@ function GuestRows({ guests }: { guests: Guest[] }) {
                 <p className="truncate font-medium">{guest.name}</p>
                 <p className="mt-1 truncate text-muted-foreground text-xs">
                   {[
-                    guest.faceScanRequired ? 'Face scan' : 'Direct access',
+                    requiresFaceScan({
+                      faceScanRequired: guest.faceScanRequired,
+                      referenceCount: guest.references.length,
+                    })
+                      ? 'Face scan'
+                      : 'Direct access',
                     guest.maxGuests > 0
                       ? `Up to ${guest.maxGuests} additional ${guest.maxGuests === 1 ? 'guest' : 'guests'}`
                       : '',

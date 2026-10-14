@@ -120,6 +120,10 @@ export interface IAddInvitationReferenceResult {
     id: string;
 }
 
+/** Result of query `RevokeFirstReferenceSessions`. */
+export interface IRevokeFirstReferenceSessionsResult {
+}
+
 /** Result of query `InvitationReferenceObservations`. */
 export interface IInvitationReferenceObservationsResult {
     id: string;
@@ -135,6 +139,10 @@ export interface IInvitationReferenceImageResult {
 /** Result of query `RemoveInvitationReference`. */
 export interface IRemoveInvitationReferenceResult {
     id: string;
+}
+
+/** Result of query `RevokeLastReferenceSessions`. */
+export interface IRevokeLastReferenceSessionsResult {
 }
 
 /** Result of query `CreateInvitationSession`. */
@@ -192,9 +200,11 @@ export interface Queries {
     RevokeRotatedInvitationSessions: IRevokeRotatedInvitationSessionsResult;
     RevokeInvitationSessions: IRevokeInvitationSessionsResult;
     AddInvitationReference: IAddInvitationReferenceResult;
+    RevokeFirstReferenceSessions: IRevokeFirstReferenceSessionsResult;
     InvitationReferenceObservations: IInvitationReferenceObservationsResult;
     InvitationReferenceImage: IInvitationReferenceImageResult;
     RemoveInvitationReference: IRemoveInvitationReferenceResult;
+    RevokeLastReferenceSessions: IRevokeLastReferenceSessionsResult;
     CreateInvitationSession: ICreateInvitationSessionResult;
     FindInvitationSession: IFindInvitationSessionResult;
     UpdateInvitationRsvp: IUpdateInvitationRsvpResult;

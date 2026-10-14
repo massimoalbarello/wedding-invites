@@ -18,6 +18,11 @@ test('a guest requires a name and saves the per-person access choices', async ()
       }}
     />,
   );
+  expect(
+    screen.getByText(
+      'Without reference photos, this link opens the invitation directly. Add a photo to enable the face scan.',
+    ),
+  ).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
   expect(screen.getByRole('alert').textContent).toContain('Enter the guest’s name');

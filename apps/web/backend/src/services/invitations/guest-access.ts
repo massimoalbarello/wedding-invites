@@ -13,6 +13,7 @@ import {
   MAX_GUEST_NAME_LENGTH,
   MILLISECONDS_PER_SECOND,
   type RsvpStatus,
+  requiresFaceScan,
   SESSION_MAX_AGE_SECONDS,
 } from '#backend/models/invitations/model.ts';
 import type { WeddingSettings } from '#backend/models/wedding/model.ts';
@@ -71,7 +72,10 @@ export class GuestAccessService {
     const guest = await this.guest(input.token);
     return {
       name: guest.name,
-      faceScanRequired: guest.faceScanRequired,
+      faceScanRequired: requiresFaceScan({
+        faceScanRequired: guest.faceScanRequired,
+        referenceCount: guest.references.length,
+      }),
       authenticated: await this.authenticated({ guest, session: input.session }),
     };
   }
@@ -86,7 +90,10 @@ export class GuestAccessService {
       linkToken: guest.token,
       tokenHash: hashSession(token),
       expiresAt,
-      faceScanRequired: guest.faceScanRequired,
+      faceScanRequired: requiresFaceScan({
+        faceScanRequired: guest.faceScanRequired,
+        referenceCount: guest.references.length,
+      }),
     });
     if (!created) {
       throw new NotFoundError();
@@ -95,14 +102,24 @@ export class GuestAccessService {
   }
   async bypass(token: string) {
     const guest = await this.guest(token);
-    if (guest.faceScanRequired) {
+    if (
+      requiresFaceScan({
+        faceScanRequired: guest.faceScanRequired,
+        referenceCount: guest.references.length,
+      })
+    ) {
       throw new ForbiddenError('This invitation requires a selfie.');
     }
     return this.session(guest);
   }
   async verify(input: { token: string; photo: File }) {
     const guest = await this.guest(input.token);
-    if (!guest.faceScanRequired) {
+    if (
+      !requiresFaceScan({
+        faceScanRequired: guest.faceScanRequired,
+        referenceCount: guest.references.length,
+      })
+    ) {
       return this.session(guest);
     }
     const references = await this.input.guests.references({
@@ -110,9 +127,7 @@ export class GuestAccessService {
       guestId: guest.id,
     });
     if (!references.length) {
-      throw new ConflictError(
-        'This invitation is not ready yet. Please ask the sender to add a reference photo.',
-      );
+      return this.bypass(input.token);
     }
     const { image } = await readPhoto(input.photo);
     const capture = await analyzePhoto({ faces: this.input.faces, ownerId: guest.ownerId, image });

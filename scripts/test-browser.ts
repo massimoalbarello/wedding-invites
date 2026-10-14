@@ -217,6 +217,17 @@ async function checkGuestPhotoEditing({
   const row = page.getByRole('link').filter({ hasText: guest.name }).first();
   await row.getByText('TR', { exact: true }).waitFor();
   assert.equal(await row.locator('img').count(), 0);
+  const previouslyBypassed = await browser();
+  await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
+  await previouslyBypassed.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
+  assert.equal(
+    await previouslyBypassed.page
+      .getByRole('button', { name: 'Take a selfie', exact: true })
+      .count(),
+    0,
+  );
   await page.goto(detailUrl);
   await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
   await page
@@ -224,6 +235,16 @@ async function checkGuestPhotoEditing({
     .setInputFiles(resolve(fixtures, 'reference.jpg'));
   await page.getByRole('button', { name: 'Save guest', exact: true }).click();
   await page.getByRole('button', { name: 'Edit guest', exact: true }).waitFor();
+  await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
+  await previouslyBypassed.page
+    .getByRole('button', { name: 'Take a selfie', exact: true })
+    .waitFor();
+  assert.equal(
+    (
+      await previouslyBypassed.page.request.get(`${origin}/api/invitations/${guest.token}/content`)
+    ).status(),
+    HTTP_UNAUTHORIZED,
+  );
   await page.screenshot({ path: resolve(artifacts, 'guest-settings.png'), fullPage: true });
 }
 
@@ -277,6 +298,21 @@ async function checkGuestGrouping({ page, origin }: { page: Page; origin: string
     return ((await response.json()) as { groupName: string }).groupName;
   };
   assert.equal(await savedGroup(), 'Friends');
+  const noReference = await browser();
+  await noReference.page.goto(
+    await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
+  );
+  await noReference.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
+  assert.equal(
+    await noReference.page.getByRole('button', { name: 'Take a selfie', exact: true }).count(),
+    0,
+  );
+  await noReference.page.screenshot({
+    path: resolve(artifacts, 'invitation-without-reference.png'),
+    fullPage: true,
+  });
   for (const group of ['', 'Neighbours', 'Friends']) {
     await page.getByRole('button', { name: 'Edit guest', exact: true }).click();
     await chooseGroup(group === 'Neighbours' ? 'Create a new group…' : group || 'Ungrouped');
@@ -445,6 +481,11 @@ try {
 
   const seeded = await seedGuests({ page, origin: app.origin });
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
+  await guestBrowser.page.goto(link);
+  await captureSelfie(guestBrowser.page);
+  await guestBrowser.page
+    .getByRole('heading', { name: EXAMPLE_WEDDING.coupleNames, exact: true })
+    .waitFor();
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
   await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
