@@ -33,22 +33,26 @@ test('opening is gated by recipient context and reveals live text without a skip
   );
   expect((screen.getByRole('button') as HTMLButtonElement).disabled).toBe(true);
   resolveContext(context);
-  const open = await screen.findByRole('button', { name: 'Tap to open' });
+  const open = await screen.findByRole('button', { name: 'Open invitation' });
   await userEvent.click(open);
   expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
+  expect(open.textContent).toBe('');
+  expect((open as HTMLButtonElement).disabled).toBe(true);
+  await userEvent.click(open);
   expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
   fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
     animationName: 'envelope-depart',
   });
   const heading = screen.getByRole('heading', { name: 'Massimo & Lisa' });
   expect(document.activeElement).toBe(heading);
+  expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(screen.getByRole('link', { name: 'Into the garden' }).getAttribute('href')).toBe('#venue');
 });
 
 test('inner light animation does not finish the opening before the envelope', async () => {
   show();
-  await userEvent.click(await screen.findByRole('button', { name: 'Tap to open' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
   fireEvent.animationEnd(document.querySelector('.envelope-glow')!, {
     animationName: 'letter-glow',
   });
@@ -69,7 +73,7 @@ test('reduced motion opens immediately without the opening stage', async () => {
   };
   try {
     show();
-    await userEvent.click(await screen.findByRole('button', { name: 'Tap to open' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
     expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Massimo & Lisa' })).toBeDefined();
   } finally {
@@ -88,7 +92,7 @@ test('failed connection offers a retry before opening', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe('Open your personal link again.');
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByText('A letter for Alex Rivera')).toBeDefined();
-  expect((screen.getByRole('button', { name: 'Tap to open' }) as HTMLButtonElement).disabled).toBe(
-    false,
-  );
+  expect(
+    (screen.getByRole('button', { name: 'Open invitation' }) as HTMLButtonElement).disabled,
+  ).toBe(false);
 });

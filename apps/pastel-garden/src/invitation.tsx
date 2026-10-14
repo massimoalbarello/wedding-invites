@@ -56,43 +56,47 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   return (
     <div className="invitation">
       {stage !== 'open' ? (
-        <main
-          className={stage === 'opening' ? 'sealed-letter is-revealing' : 'sealed-letter'}
-          aria-label="Sealed invitation"
-          style={{ '--opening-duration': `${OPENING_DURATION_MS}ms` } as CSSProperties}
-        >
-          <div className="opening-light" aria-hidden="true">
-            <span className="opening-halo" />
-            <span className="opening-rays" />
-            <span className="opening-wash" />
-          </div>
-          <div className="envelope-greeting">
-            <p className="eyebrow">You are invited</p>
-            {context.data && <p>A letter for {context.data.recipient.name}</p>}
-          </div>
-          <Envelope opening={stage === 'opening'} onOpened={() => setStage('open')} />
-          <div className="envelope-actions">
-            {stage === 'closed' ? (
-              <button
-                type="button"
-                disabled={!context.data}
-                onClick={() =>
-                  setStage(
-                    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                      ? 'open'
-                      : 'opening',
-                  )
-                }
-              >
-                {context.isPending ? 'Just a moment…' : 'Tap to open'}
-              </button>
-            ) : (
-              <p className="opening-status" role="status">
-                Opening your invitation…
-              </p>
-            )}
-          </div>
-        </main>
+        <>
+          <main
+            className={stage === 'opening' ? 'sealed-letter is-revealing' : 'sealed-letter'}
+            aria-label="Sealed invitation"
+            style={{ '--opening-duration': `${OPENING_DURATION_MS}ms` } as CSSProperties}
+          >
+            <div className="opening-light" aria-hidden="true">
+              <span className="opening-halo" />
+              <span className="opening-rays" />
+              <span className="opening-wash" />
+            </div>
+            <div className="envelope-greeting">
+              <p className="eyebrow">You are invited</p>
+              {context.data && <p>A letter for {context.data.recipient.name}</p>}
+            </div>
+            <Envelope opening={stage === 'opening'} onOpened={() => setStage('open')} />
+            <div className="envelope-actions">
+              {stage === 'opening' && (
+                <p className="opening-status" role="status">
+                  Opening your invitation…
+                </p>
+              )}
+              {context.isPending && <p role="status">Just a moment…</p>}
+            </div>
+          </main>
+          <button
+            className="entrance-trigger"
+            type="button"
+            aria-label="Open invitation"
+            disabled={!context.data || stage !== 'closed'}
+            onClick={() =>
+              setStage((current) =>
+                current === 'closed'
+                  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'open'
+                    : 'opening'
+                  : current,
+              )
+            }
+          />
+        </>
       ) : (
         <main className="letter">
           <FloralFrame />

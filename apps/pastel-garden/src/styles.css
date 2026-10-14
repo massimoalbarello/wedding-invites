@@ -281,6 +281,26 @@ button:hover:not(:disabled),
   position: relative;
   z-index: 5;
 }
+.entrance-trigger {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.entrance-trigger:hover:not(:disabled) {
+  background: transparent;
+}
+.entrance-trigger:disabled {
+  opacity: 1;
+}
+.entrance-trigger:focus-visible {
+  outline-offset: -8px;
+}
 .letter {
   animation: garden-reveal 0.8s ease-out both;
   background: #f8fbfd;
