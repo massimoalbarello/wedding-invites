@@ -106,7 +106,7 @@ export async function deployToNibrun({
     target[1] = await resolveAppSlug({ nib, requested: target[1] });
   }
   const { name }: { name: string } = await Bun.file(join(directory, 'package.json')).json();
-  const build = await $`${process.execPath} run --bun turbo ${task} ${`--filter=${name}`}`
+  const build = await $`${process.execPath} run turbo ${task} ${`--filter=${name}`}`
     .cwd(directory)
     .env({ ...process.env, BUILD_TARGET: NIBRUN_BUILD_TARGET })
     .nothrow();
