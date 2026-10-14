@@ -33,7 +33,8 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/apps/amalfi/**",
         "$TURBO_ROOT$/packages/invitation-runtime/**",
-        "$TURBO_ROOT$/apps/minimal/**"
+        "$TURBO_ROOT$/apps/minimal/**",
+        "$TURBO_ROOT$/apps/pastel-garden/**"
       ],
       "outputs": ["dist/invitations/**"]
     }
