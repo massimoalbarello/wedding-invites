@@ -12,10 +12,10 @@ try {
   await browser.page.goto(app.origin);
   if (Bun.argv.includes('--seed')) {
     await browser.page.getByRole('button', { name: 'Create dashboard with a passkey' }).click();
-    await browser.page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+    await browser.page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
     await seedGuests({ page: browser.page, origin: app.origin });
     await browser.page.reload();
-    await browser.page.getByText('Alex Rivera', { exact: true }).waitFor();
+    await browser.page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
   }
   console.log(`Isolated application: ${app.origin} (data: ${app.dataFolder})`);
   await app.child.exited;

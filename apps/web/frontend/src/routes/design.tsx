@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
 import { AdminLayout } from '../components/admin-layout';
 import { designKeys, designsOptions, saveDesign } from '../queries/designs';
@@ -34,9 +34,6 @@ function InvitationDesign() {
   return (
     <AdminLayout>
       <main className="mx-auto max-w-3xl px-5 py-9 sm:px-10 sm:py-12">
-        <Link to="/" className="text-muted-foreground text-sm hover:text-foreground">
-          ← Guest list
-        </Link>
         <DesignForm
           key={`${editing}:${catalog.selectedPackageId}`}
           catalog={catalog}

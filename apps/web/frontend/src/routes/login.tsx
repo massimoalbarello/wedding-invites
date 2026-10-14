@@ -17,12 +17,15 @@ function Login() {
   const client = useQueryClient();
   const navigate = useNavigate();
   const { data: owner } = useSuspenseQuery(ownerStatusOptions);
-  const completed = async () => {
+  const completed = async (to: '/' | '/design') => {
     client.clear();
-    await navigate({ to: '/' });
+    await navigate({ to });
   };
-  const register = useMutation({ mutationFn: registerAccount, onSuccess: completed });
-  const login = useMutation({ mutationFn: signIn, onSuccess: completed });
+  const register = useMutation({
+    mutationFn: registerAccount,
+    onSuccess: () => completed('/design'),
+  });
+  const login = useMutation({ mutationFn: signIn, onSuccess: () => completed('/') });
   const pending = register.isPending || login.isPending;
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16">

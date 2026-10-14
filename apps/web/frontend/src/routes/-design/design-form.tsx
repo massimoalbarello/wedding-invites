@@ -30,7 +30,7 @@ export function DesignForm({
         void form.handleSubmit();
       }}
     >
-      <div className="mt-8 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="min-w-0 font-semibold text-2xl tracking-tight sm:text-3xl">
           Invitation design
         </h1>

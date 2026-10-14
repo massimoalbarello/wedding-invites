@@ -464,7 +464,21 @@ try {
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.goto(app.origin);
   await page.getByRole('button', { name: 'Create dashboard with a passkey', exact: true }).click();
+  await page.getByRole('heading', { name: 'Invitation design', exact: true }).waitFor();
+  assert.equal(new URL(page.url()).pathname, '/design');
+  const views = page.getByRole('navigation', { name: 'Dashboard views' });
+  assert.equal(
+    await views
+      .getByRole('link', { name: 'Invitation design', exact: true })
+      .getAttribute('aria-current'),
+    'page',
+  );
+  await views.getByRole('link', { name: 'Guest list', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
+  assert.equal(
+    await views.getByRole('link', { name: 'Guest list', exact: true }).getAttribute('aria-current'),
+    'page',
+  );
   const link = await createGuestInDashboard(page);
   const token = new URL(link).pathname.split('/').at(-1)!;
   const guestsResponse = await page.request.get(`${app.origin}/api/admin/guests`);
