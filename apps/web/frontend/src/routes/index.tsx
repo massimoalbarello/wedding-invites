@@ -275,7 +275,7 @@ function GuestRows({ guests }: { guests: Guest[] }) {
               </div>
             )}
             <div className="col-start-2 row-start-1 flex flex-col items-end gap-1.5 justify-self-end sm:col-start-3">
-              <StatusLabel status={guest.status} />
+              <StatusLabel guest={guest} />
               {!guest.active && (
                 <span className="text-muted-foreground text-xs">Access paused</span>
               )}
