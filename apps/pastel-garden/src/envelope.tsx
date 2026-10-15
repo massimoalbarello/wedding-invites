@@ -64,7 +64,7 @@ export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: ()
           muted={muted}
           playsInline
           preload="metadata"
-          aria-label="Our story, from the Dolomites to Castello di Casiglio"
+          aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
           onEnded={opening ? onOpened : undefined}
           onError={opening ? onOpened : undefined}
           onWaiting={opening && !paused ? waitForPlayback : undefined}
