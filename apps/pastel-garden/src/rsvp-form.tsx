@@ -124,7 +124,6 @@ export function RsvpForm({
                   ))}
                   {field.state.value.length < maxGuests && (
                     <button
-                      className="add-guest"
                       type="button"
                       onClick={() => field.pushValue({ id: crypto.randomUUID(), name: '' })}
                     >

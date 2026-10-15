@@ -22,6 +22,12 @@ export type GuestSettings = {
 };
 export type Companion = { id: string; name: string };
 export type ReferencePhoto = { id: string; createdAt: string };
+export type InvitationActivity = {
+  linkOpenedAt: string | null;
+  verificationFailedAt: string | null;
+  verifiedAt: string | null;
+  invitationOpenedAt: string | null;
+};
 export type Guest = GuestSettings & {
   id: string;
   publicId: string;
@@ -32,6 +38,7 @@ export type Guest = GuestSettings & {
   createdAt: string;
   companions: Companion[];
   references: ReferencePhoto[];
+  activity: InvitationActivity;
 };
 export type GuestListInput = {
   order?: 'group';

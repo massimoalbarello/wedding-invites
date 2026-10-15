@@ -106,6 +106,7 @@ test('a bad draft photo leaves no created guest and preserves all edited setting
     const session = cookies(
       await f.request({ path: `${route}/verify`, method: 'POST', body: upload(FOURTH) }),
     );
+    const beforeEdit = await f.management.get({ actor, id: guest.id });
     const edited = await api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
@@ -116,7 +117,7 @@ test('a bad draft photo leaves no created guest and preserves all edited setting
       options,
     );
     expect(edited.status).toBe(BAD_REQUEST);
-    expect(await f.management.get({ actor, id: guest.id })).toEqual(guest);
+    expect(await f.management.get({ actor, id: guest.id })).toEqual(beforeEdit);
     expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(SUCCESS);
     const rows = await f.database`select count(*) as count from invitation_reference`;
     expect(rows[0]!.count).toBe(1);

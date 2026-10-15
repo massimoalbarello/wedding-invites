@@ -12,6 +12,12 @@ import {
 import type { Queries } from '#backend/queries.gen.ts';
 
 export type GuestScope = { ownerId: string; guestId: string };
+export type InvitationActivityUpdate = GuestScope & {
+  linkToken: string;
+  event: 'link_opened' | 'verification_failed' | 'invitation_opened';
+  now: string;
+  tokenHash?: string;
+};
 export type PreparedReference = {
   id: string;
   image: Uint8Array;
@@ -34,7 +40,7 @@ export interface InvitationsRepositoryContract {
   list(input: GuestListInput & { ownerId: string }): Promise<Guest[]>;
   get(input: { ownerId: string; publicId: string }): Promise<Guest | null>;
   byToken(token: string): Promise<Guest | null>;
-  create(input: { guest: Guest; references: PreparedReference[] }): Promise<void>;
+  create(input: { guest: Omit<Guest, 'activity'>; references: PreparedReference[] }): Promise<void>;
   update(input: GuestUpdate): Promise<GuestUpdateResult>;
   stats(ownerId: string): Promise<InvitationStats>;
   groups(ownerId: string): Promise<string[]>;
@@ -64,6 +70,7 @@ export interface InvitationsRepositoryContract {
     },
   ): Promise<boolean>;
   hasSession(input: GuestScope & { tokenHash: string; now: string }): Promise<boolean>;
+  recordActivity(input: InvitationActivityUpdate): Promise<boolean>;
   rsvp(
     input: GuestScope & {
       linkToken: string;
@@ -149,7 +156,13 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     `;
     return rows[0] ? mapGuest(rows[0]) : null;
   }
-  async create({ guest, references }: { guest: Guest; references: PreparedReference[] }) {
+  async create({
+    guest,
+    references,
+  }: {
+    guest: Omit<Guest, 'activity'>;
+    references: PreparedReference[];
+  }) {
     if (references.length > MAX_REFERENCE_PHOTOS) {
       throw new Error('Reference photo limit exceeded.');
     }
@@ -322,7 +335,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       return true;
     });
   }
-  async createSession(
+  createSession(
     input: GuestScope & {
       linkToken: string;
       tokenHash: string;
@@ -330,7 +343,9 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       faceVerified: boolean;
     },
   ) {
-    const rows = await this.sql.CreateInvitationSession`
+    return this.database.begin(async (tx) => {
+      const sql = withTypes<Queries>(tx);
+      const rows = await sql.CreateInvitationSession`
       insert into invitation_session (token_hash, owner_id, guest_id, expires_at)
       select ${input.tokenHash}, g.owner_id, g.id, ${input.expiresAt} from invitation_guest g
       where g.owner_id = ${input.ownerId} and g.id = ${input.guestId} and g.token = ${input.linkToken} and g.active = 1
@@ -338,6 +353,32 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
           select 1 from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id
         ) = ${Number(input.faceVerified)}
       returning token_hash
+    `;
+      if (rows.length === 0) {
+        return false;
+      }
+      if (input.faceVerified) {
+        await sql.RecordInvitationVerified`
+          update invitation_guest set verified_at = coalesce(verified_at, ${new Date().toISOString()})
+          where owner_id = ${input.ownerId} and id = ${input.guestId}
+        `;
+      }
+      return true;
+    });
+  }
+  async recordActivity(input: InvitationActivityUpdate) {
+    const rows = await this.sql.RecordInvitationActivity`
+      update invitation_guest set
+        link_opened_at = case when ${input.event} = 'link_opened' then coalesce(link_opened_at, ${input.now}) else link_opened_at end,
+        verification_failed_at = case when ${input.event} = 'verification_failed' then ${input.now} else verification_failed_at end,
+        invitation_opened_at = case when ${input.event} = 'invitation_opened' then coalesce(invitation_opened_at, ${input.now}) else invitation_opened_at end
+      where owner_id = ${input.ownerId} and id = ${input.guestId}
+        and token = ${input.linkToken} and active = 1
+        and (${input.event} <> 'invitation_opened' or exists (
+          select 1 from invitation_session s where s.owner_id = ${input.ownerId} and s.guest_id = ${input.guestId}
+            and s.token_hash = ${input.tokenHash ?? null} and s.expires_at > ${input.now}
+        ))
+      returning id
     `;
     return rows.length > 0;
   }
@@ -395,6 +436,12 @@ function mapGuest(row: Queries['ListInvitationGuests']): Guest {
     createdAt: row.created_at,
     companions: JSON.parse(row.companions),
     references: JSON.parse(row.references_json),
+    activity: {
+      linkOpenedAt: row.link_opened_at,
+      verificationFailedAt: row.verification_failed_at,
+      verifiedAt: row.verified_at,
+      invitationOpenedAt: row.invitation_opened_at,
+    },
   };
 }
 

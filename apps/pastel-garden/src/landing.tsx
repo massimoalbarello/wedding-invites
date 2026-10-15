@@ -1,6 +1,5 @@
 import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useEffect, useRef } from 'react';
-import { VenueArtwork } from './artwork';
 import { content } from './content';
 import { Countdown } from './countdown';
 import { ReplySection } from './reply-section';
@@ -63,7 +62,13 @@ export function Landing({
         <div className="venue-copy">
           <p className="eyebrow">Our wedding</p>
           <h2 id="venue-heading">{content.venue}</h2>
-          <VenueArtwork />
+          <img
+            className="venue-artwork"
+            src="./media/casiglio-venue.webp"
+            alt="The pink villa of Castello di Casiglio, with the stone castle alongside it"
+            width="1536"
+            height="1024"
+          />
           <time dateTime={content.date}>{content.dateLabel}</time>
           <p className="signature">{content.nameLabel}</p>
         </div>

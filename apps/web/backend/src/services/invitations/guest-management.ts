@@ -35,6 +35,7 @@ export function publicGuest(guest: Guest) {
     createdAt: guest.createdAt,
     companions: guest.companions,
     references: guest.references,
+    activity: guest.activity,
   };
 }
 function normalizedSettings(settings: GuestSettings): GuestSettings {
@@ -108,7 +109,7 @@ export class GuestManagementService {
     photos?: File[];
   }) {
     requireOwner(actor);
-    const guest: Guest = {
+    const guest: Omit<Guest, 'activity'> = {
       ...normalizedSettings(settings),
       id: crypto.randomUUID(),
       publicId: Bun.randomUUIDv7(),

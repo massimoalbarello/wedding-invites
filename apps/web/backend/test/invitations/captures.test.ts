@@ -90,7 +90,14 @@ test('submitted selfies are retained independently of match results and referenc
       expect(new Date(capture.created_at).toISOString()).toBe(capture.created_at);
       expect(capture.created_at >= started && capture.created_at <= finished).toBe(true);
     }
-    expect(await f.management.get({ actor, id: guest.id })).toEqual(guest);
+    expect(await f.management.get({ actor, id: guest.id })).toEqual({
+      ...guest,
+      activity: {
+        ...guest.activity,
+        verifiedAt: expect.any(String),
+        verificationFailedAt: expect.any(String),
+      },
+    });
     const avatar = await f.request({
       path: `/api/admin/guests/${guest.id}/photos/${guest.references[0]!.id}`,
       cookie: owner,

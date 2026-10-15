@@ -63,11 +63,7 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
             </div>
             <Envelope opening={stage === 'opening'} onOpened={finishOpening} />
             <div className="sr-only">
-              {stage === 'opening' && (
-                <p className="opening-status" role="status">
-                  Our story is playing…
-                </p>
-              )}
+              {stage === 'opening' && <p role="status">Our story is playing…</p>}
               {(context.isPending || !landingReady) && <p role="status">Just a moment…</p>}
             </div>
           </main>

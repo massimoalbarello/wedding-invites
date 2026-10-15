@@ -51,6 +51,12 @@ export const GuestSchema = t.Object({
   createdAt: t.String(),
   companions: t.Array(CompanionSchema),
   references: t.Array(t.Object({ id: PublicIdSchema, createdAt: t.String() })),
+  activity: t.Object({
+    linkOpenedAt: t.Nullable(t.String()),
+    verificationFailedAt: t.Nullable(t.String()),
+    verifiedAt: t.Nullable(t.String()),
+    invitationOpenedAt: t.Nullable(t.String()),
+  }),
 });
 export const GuestListQuerySchema = t.Object({
   order: t.Optional(t.Literal('group')),

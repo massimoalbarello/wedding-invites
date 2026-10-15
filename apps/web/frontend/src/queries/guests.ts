@@ -1,6 +1,8 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
+const ACTIVITY_REFRESH_MS = 15_000;
+
 export type GuestFilters = {
   search?: string;
   status?: 'pending' | 'accepted' | 'declined';
@@ -26,6 +28,7 @@ export const ownerStatusOptions = queryOptions({
 export function guestsOptions({ ownerId, filters }: { ownerId: string; filters: GuestFilters }) {
   return infiniteQueryOptions({
     queryKey: guestKeys.list({ ownerId, filters }),
+    refetchInterval: ACTIVITY_REFRESH_MS,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const result = await api.api.admin.guests.get({
@@ -42,6 +45,7 @@ export function guestsOptions({ ownerId, filters }: { ownerId: string; filters: 
 export function statsOptions(ownerId: string) {
   return queryOptions({
     queryKey: [...guestKeys.owner(ownerId), 'stats'],
+    refetchInterval: ACTIVITY_REFRESH_MS,
     queryFn: async () => {
       const result = await api.api.admin.stats.get();
       if (result.error) {
@@ -66,6 +70,7 @@ export function groupsOptions(ownerId: string) {
 export function guestOptions({ ownerId, id }: { ownerId: string; id: string }) {
   return queryOptions({
     queryKey: guestKeys.detail({ ownerId, id }),
+    refetchInterval: ACTIVITY_REFRESH_MS,
     queryFn: async () => {
       const result = await api.api.admin.guests({ id }).get();
       if (result.error) {

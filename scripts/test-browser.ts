@@ -19,6 +19,22 @@ type TestBrowser = Awaited<ReturnType<typeof virtualPasskeyBrowser>>;
 type Page = TestBrowser['page'];
 type Guest = { id: string; name: string; token: string };
 
+async function waitForGuestStatus({
+  page,
+  guest,
+  status,
+}: {
+  page: Page;
+  guest: Guest;
+  status: string;
+}) {
+  await page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('link').filter({ hasText: guest.name }) })
+    .getByText(status)
+    .waitFor({ timeout: 20_000 });
+}
+
 async function cameraVideo(name: string) {
   const destination = resolve(artifacts, `${name}.y4m`);
   // The independent portrait is a stage photograph; frame the face like a phone selfie.
@@ -78,6 +94,13 @@ async function checkInvitationCopy({
 
 function invitationFrame(page: Page) {
   return page.frameLocator('iframe[title="Invitation"]');
+}
+async function openDirectInvitation({ page, link }: { page: Page; link: string }) {
+  await page.goto(link);
+  await page.getByTitle('Invitation', { exact: true }).waitFor();
+  assert.equal(page.url(), `${link}/invitation`);
+  assert.equal(await page.getByRole('button', { name: 'Open invitation' }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Take a selfie & open' }).count(), 0);
 }
 async function openLetter(page: Page) {
   const frame = invitationFrame(page);
@@ -169,8 +192,10 @@ async function checkDesignSelection(input: {
     0,
   );
   const noAllowance = await browser();
-  await noAllowance.page.goto(`${origin}/i/${input.noAllowance.token}`);
-  await noAllowance.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({
+    page: noAllowance.page,
+    link: `${origin}/i/${input.noAllowance.token}`,
+  });
   const noAllowanceFrame = invitationFrame(noAllowance.page);
   await noAllowanceFrame.getByRole('radio', { name: 'Yes, I’ll be there', exact: true }).check();
   assert.equal(await noAllowanceFrame.getByRole('button', { name: 'Add a guest' }).count(), 0);
@@ -281,10 +306,7 @@ async function checkGuestPhotoEditing({
   await row.getByText('TR', { exact: true }).waitFor();
   assert.equal(await row.locator('img').count(), 0);
   const previouslyBypassed = await browser();
-  await previouslyBypassed.page.goto(`${origin}/i/${guest.token}`);
-  await previouslyBypassed.page
-    .getByRole('button', { name: 'Open invitation', exact: true })
-    .click();
+  await openDirectInvitation({ page: previouslyBypassed.page, link: `${origin}/i/${guest.token}` });
   await openLetter(previouslyBypassed.page);
   assert.equal(
     await previouslyBypassed.page
@@ -364,10 +386,10 @@ async function checkGuestGrouping({ page, origin }: { page: Page; origin: string
   };
   assert.equal(await savedGroup(), 'Friends');
   const noReference = await browser();
-  await noReference.page.goto(
-    await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
-  );
-  await noReference.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({
+    page: noReference.page,
+    link: await page.getByLabel('Personal invitation link', { exact: true }).inputValue(),
+  });
   await openLetter(noReference.page);
   assert.equal(
     await noReference.page
@@ -490,6 +512,8 @@ try {
   const guestsResponse = await page.request.get(`${app.origin}/api/admin/guests`);
   const guest = ((await guestsResponse.json()) as { items: Guest[] }).items[0]!;
   const prefix = `${app.origin}/api/invitations/${token}`;
+  await page.goto(app.origin);
+  await waitForGuestStatus({ page, guest, status: 'Not opened' });
   const newcomer = await browser();
   await newcomer.page.goto(app.origin);
   await newcomer.page.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
@@ -507,6 +531,7 @@ try {
   );
   await newcomer.page.goto(link);
   await newcomer.page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Link opened' });
   assert.equal(await newcomer.page.locator('input[type=file]').count(), 0);
   const anonymousMessage = await newcomer.page.locator('body').innerText();
   assert(!anonymousMessage.includes('Elena'));
@@ -521,6 +546,10 @@ try {
   await duplicate.page.goto(link);
   await captureSelfie(duplicate.page);
   await duplicate.page.getByRole('alert').filter({ hasText: 'reference photo' }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Verification failed' });
+  await page
+    .locator('main')
+    .screenshot({ path: resolve(artifacts, 'funnel-verification-failed.png') });
   assert.equal((await duplicate.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
   const stranger = await browser({
     cameraFile: videos.stranger,
@@ -601,6 +630,8 @@ try {
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
   await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Verified' });
+  await page.locator('main').screenshot({ path: resolve(artifacts, 'funnel-verified.png') });
   assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'verification-success-mobile.png'),
@@ -611,6 +642,10 @@ try {
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
     .waitFor();
+  await waitForGuestStatus({ page, guest, status: 'Invitation opened' });
+  await page
+    .locator('main')
+    .screenshot({ path: resolve(artifacts, 'funnel-invitation-opened.png') });
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'amalfi-envelope-mobile.png'),
     fullPage: true,
@@ -625,6 +660,7 @@ try {
     .first()
     .waitFor();
   await saveReply(guestBrowser.page);
+  await waitForGuestStatus({ page, guest, status: 'Accepted' });
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'invitation-mobile.png'),
     fullPage: true,
@@ -667,6 +703,8 @@ try {
   assert.equal((await forwarded.page.request.get(`${prefix}/content`)).status(), HTTP_UNAUTHORIZED);
 
   const seeded = await seedGuests({ page, origin: app.origin });
+  await page.goto(`${app.origin}/guests/${guest.id}`);
+  await page.getByRole('heading', { name: guest.name, exact: true }).waitFor();
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
@@ -674,8 +712,7 @@ try {
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
-  await newcomer.page.goto(`${app.origin}/i/${bypass.token}`);
-  await newcomer.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await openDirectInvitation({ page: newcomer.page, link: `${app.origin}/i/${bypass.token}` });
   await openLetter(newcomer.page);
   assert.equal(
     await newcomer.page.getByRole('button', { name: 'Take a selfie & open' }).count(),
@@ -705,6 +742,9 @@ try {
     .getByRole('button', { name: `Copy invitation link for ${bypass.name}`, exact: true })
     .getByText('Invitation link', { exact: true })
     .waitFor();
+  await waitForGuestStatus({ page, guest: bypass, status: 'Invitation opened' });
+  await waitForGuestStatus({ page, guest: seeded[5]!, status: 'Not opened' });
+  await waitForGuestStatus({ page, guest: seeded[3]!, status: 'Declined' });
   await page.screenshot({ path: resolve(artifacts, 'guest-list-desktop.png'), fullPage: true });
   await checkInvitationCopy({ page, origin: app.origin, guest: bypass });
   await page.setViewportSize(MOBILE_VIEWPORT);
