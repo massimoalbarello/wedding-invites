@@ -62,11 +62,6 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
             aria-label="Sealed invitation"
             style={{ '--opening-duration': `${OPENING_DURATION_MS}ms` } as CSSProperties}
           >
-            <div className="opening-light" aria-hidden="true">
-              <span className="opening-halo" />
-              <span className="opening-rays" />
-              <span className="opening-wash" />
-            </div>
             <div className="envelope-greeting">
               <p className="eyebrow">You are invited</p>
               {context.data && <p>A letter for {context.data.recipient.name}</p>}

@@ -50,11 +50,11 @@ test('opening is gated by recipient context and reveals live text without a skip
   expect(screen.getByRole('link', { name: 'Into the garden' }).getAttribute('href')).toBe('#venue');
 });
 
-test('inner light animation does not finish the opening before the envelope', async () => {
+test('inner flap animation does not finish the opening before the envelope', async () => {
   show();
   await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  fireEvent.animationEnd(document.querySelector('.envelope-glow')!, {
-    animationName: 'letter-glow',
+  fireEvent.animationEnd(document.querySelector('.envelope-flap')!, {
+    animationName: 'flap-open',
   });
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');

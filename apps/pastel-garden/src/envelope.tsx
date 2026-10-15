@@ -13,20 +13,15 @@ export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: ()
         }
       }}
     >
-      <div className="envelope-back" />
-      <div className="envelope-glow" />
       <div className="envelope-letter">
         <span>{content.nameLabel}</span>
         <span>{content.dateLabel}</span>
       </div>
-      <div className="envelope-body" />
-      <div className="envelope-flap" />
-      <div className="envelope-sparkles">
-        <span className="envelope-glint" />
-        <span className="envelope-glint" />
-        <span className="envelope-glint" />
-        <span className="envelope-glint" />
-        <span className="envelope-glint" />
+      <div className="envelope-panel envelope-bottom" />
+      <div className="envelope-panel envelope-left" />
+      <div className="envelope-panel envelope-right" />
+      <div className="envelope-panel envelope-flap">
+        <span className="envelope-seal" />
       </div>
     </div>
   );
