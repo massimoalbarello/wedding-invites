@@ -88,3 +88,43 @@ test('a missing invitation package shows a neutral not-ready page without an ifr
   expect(screen.queryByRole('heading', { name: 'Avery & Jordan' })).toBeNull();
   queryClient.clear();
 });
+
+test('recipient viewport restrictions are removed when leaving the invitation route', async () => {
+  const content: Invitation = {
+    name: 'Alex Morgan',
+    assetUrl: 'about:blank',
+    status: 'pending',
+    maxGuests: 1,
+    companions: [],
+  };
+  const fetchResponse = Object.assign(() => Promise.resolve(Response.json(content)), {
+    preconnect: globalThis.fetch.preconnect,
+  });
+  spyOn(globalThis, 'fetch').mockImplementation(fetchResponse);
+  const viewport = document.createElement('meta');
+  viewport.name = 'viewport';
+  const original = 'width=device-width, initial-scale=1.0';
+  viewport.content = original;
+  document.head.append(viewport);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    history: createMemoryHistory({ initialEntries: [`/i/${'c'.repeat(TOKEN_LENGTH)}/invitation`] }),
+  });
+  try {
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await screen.findByTitle('Invitation');
+    expect(viewport.content).toContain('maximum-scale=1');
+    expect(viewport.content).toContain('user-scalable=no');
+    view.unmount();
+    expect(viewport.content).toBe(original);
+  } finally {
+    viewport.remove();
+    queryClient.clear();
+  }
+});
