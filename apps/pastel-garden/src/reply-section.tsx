@@ -1,5 +1,8 @@
 import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { FloralFrame } from './floral-frame';
+import { PetalCelebration } from './petal-celebration';
 import { RsvpForm } from './rsvp-form';
 
 export function ReplySection({
@@ -10,16 +13,25 @@ export function ReplySection({
   context: InvitationContext;
 }) {
   const client = useQueryClient();
+  const [celebrating, setCelebrating] = useState(false);
   const reply = useMutation({
     mutationFn: (value: Parameters<InvitationRuntime['saveRsvp']>[0]) => runtime.saveRsvp(value),
-    onSuccess: (rsvp) => client.setQueryData(['recipient-context'], { ...context, rsvp }),
+    onSuccess: (rsvp) => {
+      client.setQueryData(['recipient-context'], { ...context, rsvp });
+      setCelebrating(rsvp.status === 'accepted');
+    },
+    onMutate: () => setCelebrating(false),
   });
   return (
-    <section className="reply-section" id="rsvp" aria-labelledby="reply-heading">
+    <section className="reply-section floral-section" id="rsvp" aria-labelledby="reply-heading">
+      <FloralFrame />
+      {celebrating && <PetalCelebration onEnd={() => setCelebrating(false)} />}
       <div className="reply-copy">
         <p className="eyebrow">RSVP</p>
-        <h2 id="reply-heading">Celebrate with us</h2>
-        <p className="recipient-name">A personal invitation for {context.recipient.name}</p>
+        <p className="recipient-name">
+          This is a personal invitation for {context.recipient.name}.
+        </p>
+        <h2 id="reply-heading">Will you celebrate with us?</h2>
         <RsvpForm
           key={`${context.rsvp.status}:${context.rsvp.companions.join('|')}`}
           status={context.rsvp.status}

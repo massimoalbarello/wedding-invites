@@ -45,7 +45,7 @@ export function RsvpForm({
       >
         {(field) => (
           <fieldset>
-            <legend>Will you join us?</legend>
+            <legend className="sr-only">Your reply</legend>
             {[
               { value: 'accepted', label: 'Yes, I’ll be there' },
               { value: 'declined', label: 'Sorry, I can’t make it' },
@@ -83,9 +83,13 @@ export function RsvpForm({
               }}
             >
               {(field) => (
-                <section>
+                <section className="guest-details">
                   <div>
                     <h3>Who’s coming with you?</h3>
+                    <p>
+                      We’re keeping our celebration close to the people who have shared our lives
+                      over the years. Please keep this in mind when choosing who to bring with you.
+                    </p>
                     <p>
                       You can bring up to {maxGuests} additional{' '}
                       {maxGuests === 1 ? 'guest' : 'guests'}.

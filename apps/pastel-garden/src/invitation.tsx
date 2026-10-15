@@ -61,7 +61,11 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
               <p className="eyebrow">You are invited</p>
               {context.data && <p>A letter for {context.data.recipient.name}</p>}
             </div>
-            <Envelope opening={stage === 'opening'} onOpened={finishOpening} />
+            <Envelope
+              opening={stage === 'opening'}
+              ready={Boolean(context.data) && landingReady}
+              onOpened={finishOpening}
+            />
             <div className="sr-only">
               {stage === 'opening' && <p role="status">Our story is playing…</p>}
               {(context.isPending || !landingReady) && <p role="status">Just a moment…</p>}

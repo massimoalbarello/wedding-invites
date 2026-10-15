@@ -58,3 +58,40 @@ test('a guest without an allowance can reply without companion controls', async 
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   expect((await screen.findByRole('status')).textContent).toContain('Your reply is saved');
 });
+
+test('guest guidance appears only with Yes and disappears again with No', async () => {
+  show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
+  const guidance = /We’re keeping our celebration close/;
+  expect(screen.queryByText(guidance)).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(screen.getByText(guidance)).toBeDefined();
+  await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
+  expect(screen.queryByText(guidance)).toBeNull();
+  expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
+});
+
+test('petals celebrate a saved acceptance, never a draft, failure, or decline', async () => {
+  let fail = true;
+  show({
+    saveRsvp: (reply) =>
+      fail
+        ? Promise.reject(new Error('Please try again.'))
+        : Promise.resolve({ ...context.rsvp, ...reply }),
+  });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(document.querySelector('.petal-celebration')).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  await screen.findByRole('alert');
+  expect(document.querySelector('.petal-celebration')).toBeNull();
+  fail = false;
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  await screen.findByRole('status');
+  expect(document.querySelector('.petal-celebration')).not.toBeNull();
+  await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  expect((await screen.findByRole('status')).textContent).toBe('Thank you for letting us know.');
+  expect(document.querySelector('.petal-celebration')).toBeNull();
+});
