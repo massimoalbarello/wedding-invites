@@ -607,8 +607,18 @@ h2 {
   width: var(--size);
   height: var(--size);
   object-fit: contain;
+  filter: saturate(1.35);
   opacity: 0;
   animation: petal-fall var(--duration) var(--delay) linear both;
+}
+.petal-celebration img:nth-child(4n + 2) {
+  filter: hue-rotate(205deg) saturate(1.7);
+}
+.petal-celebration img:nth-child(4n + 3) {
+  filter: hue-rotate(250deg) saturate(1.5);
+}
+.petal-celebration img:nth-child(4n + 4) {
+  filter: hue-rotate(50deg) saturate(1.4);
 }
 @keyframes celebration-lifetime {
   from {

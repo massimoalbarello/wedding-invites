@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 const motion = {
-  count: 64,
+  count: 128,
   spreadStep: 37,
   widthPercent: 100,
   driftStep: 29,
