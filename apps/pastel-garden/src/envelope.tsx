@@ -1,28 +1,31 @@
-import { content } from './content';
+import { useEffect, useRef } from 'react';
 
-export const OPENING_DURATION_MS = 4200;
+export const OPENING_DURATION_MS = 8000;
 
 export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: () => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const player = video.current;
+    if (!opening || !player) {
+      return;
+    }
+    void player.play().catch(onOpened);
+    return () => player.pause();
+  }, [opening, onOpened]);
   return (
-    <div
-      className={opening ? 'envelope-art is-opening' : 'envelope-art'}
-      aria-hidden="true"
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget && event.animationName === 'envelope-depart') {
-          onOpened();
-        }
-      }}
-    >
-      <div className="envelope-letter">
-        <span>{content.nameLabel}</span>
-        <span>{content.dateLabel}</span>
-      </div>
-      <div className="envelope-panel envelope-bottom" />
-      <div className="envelope-panel envelope-left" />
-      <div className="envelope-panel envelope-right" />
-      <div className="envelope-panel envelope-flap">
-        <span className="envelope-seal" />
-      </div>
+    <div className="portrait-art" aria-hidden="true">
+      <video
+        ref={video}
+        src="./media/opening.mp4"
+        poster="./media/opening-poster.webp"
+        muted
+        playsInline
+        preload="auto"
+        onEnded={opening ? onOpened : undefined}
+        onError={opening ? onOpened : undefined}
+        width="720"
+        height="1280"
+      />
     </div>
   );
 }

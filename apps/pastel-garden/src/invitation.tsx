@@ -1,7 +1,7 @@
 import type { InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useQuery } from '@tanstack/react-query';
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
-import { FloralFrame, GardenScene, VenueArtwork } from './artwork';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { VenueArtwork } from './artwork';
 import { content } from './content';
 import { Countdown } from './countdown';
 import { Envelope, OPENING_DURATION_MS } from './envelope';
@@ -15,13 +15,14 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
     queryFn: () => runtime.getContext(),
   });
   const [stage, setStage] = useState<'closed' | 'opening' | 'open'>('closed');
+  const finishOpening = useCallback(() => setStage('open'), []);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (stage === 'open') {
       heading.current?.focus({ preventScroll: true });
     }
     if (stage === 'opening') {
-      // Guarantee access even if a browser disables or interrupts CSS animation.
+      // Guarantee access if playback stalls or the motion preference changes.
       const media = window.matchMedia('(prefers-reduced-motion: reduce)');
       const finishWithReducedMotion = () => {
         if (media.matches) {
@@ -57,17 +58,13 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
     <div className="invitation">
       {stage !== 'open' ? (
         <>
-          <main
-            className={stage === 'opening' ? 'sealed-letter is-revealing' : 'sealed-letter'}
-            aria-label="Sealed invitation"
-            style={{ '--opening-duration': `${OPENING_DURATION_MS}ms` } as CSSProperties}
-          >
-            <div className="envelope-greeting">
+          <main className="sealed-letter" aria-label="Sealed invitation">
+            <div className="sr-only">
               <p className="eyebrow">You are invited</p>
               {context.data && <p>A letter for {context.data.recipient.name}</p>}
             </div>
-            <Envelope opening={stage === 'opening'} onOpened={() => setStage('open')} />
-            <div className="envelope-actions">
+            <Envelope opening={stage === 'opening'} onOpened={finishOpening} />
+            <div className="sr-only">
               {stage === 'opening' && (
                 <p className="opening-status" role="status">
                   Opening your invitation…
@@ -94,22 +91,20 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
         </>
       ) : (
         <main className="letter">
-          <FloralFrame />
           <section className="hero" aria-label="Wedding invitation">
-            <div className="hero-copy">
-              <p className="eyebrow">We’re getting married</p>
-              <h1 ref={heading} tabIndex={-1} aria-label={content.nameLabel}>
-                <span>{content.names[0]}</span> <span>&amp; {content.names[1]}</span>
-              </h1>
-              <p className="wedding-date">
-                <time dateTime={content.date}>{content.dateLabel}</time>
-              </p>
-              <p className="wedding-venue">{content.venue}</p>
-              <a className="garden-link" href="#venue">
-                Into the garden <span aria-hidden="true">↓</span>
-              </a>
+            <div className="portrait-art">
+              <img src="./media/landing.webp" alt="" width="720" height="1280" />
+              <div className="hero-copy">
+                <h1 ref={heading} tabIndex={-1} aria-label={content.nameLabel}>
+                  <span className="first-name">{content.names[0]}</span>{' '}
+                  <span className="second-name">&amp; {content.names[1]}</span>
+                </h1>
+                <p className="wedding-date">
+                  <time dateTime={content.date}>{content.dateLabel}</time>
+                </p>
+                <p className="wedding-venue">{content.venue}</p>
+              </div>
             </div>
-            <GardenScene />
           </section>
           <section className="venue-section" id="venue" aria-labelledby="venue-heading">
             <div className="venue-copy">

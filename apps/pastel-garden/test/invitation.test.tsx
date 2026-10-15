@@ -40,28 +40,50 @@ test('opening is gated by recipient context and reveals live text without a skip
   expect((open as HTMLButtonElement).disabled).toBe(true);
   await userEvent.click(open);
   expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
-  fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
-    animationName: 'envelope-depart',
-  });
+  const video = document.querySelector('video')!;
+  expect(video.loop).toBe(false);
+  expect(video.controls).toBe(false);
+  expect(video.muted).toBe(true);
+  fireEvent.ended(video);
   const heading = screen.getByRole('heading', { name: 'Massimo & Elizaveta' });
   expect(document.activeElement).toBe(heading);
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
-  expect(screen.getByRole('link', { name: 'Into the garden' }).getAttribute('href')).toBe('#venue');
+  expect(document.querySelector('video')).toBeNull();
+  expect(screen.getByRole('heading', { name: 'We’re counting the days' })).toBeDefined();
+  expect(screen.getByRole('heading', { name: 'Celebrate with us' })).toBeDefined();
 });
 
-test('inner flap animation does not finish the opening before the envelope', async () => {
+test('playback progress does not finish the opening before its final frame', async () => {
   show();
   await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  fireEvent.animationEnd(document.querySelector('.envelope-flap')!, {
-    animationName: 'flap-open',
-  });
+  fireEvent.timeUpdate(document.querySelector('video')!);
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
-  fireEvent.animationEnd(document.querySelector('.envelope-art')!, {
-    animationName: 'envelope-depart',
-  });
+  fireEvent.ended(document.querySelector('video')!);
   expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+});
+
+test('a video failure still grants access to the live invitation', async () => {
+  show();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+  fireEvent.error(document.querySelector('video')!);
+  expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+  expect(document.querySelector('video')).toBeNull();
+});
+
+test('a browser playback rejection still grants access to the live invitation', async () => {
+  const play = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = () => Promise.reject(new Error('Playback was denied.'));
+  try {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    const heading = await screen.findByRole('heading', { name: 'Massimo & Elizaveta' });
+    expect(document.activeElement).toBe(heading);
+    expect(document.querySelector('video')).toBeNull();
+  } finally {
+    HTMLMediaElement.prototype.play = play;
+  }
 });
 
 test('reduced motion opens immediately without the opening stage', async () => {
