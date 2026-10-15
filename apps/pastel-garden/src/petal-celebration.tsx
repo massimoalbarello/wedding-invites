@@ -12,7 +12,6 @@ const motion = {
   clockwise: 280,
   counterclockwise: -240,
 };
-const colors = ['#e8ccd4', '#bcd5ec', '#f4e4dc', '#cbd8bf'];
 
 export function PetalCelebration({ onEnd }: { onEnd: () => void }) {
   return (
@@ -26,7 +25,11 @@ export function PetalCelebration({ onEnd }: { onEnd: () => void }) {
       }}
     >
       {[...Array.from({ length: motion.count }).keys()].map((seed) => (
-        <i
+        <img
+          src="./media/garden-petal.webp"
+          alt=""
+          width="96"
+          height="96"
           key={seed}
           style={
             {
@@ -34,7 +37,6 @@ export function PetalCelebration({ onEnd }: { onEnd: () => void }) {
               '--drift': `${((seed * motion.driftStep) % motion.driftRange) - motion.driftOffset}px`,
               '--delay': `${(seed % motion.staggerCount) * motion.staggerSeconds}s`,
               '--turn': `${seed % 2 === 0 ? motion.clockwise : motion.counterclockwise}deg`,
-              '--petal': colors[seed % colors.length],
             } as CSSProperties
           }
         />

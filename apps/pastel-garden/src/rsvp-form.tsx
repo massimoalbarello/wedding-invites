@@ -90,17 +90,15 @@ export function RsvpForm({
                       We’re keeping our celebration close to the people who have shared our lives
                       over the years. Please keep this in mind when choosing who to bring with you.
                     </p>
-                    <p>
-                      You can bring up to {maxGuests} additional{' '}
-                      {maxGuests === 1 ? 'guest' : 'guests'}.
-                    </p>
                   </div>
                   {Array.from(field.state.value.entries()).map(([index, person]) => (
                     <form.Field key={person.id} name={`companions[${index}].name`}>
                       {(nameField) => (
                         <div>
                           <div>
-                            <label htmlFor={`companion-${index}`}>Guest {index + 1} name</label>
+                            <label htmlFor={`companion-${index}`}>
+                              {maxGuests === 1 ? 'Guest name' : `Guest ${index + 1} name`}
+                            </label>
                             <input
                               id={`companion-${index}`}
                               value={nameField.state.value}
@@ -112,7 +110,9 @@ export function RsvpForm({
                           <button
                             className="remove-guest"
                             type="button"
-                            aria-label={`Remove guest ${index + 1}`}
+                            aria-label={
+                              maxGuests === 1 ? 'Remove guest' : `Remove guest ${index + 1}`
+                            }
                             onClick={() => field.removeValue(index)}
                           >
                             Remove

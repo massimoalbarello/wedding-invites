@@ -193,7 +193,6 @@ h1:focus {
   display: grid;
   place-items: center;
   padding: 160px 14% 170px;
-  background: linear-gradient(#f9fcfe, #fffaf7);
   text-align: center;
 }
 .venue-copy {
@@ -207,7 +206,9 @@ h2 {
   margin: 20px 0;
 }
 .venue-copy .venue-artwork {
-  margin: 24px auto;
+  width: 122%;
+  max-width: none;
+  margin: 24px -11%;
 }
 .connection-error {
   min-height: 100svh;
@@ -247,15 +248,18 @@ h2 {
   place-items: center;
   padding: 150px 16%;
   text-align: center;
-  background: linear-gradient(#fffaf7, #eef6fd);
+}
+.venue-copy,
+.countdown-copy,
+.reply-copy {
+  text-shadow:
+    0 1px 2px #f8fbfd,
+    0 0 14px #f8fbfdd9;
 }
 .countdown-copy,
 .reply-copy {
   width: 100%;
   max-width: 480px;
-}
-.reply-section {
-  background: #f8fbfe;
 }
 .recipient-name {
   line-height: 1.4;
@@ -483,9 +487,40 @@ h2 {
     transform: translateY(4px);
   }
 }
-.floral-section {
+.garden-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, #000 4%, #000);
+}
+.garden-details::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to right,
+    transparent 12%,
+    #f4faff80 30%,
+    #f4faff80 70%,
+    transparent 88%
+  );
+  pointer-events: none;
+}
+.garden-details {
   position: relative;
   isolation: isolate;
+  background: linear-gradient(
+    #d2e8f7,
+    #f6fbfe 12%,
+    #fffaf7 44%,
+    #eef6fd 75%,
+    #f8fbfe
+  );
 }
 .floral-frame {
   position: absolute;
@@ -493,30 +528,44 @@ h2 {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  mask-image: linear-gradient(
+    to right,
+    #000 4%,
+    #000c 12%,
+    transparent 27%,
+    transparent 73%,
+    #000c 88%,
+    #000 96%
+  );
 }
-.floral-spray {
+.flower-cluster {
   position: absolute;
-  width: clamp(105px, 24%, 205px);
-  opacity: 0.8;
+  max-width: 510px;
 }
-.floral-spray-top {
-  top: 28px;
-  left: 12px;
+.flower-cluster-left {
+  left: -2%;
 }
-.floral-spray-bottom {
-  bottom: 28px;
-  right: 12px;
-  transform: rotate(180deg);
+.flower-cluster-right {
+  right: -2%;
+  --mirror: -1;
 }
-.countdown-section {
-  background: linear-gradient(#eef6fd, #fffaf7);
+.flower-cluster img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: translateY(var(--bloom-shift, 0px))
+    rotate(calc(var(--base-turn) + var(--bloom-turn, 0deg)))
+    scale(var(--bloom-scale, 1)) scaleX(var(--mirror, 1));
+}
+.flower-cluster-vine img {
+  mask-image: linear-gradient(transparent, #000 14%, #000 82%, transparent);
 }
 .countdown-copy {
   max-width: 580px;
 }
 .countdown-intro {
   margin-top: 48px;
-  font-size: 30px;
+  font-size: clamp(25px, 4vw, 30px);
 }
 .countdown-clock {
   display: grid;
@@ -558,15 +607,13 @@ h2 {
   z-index: 20;
   animation: celebration-lifetime 5s linear;
 }
-.petal-celebration i {
+.petal-celebration img {
   position: absolute;
   top: -30px;
   left: var(--x);
   width: 13px;
   height: 20px;
-  border-radius: 85% 20% 75% 30%;
-  background:
-    radial-gradient(ellipse at 30% 30%, #fff9, transparent 70%), var(--petal);
+  object-fit: contain;
   opacity: 0;
   animation: petal-fall 4s var(--delay) ease-in both;
 }
@@ -599,12 +646,6 @@ h2 {
   .countdown-section {
     padding-inline: 10%;
   }
-  .floral-spray-top {
-    left: -12px;
-  }
-  .floral-spray-bottom {
-    right: -12px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .envelope-is-ready > video,
@@ -617,5 +658,163 @@ h2 {
   .seal-hint,
   .petal-celebration {
     display: none;
+  }
+}
+
+.garden-air {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  margin-bottom: -100svh;
+  z-index: -1;
+  pointer-events: none;
+}
+.garden-air-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+}
+.garden-air img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.garden-petal {
+  position: absolute;
+  top: -40px;
+  width: 20px;
+  opacity: 0;
+  animation: garden-petal-drift 28s linear infinite both;
+}
+.garden-petal-first {
+  left: 14%;
+  animation-delay: 2s;
+}
+.garden-petal-second {
+  left: 76%;
+  animation-delay: 9s;
+  width: 15px;
+}
+.garden-petal-third {
+  left: 35%;
+  animation-delay: 16s;
+  width: 17px;
+}
+.garden-petal-fourth {
+  left: 90%;
+  animation-delay: 23s;
+}
+.garden-butterfly,
+.garden-dove {
+  position: absolute;
+  left: -90px;
+  opacity: 0;
+}
+.garden-butterfly {
+  top: 35%;
+  width: 42px;
+  animation: garden-butterfly-flight 38s 6s linear infinite both;
+}
+.garden-butterfly img {
+  animation: butterfly-flutter 850ms ease-in-out infinite alternate;
+}
+.garden-dove {
+  top: 18%;
+  width: 66px;
+  animation: garden-dove-flight 54s 24s linear infinite both;
+}
+.garden-dove img {
+  animation: dove-glide 2s ease-in-out infinite alternate;
+}
+.garden-air:not(.is-in-view) *,
+.garden-air:not(.is-in-view) img {
+  animation-play-state: paused;
+}
+@keyframes garden-petal-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-20deg);
+  }
+  3% {
+    opacity: 0.65;
+  }
+  12% {
+    transform: translate3d(28px, 50cqh, 0) rotate(80deg);
+  }
+  24% {
+    opacity: 0.5;
+  }
+  28%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-20px, calc(100cqh + 60px), 0) rotate(190deg);
+  }
+}
+@keyframes garden-butterfly-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  3% {
+    opacity: 0.75;
+  }
+  9% {
+    transform: translate3d(35cqw, -60px, 0);
+  }
+  18% {
+    transform: translate3d(70cqw, 35px, 0);
+  }
+  27% {
+    opacity: 0.65;
+  }
+  30%,
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100cqw + 180px), -40px, 0);
+  }
+}
+@keyframes garden-dove-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  2% {
+    opacity: 0.75;
+  }
+  9% {
+    transform: translate3d(55cqw, -45px, 0);
+  }
+  16% {
+    opacity: 0.7;
+  }
+  20%,
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100cqw + 180px), 20px, 0);
+  }
+}
+@keyframes butterfly-flutter {
+  from {
+    transform: rotate(65deg) scaleX(0.45);
+  }
+  to {
+    transform: rotate(75deg) scaleX(1);
+  }
+}
+@keyframes dove-glide {
+  from {
+    transform: rotate(-4deg) scaleY(0.94);
+  }
+  to {
+    transform: rotate(3deg) scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .garden-air {
+    display: none;
+  }
+  .flower-cluster img {
+    transform: rotate(var(--base-turn)) scaleX(var(--mirror, 1));
   }
 }

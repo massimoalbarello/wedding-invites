@@ -1,7 +1,6 @@
 import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { FloralFrame } from './floral-frame';
 import { PetalCelebration } from './petal-celebration';
 import { RsvpForm } from './rsvp-form';
 
@@ -23,8 +22,7 @@ export function ReplySection({
     onMutate: () => setCelebrating(false),
   });
   return (
-    <section className="reply-section floral-section" id="rsvp" aria-labelledby="reply-heading">
-      <FloralFrame />
+    <section className="reply-section" id="rsvp" aria-labelledby="reply-heading">
       {celebrating && <PetalCelebration onEnd={() => setCelebrating(false)} />}
       <div className="reply-copy">
         <p className="eyebrow">RSVP</p>

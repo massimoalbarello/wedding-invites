@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { content } from './content';
-import { FloralFrame } from './floral-frame';
 
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
@@ -29,8 +28,7 @@ export function Countdown() {
   const remaining = timeUntilWedding(now);
   const arrived = Object.values(remaining).every((value) => value === 0);
   return (
-    <section className="countdown-section floral-section" aria-labelledby="countdown-heading">
-      <FloralFrame />
+    <section className="countdown-section" aria-labelledby="countdown-heading">
       <div className="countdown-copy">
         <p className="eyebrow">When</p>
         <h2 id="countdown-heading">
@@ -39,7 +37,7 @@ export function Countdown() {
         <p>
           <time dateTime={content.startsAt}>{content.timeLabel}</time>
         </p>
-        <p className="countdown-intro">Until we say “I do”</p>
+        <p className="countdown-intro">The countdown has begun</p>
         <dl className="countdown-clock" aria-label="Time until our wedding" aria-live="off">
           {Object.entries(remaining).map(([unit, value]) => (
             <div key={unit}>

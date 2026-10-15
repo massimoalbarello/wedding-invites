@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { content } from './content';
 import { Countdown } from './countdown';
 import { FloralFrame } from './floral-frame';
+import { GardenAir } from './garden-air';
 import { ReplySection } from './reply-section';
 
 const VENUE_VISIBILITY_THRESHOLD = 0.05;
@@ -91,28 +92,39 @@ export function Landing({
           </a>
         )}
       </section>
-      <section
-        ref={venue}
-        className="venue-section floral-section"
-        id="venue"
-        tabIndex={-1}
-        aria-labelledby="venue-heading"
-      >
+      <div className="garden-details">
+        <img
+          className="garden-scene"
+          src="./media/garden-scene.webp"
+          alt=""
+          width="900"
+          height="2700"
+          loading="lazy"
+        />
         <FloralFrame />
-        <div className="venue-copy">
-          <p className="eyebrow">Where</p>
-          <h2 id="venue-heading">{content.venue}</h2>
-          <img
-            className="venue-artwork"
-            src="./media/casiglio-venue.webp"
-            alt="The pink villa of Castello di Casiglio, with the stone castle alongside it"
-            width="1536"
-            height="1024"
-          />
-        </div>
-      </section>
-      <Countdown />
-      <ReplySection runtime={runtime} context={context} />
+        <GardenAir />
+        <section
+          ref={venue}
+          className="venue-section"
+          id="venue"
+          tabIndex={-1}
+          aria-labelledby="venue-heading"
+        >
+          <div className="venue-copy">
+            <p className="eyebrow">Where</p>
+            <h2 id="venue-heading">{content.venue}</h2>
+            <img
+              className="venue-artwork"
+              src="./media/casiglio-venue.webp"
+              alt="The pink villa of Castello di Casiglio, with the stone castle alongside it"
+              width="1536"
+              height="1024"
+            />
+          </div>
+        </section>
+        <Countdown />
+        <ReplySection runtime={runtime} context={context} />
+      </div>
     </main>
   );
 }
