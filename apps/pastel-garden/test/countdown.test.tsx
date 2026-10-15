@@ -43,6 +43,7 @@ test('the displayed seconds tick without announcing each tick to assistive techn
   render(<Countdown />);
   expect(screen.getByText('The countdown has begun')).toBeDefined();
   expect(screen.queryByText('Until we say “I do”')).toBeNull();
+  expect(screen.queryByText(/5:00 pm/)).toBeNull();
   const clock = screen.getByLabelText('Time until our wedding');
   // Read the seconds cell rather than relying on the date the test is run.
   const seconds = screen.getByText('seconds').nextElementSibling!;

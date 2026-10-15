@@ -34,9 +34,6 @@ export function Countdown() {
         <h2 id="countdown-heading">
           <time dateTime={content.date}>{content.dateLabel}</time>
         </h2>
-        <p>
-          <time dateTime={content.startsAt}>{content.timeLabel}</time>
-        </p>
         <p className="countdown-intro">The countdown has begun</p>
         <dl className="countdown-clock" aria-label="Time until our wedding" aria-live="off">
           {Object.entries(remaining).map(([unit, value]) => (
