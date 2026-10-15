@@ -1,7 +1,7 @@
 import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { PetalCelebration } from './petal-celebration';
+import { useCallback, useRef, useState } from 'react';
+import { ReplyCelebration } from './reply-celebration';
 import { RsvpForm } from './rsvp-form';
 
 export function ReplySection({
@@ -12,18 +12,20 @@ export function ReplySection({
   context: InvitationContext;
 }) {
   const client = useQueryClient();
+  const submitButton = useRef<HTMLButtonElement>(null);
   const [celebrating, setCelebrating] = useState(false);
+  const endCelebration = useCallback(() => setCelebrating(false), []);
   const reply = useMutation({
     mutationFn: (value: Parameters<InvitationRuntime['saveRsvp']>[0]) => runtime.saveRsvp(value),
     onSuccess: (rsvp) => {
       client.setQueryData(['recipient-context'], { ...context, rsvp });
       setCelebrating(rsvp.status === 'accepted');
     },
-    onMutate: () => setCelebrating(false),
+    onMutate: endCelebration,
   });
   return (
     <section className="reply-section" id="rsvp" aria-labelledby="reply-heading">
-      {celebrating && <PetalCelebration onEnd={() => setCelebrating(false)} />}
+      {celebrating && <ReplyCelebration anchor={submitButton} onEnd={endCelebration} />}
       <div className="reply-copy">
         <p className="eyebrow">RSVP</p>
         <p className="recipient-name">
@@ -35,6 +37,7 @@ export function ReplySection({
           status={context.rsvp.status}
           companions={context.rsvp.companions.map((name) => ({ name }))}
           maxGuests={context.rsvp.maxAdditionalGuests}
+          submitButtonRef={submitButton}
           onSave={async (value) => {
             try {
               await reply.mutateAsync(value);

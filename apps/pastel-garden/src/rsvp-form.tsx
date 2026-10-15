@@ -1,15 +1,18 @@
 import { MAX_NAME_LENGTH, type RsvpReply, type RsvpState } from '@repo/invitation-runtime/contract';
 import { useForm } from '@tanstack/react-form';
+import type { Ref } from 'react';
 
 export function RsvpForm({
   status,
   companions,
   maxGuests,
+  submitButtonRef,
   onSave,
 }: {
   status: RsvpState['status'];
   companions: { name: string }[];
   maxGuests: number;
+  submitButtonRef: Ref<HTMLButtonElement>;
   onSave: (reply: RsvpReply) => Promise<void>;
 }) {
   const form = useForm({
@@ -142,7 +145,7 @@ export function RsvpForm({
       </form.Subscribe>
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(pending: boolean) => (
-          <button type="submit" disabled={pending}>
+          <button ref={submitButtonRef} type="submit" disabled={pending}>
             {pending ? 'Saving your reply…' : status === 'pending' ? 'Send reply' : 'Update reply'}
           </button>
         )}

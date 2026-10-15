@@ -72,7 +72,7 @@ test('guest guidance appears only with Yes and disappears again with No', async 
   expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
 });
 
-test('petals celebrate a saved acceptance, never a draft, failure, or decline', async () => {
+test('confetti celebrates a saved acceptance, never a draft, failure, or decline', async () => {
   let fail = true;
   show({
     saveRsvp: (reply) =>
@@ -82,18 +82,18 @@ test('petals celebrate a saved acceptance, never a draft, failure, or decline', 
   });
   const user = userEvent.setup();
   await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
-  expect(document.querySelector('.petal-celebration')).toBeNull();
+  expect(document.querySelector('.reply-celebration')).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   await screen.findByRole('alert');
-  expect(document.querySelector('.petal-celebration')).toBeNull();
+  expect(document.querySelector('.reply-celebration')).toBeNull();
   fail = false;
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   await screen.findByRole('status');
-  expect(document.querySelector('.petal-celebration')).not.toBeNull();
+  expect(document.querySelector('.reply-celebration')).not.toBeNull();
   await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   expect((await screen.findByRole('status')).textContent).toBe('Thank you for letting us know.');
-  expect(document.querySelector('.petal-celebration')).toBeNull();
+  expect(document.querySelector('.reply-celebration')).toBeNull();
 });
 
 test('a single companion uses an unnumbered label and the allowance still limits the form', async () => {
