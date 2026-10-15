@@ -16,7 +16,6 @@ const result = await Bun.build({
       join(import.meta.dir, '../dist/public'),
       join(import.meta.dir, '../dist/invitations'),
       faceAssets,
-      join(import.meta.dir, '../../../LICENSE'),
       join(import.meta.dir, '../backend/src/db/migrations'),
     ],
   },

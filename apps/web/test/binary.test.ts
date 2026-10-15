@@ -18,6 +18,15 @@ test('standalone binary embeds frontend and migrations and preserves state on re
   const folder = await mkdtemp(join(tmpdir(), 'binary-test-'));
   try {
     const executable = join(import.meta.dir, '../dist/app');
+    const binary = Buffer.from(await Bun.file(executable).bytes());
+    for (const notice of [
+      '../backend/native/faces/THIRD_PARTY_NOTICES.txt',
+      '../../pastel-garden/public/assets/pinyon-script-LICENSE.txt',
+    ]) {
+      expect(
+        binary.includes(Buffer.from(await Bun.file(join(import.meta.dir, notice)).bytes())),
+      ).toBe(true);
+    }
     const dataFolder = join(folder, 'data');
     await using app = await startBinary({
       executable,
