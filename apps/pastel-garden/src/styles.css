@@ -83,6 +83,12 @@ button:hover:not(:disabled),
   background: linear-gradient(#f6fbfe, #d2e8f7);
   overflow: hidden;
 }
+.portrait-art {
+  container-type: inline-size;
+  position: relative;
+  width: min(100%, calc(100svh * 9 / 16), 900px);
+  aspect-ratio: 9 / 16;
+}
 .invitation.is-sealed {
   height: 100svh;
   overflow: hidden;
@@ -91,27 +97,12 @@ button:hover:not(:disabled),
   position: fixed;
   inset: 0;
   z-index: 10;
-  pointer-events: none;
-}
-.intro-visual {
-  position: absolute;
-  inset: 0;
   display: grid;
   place-items: center;
   background: linear-gradient(#f6fbfe, #d2e8f7);
 }
-.portrait-art {
-  container-type: inline-size;
-  position: relative;
-  width: min(100%, calc(100svh * 9 / 16));
-  aspect-ratio: 9 / 16;
-}
-.intro-frame {
-  width: min(100%, calc(100svh * 9 / 16), 900px);
-  aspect-ratio: 9 / 16;
-}
 .portrait-art > img,
-.intro-frame > video {
+.portrait-art > video {
   display: block;
   width: 100%;
   height: 100%;
@@ -156,46 +147,42 @@ button:hover:not(:disabled),
   inset: 0;
   text-align: center;
 }
+.letter.is-active .hero-copy {
+  animation: invitation-copy-reveal 900ms ease-out both;
+}
+@keyframes invitation-copy-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 h1 {
   font-weight: 400;
   line-height: 1.2;
 }
 .hero h1 {
   position: absolute;
-  top: 9.765625%;
-  left: 0;
-  width: 100%;
+  top: 12.5%;
+  left: 10%;
+  width: 80%;
   margin: 0;
   max-width: none;
+  font-size: 7.6cqw;
 }
 h1:focus {
   outline: none;
 }
-.wedding-date,
-.wedding-venue {
+.invitation-line {
   position: absolute;
+  top: 18.5%;
   left: 0;
   width: 100%;
-  line-height: 1;
-}
-.hero h1 span {
-  display: block;
-  line-height: 1;
-}
-.first-name {
-  font-size: 15cqw;
-}
-.second-name {
-  margin-top: 3.305556cqw;
-  font-size: 14.444444cqw;
-}
-.wedding-date {
-  top: 31.210938%;
-  font-size: 7.638889cqw;
-}
-.wedding-venue {
-  top: 37.078125%;
-  font-size: 7.777778cqw;
+  font-size: 4.2cqw;
+  line-height: 1.2;
 }
 .garden-link {
   margin-top: 16px;
@@ -264,6 +251,9 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  .letter.is-active .hero-copy {
+    animation: none;
   }
 }
 .countdown-section,

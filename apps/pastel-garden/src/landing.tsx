@@ -36,19 +36,21 @@ export function Landing({
     }
   }, [active]);
   return (
-    <main className="letter" inert={!active} aria-hidden={!active}>
+    <main className={active ? 'letter is-active' : 'letter'} inert={!active} aria-hidden={!active}>
       <section className="hero" aria-label="Wedding invitation">
         <div className="portrait-art">
-          <img ref={artwork} src="./media/landing.webp" alt="" width="720" height="1280" />
+          <img
+            ref={artwork}
+            src="./media/landing-couple.webp"
+            alt="Massimo and Elizaveta together in the flower-lined garden at Castello di Casiglio"
+            width="720"
+            height="1280"
+          />
           <div className="hero-copy">
             <h1 ref={heading} tabIndex={-1} aria-label={content.nameLabel}>
-              <span className="first-name">{content.names[0]}</span>{' '}
-              <span className="second-name">&amp; {content.names[1]}</span>
+              {content.names[0]} &amp; {content.names[1]}
             </h1>
-            <p className="wedding-date">
-              <time dateTime={content.date}>{content.dateLabel}</time>
-            </p>
-            <p className="wedding-venue">{content.venue}</p>
+            <p className="invitation-line">invite you to their wedding</p>
           </div>
         </div>
       </section>

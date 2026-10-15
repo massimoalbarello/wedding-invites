@@ -1,75 +1,90 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const CLEARING_SECONDS = 3.5;
-const STALLED_PLAYBACK_TIMEOUT_MS = 10_000;
+const PLAYBACK_STALL_TIMEOUT_MS = 8000;
+
+function playbackWasInterrupted(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
 
 export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
-  const visual = useRef<HTMLDivElement>(null);
+  const stallTimer = useRef<number | undefined>(undefined);
+  const lastProgress = useRef(0);
+  const [muted, setMuted] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const clearStallTimer = useCallback(() => {
+    window.clearTimeout(stallTimer.current);
+    stallTimer.current = undefined;
+  }, []);
+  const waitForPlayback = useCallback(() => {
+    if (stallTimer.current !== undefined) {
+      return;
+    }
+    stallTimer.current = window.setTimeout(onOpened, PLAYBACK_STALL_TIMEOUT_MS);
+  }, [onOpened]);
+
   useEffect(() => {
     const player = video.current;
     if (!opening || !player) {
       return;
     }
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (media.matches) {
-      onOpened();
-      return;
-    }
-    let timer = window.setTimeout(onOpened, STALLED_PLAYBACK_TIMEOUT_MS);
-    let lastProgress = player.currentTime;
-    const progress = () => {
-      if (player.currentTime !== lastProgress) {
-        lastProgress = player.currentTime;
-        window.clearTimeout(timer);
-        timer = window.setTimeout(onOpened, STALLED_PLAYBACK_TIMEOUT_MS);
+    let active = true;
+    waitForPlayback();
+    void player.play().catch((error: unknown) => {
+      if (!active) {
+        return;
       }
-    };
-    const motionChanged = () => {
-      if (media.matches) {
-        onOpened();
+      if (playbackWasInterrupted(error)) {
+        clearStallTimer();
+        return;
       }
-    };
-    let frame = 0;
-    const draw = () => {
-      if (visual.current && Number.isFinite(player.duration)) {
-        const remaining = Math.max(
-          0,
-          Math.min(1, (player.duration - player.currentTime) / CLEARING_SECONDS),
-        );
-        // biome-ignore lint/style/noMagicNumbers: coefficients of the cubic smoothstep polynomial.
-        visual.current.style.opacity = String(remaining * remaining * (3 - 2 * remaining));
-      }
-      frame = window.requestAnimationFrame(draw);
-    };
-    media.addEventListener('change', motionChanged);
-    player.addEventListener('timeupdate', progress);
-    frame = window.requestAnimationFrame(draw);
-    void player.play().catch(onOpened);
+      // Some mobile browsers permit inline playback only when it starts muted.
+      player.muted = true;
+      setMuted(true);
+      void player.play().catch((retryError: unknown) => {
+        if (active && !playbackWasInterrupted(retryError)) {
+          onOpened();
+        }
+      });
+    });
     return () => {
+      active = false;
+      clearStallTimer();
       player.pause();
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-      player.removeEventListener('timeupdate', progress);
-      media.removeEventListener('change', motionChanged);
     };
-  }, [opening, onOpened]);
+  }, [opening, onOpened, waitForPlayback, clearStallTimer]);
+
   return (
-    <div ref={visual} className="intro-visual" aria-hidden="true">
-      <div className="intro-frame">
-        <video
-          ref={video}
-          src="./media/intro.mp4"
-          poster="./media/opening-poster.webp"
-          muted
-          playsInline
-          preload="auto"
-          onEnded={opening ? onOpened : undefined}
-          onError={opening ? onOpened : undefined}
-          width="720"
-          height="1280"
-        />
-      </div>
+    <div className="portrait-art">
+      <video
+        ref={video}
+        src="./media/our-story-opening.mp4"
+        poster="./media/opening-poster.webp"
+        muted={muted}
+        playsInline
+        preload="metadata"
+        aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
+        onEnded={opening ? onOpened : undefined}
+        onError={opening ? onOpened : undefined}
+        onWaiting={opening && !paused ? waitForPlayback : undefined}
+        onStalled={opening && !paused ? waitForPlayback : undefined}
+        onPlaying={() => {
+          clearStallTimer();
+          setPaused(false);
+        }}
+        onPause={() => {
+          clearStallTimer();
+          setPaused(true);
+        }}
+        onTimeUpdate={(event) => {
+          if (event.currentTarget.currentTime !== lastProgress.current) {
+            lastProgress.current = event.currentTarget.currentTime;
+            clearStallTimer();
+          }
+        }}
+        width="720"
+        height="1280"
+      />
     </div>
   );
 }
