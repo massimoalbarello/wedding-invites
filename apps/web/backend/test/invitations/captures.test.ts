@@ -8,6 +8,7 @@ import { cookies, fixture, observation, photo, upload } from './fixture.ts';
 
 const SUCCESS = 200;
 const BAD_REQUEST = 400;
+const UNAUTHORIZED = 401;
 const FORBIDDEN = 403;
 const NOT_FOUND = 404;
 const INTERNAL_ERROR = 500;
@@ -90,6 +91,30 @@ test('submitted selfies are retained independently of match results and referenc
       expect(new Date(capture.created_at).toISOString()).toBe(capture.created_at);
       expect(capture.created_at >= started && capture.created_at <= finished).toBe(true);
     }
+    const gallery = await f.request({
+      path: `/api/admin/guests/${guest.id}/captures`,
+      cookie: owner,
+    });
+    expect(gallery.status).toBe(SUCCESS);
+    expect(await gallery.json()).toEqual({
+      items: captures
+        .map((capture) => [capture.created_at, capture.id])
+        .sort()
+        .reverse()
+        .map(([createdAt, id]) => ({ id, createdAt })),
+      nextCursor: null,
+    });
+    for (const capture of captures) {
+      const image = await f.request({
+        path: `/api/admin/guests/${guest.id}/captures/${capture.id}`,
+        cookie: owner,
+      });
+      expect(image.status).toBe(SUCCESS);
+      expect(image.headers.get('content-type')).toBe(capture.media_type);
+      expect(image.headers.get('cache-control')).toBe('private, no-store');
+      expect(image.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(new Uint8Array(await image.arrayBuffer())).toEqual(new Uint8Array(capture.image));
+    }
     expect(await f.management.get({ actor, id: guest.id })).toEqual({
       ...guest,
       activity: {
@@ -104,6 +129,98 @@ test('submitted selfies are retained independently of match results and referenc
     });
     expect(new Uint8Array(await avatar.arrayBuffer())).toEqual(
       new Uint8Array(await photo(REFERENCE).arrayBuffer()),
+    );
+  } finally {
+    await f.close();
+  }
+});
+
+test('selfie reads are scoped to the owner and guest, paginate ties, and survive link and reference changes', async () => {
+  const f = await fixture();
+  try {
+    const owner = await f.admin();
+    const outsider = await f.admin('outsider');
+    const guest = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const other = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const stored = (await f.guests.get({ ownerId: actor.userId, publicId: guest.id }))!;
+    const repository = new InvitationCapturesRepository(f.database);
+    const ids = [opaqueId(), opaqueId(), opaqueId()].sort().reverse();
+    const createdAt = new Date().toISOString();
+    for (const id of ids) {
+      expect(
+        await repository.save({
+          id,
+          ownerId: actor.userId,
+          guestId: stored.id,
+          linkToken: guest.token,
+          image: new Uint8Array(await photo(SELFIE).arrayBuffer()),
+          mediaType: 'image/jpeg',
+          createdAt,
+        }),
+      ).toBe(true);
+    }
+    const prefix = `/api/admin/guests/${guest.id}/captures`;
+    const first = await f.request({ path: `${prefix}?limit=2`, cookie: owner });
+    expect(await first.json()).toEqual({
+      items: ids.slice(0, 2).map((id) => ({ id, createdAt })),
+      nextCursor: ids[1],
+    });
+    const last = await f.request({ path: `${prefix}?limit=2&cursor=${ids[1]}`, cookie: owner });
+    expect(await last.json()).toEqual({ items: [{ id: ids[2], createdAt }], nextCursor: null });
+    const empty = await f.request({
+      path: `/api/admin/guests/${other.id}/captures`,
+      cookie: owner,
+    });
+    expect(await empty.json()).toEqual({ items: [], nextCursor: null });
+    expect(await repository.list({ ownerId: 'outsider', guestId: stored.id, limit: 2 })).toEqual(
+      [],
+    );
+    expect(
+      await repository.image({ ownerId: 'outsider', guestId: stored.id, id: ids[0]! }),
+    ).toBeNull();
+    for (const path of [prefix, `${prefix}/${ids[0]}`]) {
+      expect((await f.request({ path })).status).toBe(UNAUTHORIZED);
+      expect((await f.request({ path, cookie: outsider })).status).toBe(UNAUTHORIZED);
+      expect(
+        (await f.request({ path: path.replace(guest.id, crypto.randomUUID()), cookie: owner }))
+          .status,
+      ).toBe(NOT_FOUND);
+    }
+    expect(
+      (await f.request({ path: `/api/admin/guests/${other.id}/captures/${ids[0]}`, cookie: owner }))
+        .status,
+    ).toBe(NOT_FOUND);
+    const storedOther = (await f.guests.get({ ownerId: actor.userId, publicId: other.id }))!;
+    expect(
+      await repository.save({
+        id: opaqueId(),
+        ownerId: actor.userId,
+        guestId: storedOther.id,
+        linkToken: other.token,
+        image: new Uint8Array(await photo(SELFIE).arrayBuffer()),
+        mediaType: 'image/jpeg',
+        createdAt: '2026-10-14T10:00:00.000Z',
+      }),
+    ).toBe(true);
+    const foreignCursor = await f.request({
+      path: `/api/admin/guests/${other.id}/captures?cursor=${ids[0]}`,
+      cookie: owner,
+    });
+    expect(await foreignCursor.json()).toEqual({ items: [], nextCursor: null });
+    expect((await f.request({ path: `${prefix}/${opaqueId()}`, cookie: owner })).status).toBe(
+      NOT_FOUND,
+    );
+    for (const query of ['limit=0', 'limit=101', 'cursor=invalid']) {
+      expect((await f.request({ path: `${prefix}?${query}`, cookie: owner })).status).toBe(
+        BAD_REQUEST,
+      );
+    }
+    await f.management.rotate({ actor, id: guest.id });
+    await f.management.removePhoto({ actor, id: guest.id, photoId: guest.references[0]!.id });
+    await f.management.setAccess({ actor, id: guest.id, active: false });
+    expect((await f.request({ path: `${prefix}/${ids[0]}`, cookie: owner })).status).toBe(SUCCESS);
+    expect((await (await f.request({ path: prefix, cookie: owner })).json()).items).toHaveLength(
+      ids.length,
     );
   } finally {
     await f.close();

@@ -13,6 +13,12 @@ type CaptureInput = GuestScope & {
 
 export interface InvitationCapturesRepositoryContract {
   save(input: CaptureInput): Promise<boolean>;
+  list(
+    input: GuestScope & { cursor?: string; limit: number },
+  ): Promise<{ id: string; createdAt: string }[]>;
+  image(
+    input: GuestScope & { id: string },
+  ): Promise<{ image: Uint8Array; mediaType: string } | null>;
 }
 
 export class InvitationCapturesRepository implements InvitationCapturesRepositoryContract {
@@ -20,6 +26,28 @@ export class InvitationCapturesRepository implements InvitationCapturesRepositor
 
   constructor(database: SQL) {
     this.sql = withTypes<Queries>(database);
+  }
+
+  async list(input: GuestScope & { cursor?: string; limit: number }) {
+    const rows = await this.sql.ListInvitationCaptures`
+      select id, created_at from invitation_capture
+      where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
+        and (${input.cursor ?? null} is null or (created_at, id) < (
+          select created_at, id from invitation_capture
+          where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.cursor ?? null}
+        ))
+      order by created_at desc, id desc
+      limit ${input.limit}
+    `;
+    return rows.map((row) => ({ id: row.id, createdAt: row.created_at }));
+  }
+
+  async image(input: GuestScope & { id: string }) {
+    const [row] = await this.sql.InvitationCaptureImage`
+      select image, media_type from invitation_capture
+      where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.id}
+    `;
+    return row ? { image: row.image, mediaType: row.media_type } : null;
   }
 
   async save(input: CaptureInput) {

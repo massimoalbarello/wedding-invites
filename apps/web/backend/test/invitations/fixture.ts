@@ -83,6 +83,7 @@ export async function fixture(
   const management = new GuestManagementService({
     guests,
     faces,
+    captures: new InvitationCapturesRepository(database),
     admin: new AdminRepository(database),
   });
   const assets =

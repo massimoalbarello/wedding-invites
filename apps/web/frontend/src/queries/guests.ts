@@ -14,6 +14,8 @@ export const guestKeys = {
     [...guestKeys.owner(ownerId), 'list', 'group', filters] as const,
   detail: ({ ownerId, id }: { ownerId: string; id: string }) =>
     [...guestKeys.owner(ownerId), 'detail', id] as const,
+  captures: ({ ownerId, id }: { ownerId: string; id: string }) =>
+    [...guestKeys.detail({ ownerId, id }), 'captures'] as const,
 };
 export const ownerStatusOptions = queryOptions({
   queryKey: ['owner-status'],
@@ -81,6 +83,26 @@ export function guestOptions({ ownerId, id }: { ownerId: string; id: string }) {
   });
 }
 export type GuestSettings = Pick<Guest, 'name' | 'groupName' | 'maxGuests'>;
+export function guestCapturesOptions({ ownerId, id }: { ownerId: string; id: string }) {
+  return infiniteQueryOptions({
+    queryKey: guestKeys.captures({ ownerId, id }),
+    refetchInterval: ACTIVITY_REFRESH_MS,
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const result = await api.api.admin.guests({ id }).captures.get({
+        query: { cursor: pageParam },
+      });
+      if (result.error) {
+        throw new Error('Could not load selfies. Try again.');
+      }
+      return result.data;
+    },
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+export function captureUrl({ id, captureId }: { id: string; captureId: string }) {
+  return `/api/admin/guests/${encodeURIComponent(id)}/captures/${encodeURIComponent(captureId)}`;
+}
 export type GuestDraft = GuestSettings & { photos: File[]; removedPhotoIds: string[] };
 export async function createGuest(input: GuestDraft) {
   const { removedPhotoIds: _removedPhotoIds, ...body } = input;
