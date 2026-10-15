@@ -154,6 +154,10 @@ export async function buildFaceRuntime({
       }
     }
     await prepareModels(destination);
+    await cp(
+      join(app, 'backend/native/faces/THIRD_PARTY_NOTICES.txt'),
+      join(destination, 'THIRD_PARTY_NOTICES.txt'),
+    );
     return destination;
   } finally {
     await log.end();

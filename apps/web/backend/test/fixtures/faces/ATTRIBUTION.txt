@@ -1,0 +1,29 @@
+Face verification test photographs
+----------------------------------
+These files are test fixtures, not invitation content. The following photographs
+retain their respective Creative Commons licenses, independently of the application.
+
+apps/web/backend/test/fixtures/faces/reference.jpg and reference-reencoded.jpg
+Steve Jobs portrait 2010
+Credit: Matthew Yohe; cropped around the face and resized to 512 × 512 for circular avatars
+Source: https://commons.wikimedia.org/wiki/File:Steve_Jobs_Headshot_2010-CROP.jpg
+License: CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+reference-reencoded.jpg additionally resized to 460 x 460 and JPEG recompressed.
+
+apps/web/backend/test/fixtures/faces/different-person.jpg
+Tim Cook portrait 2009
+Credit: Kindly granted by Valery Marchive (LeMagIT); cropped around the face and resized to 512 × 512 for circular avatars
+Source: https://commons.wikimedia.org/wiki/File:Tim_Cook_2009.jpg
+License: CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0)
+
+apps/web/backend/test/fixtures/faces/same-person.jpg
+Steve Jobs at WWDC 2007
+Credit: Ben Stanfield; unchanged Commons file
+Source: https://commons.wikimedia.org/wiki/File:Steve_Jobs_2007.jpg
+License: CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0/)
+
+apps/web/backend/test/fixtures/faces/multiple-people.jpg
+John Lasseter and Ed Catmull at VES Awards 2010
+Credit: Jeff Heusser; unchanged Commons file
+Source: https://commons.wikimedia.org/wiki/File:VES_Awards_89.jpg
+License: CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/)

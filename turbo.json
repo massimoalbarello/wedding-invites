@@ -3,7 +3,6 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "build:client", "build:invitations"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/LICENSE"],
       "env": ["BUILD_TARGET"],
       "outputs": ["dist/app"]
     },
@@ -33,7 +32,8 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/apps/amalfi/**",
         "$TURBO_ROOT$/packages/invitation-runtime/**",
-        "$TURBO_ROOT$/apps/minimal/**"
+        "$TURBO_ROOT$/apps/minimal/**",
+        "$TURBO_ROOT$/apps/pastel-garden/**"
       ],
       "outputs": ["dist/invitations/**"]
     }

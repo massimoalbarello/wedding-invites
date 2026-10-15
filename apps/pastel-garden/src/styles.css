@@ -1,0 +1,406 @@
+:root {
+  font-family: "Pinyon Script", cursive;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #254461;
+  background: #f4f8fc;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button,
+.garden-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 25px;
+  border: 1px solid #b7cce0;
+  border-radius: 100px;
+  background: #dce9f6;
+  color: #254461;
+  font: inherit;
+  font-size: 25px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+button:hover:not(:disabled),
+.garden-link:hover {
+  background: #cbdff1;
+}
+:focus-visible {
+  outline: 3px solid #456f98;
+  outline-offset: 5px;
+}
+.eyebrow {
+  font-size: 28px;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+.invitation {
+  max-width: 900px;
+  margin-inline: auto;
+  position: relative;
+  box-shadow: 0 0 80px #25446112;
+}
+.hero {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#f6fbfe, #d2e8f7);
+  overflow: hidden;
+}
+.invitation.is-sealed {
+  height: 100svh;
+  overflow: hidden;
+}
+.sealed-letter {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.intro-visual {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#f6fbfe, #d2e8f7);
+}
+.portrait-art {
+  container-type: inline-size;
+  position: relative;
+  width: min(100%, calc(100svh * 9 / 16));
+  aspect-ratio: 9 / 16;
+}
+.intro-frame {
+  width: min(100%, calc(100svh * 9 / 16), 900px);
+  aspect-ratio: 9 / 16;
+}
+.portrait-art > img,
+.intro-frame > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.entrance-trigger {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.entrance-trigger:hover:not(:disabled) {
+  background: transparent;
+}
+.entrance-trigger:disabled {
+  opacity: 1;
+}
+.entrance-trigger:focus-visible {
+  outline-offset: -8px;
+}
+.letter {
+  background: #f8fbfd;
+}
+.hero-copy {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+}
+h1 {
+  font-weight: 400;
+  line-height: 1.2;
+}
+.hero h1 {
+  position: absolute;
+  top: 9.765625%;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  max-width: none;
+}
+h1:focus {
+  outline: none;
+}
+.wedding-date,
+.wedding-venue {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  line-height: 1;
+}
+.hero h1 span {
+  display: block;
+  line-height: 1;
+}
+.first-name {
+  font-size: 15cqw;
+}
+.second-name {
+  margin-top: 3.305556cqw;
+  font-size: 14.444444cqw;
+}
+.wedding-date {
+  top: 31.210938%;
+  font-size: 7.638889cqw;
+}
+.wedding-venue {
+  top: 37.078125%;
+  font-size: 7.777778cqw;
+}
+.garden-link {
+  margin-top: 16px;
+}
+.venue-artwork {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.venue-section {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 160px 14% 170px;
+  background: linear-gradient(#f9fcfe, #fffaf7);
+  text-align: center;
+}
+.venue-copy {
+  width: 100%;
+}
+h2 {
+  font-size: clamp(40px, 6vw, 56px);
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin: 20px 0;
+}
+.venue-copy .venue-artwork {
+  margin: 24px auto;
+}
+.venue-copy time {
+  font-size: 30px;
+}
+.signature {
+  margin-top: 25px;
+  font-size: 40px;
+  letter-spacing: 0;
+}
+.connection-error {
+  min-height: 100svh;
+  padding: 60px 24px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 24px;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  h1 {
+    max-width: 280px;
+    margin-inline: auto;
+    font-size: clamp(46px, 12vw, 54px);
+  }
+  .eyebrow {
+    font-size: 24px;
+    letter-spacing: 0;
+  }
+  .garden-link {
+    font-size: 24px;
+    padding: 10px 18px;
+  }
+  .venue-section {
+    padding-inline: 16%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+.countdown-section,
+.reply-section {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 150px 16%;
+  text-align: center;
+  background: linear-gradient(#fffaf7, #eef6fd);
+}
+.countdown-copy,
+.reply-copy {
+  width: 100%;
+  max-width: 480px;
+}
+.countdown-number {
+  font-size: clamp(85px, 16vw, 140px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+  margin-top: 28px;
+}
+.countdown-note {
+  margin-top: 22px;
+  font-size: 24px;
+  line-height: 1.4;
+  color: #4e6981;
+}
+.reply-section {
+  background: #f8fbfe;
+}
+.recipient-name {
+  line-height: 1.4;
+  margin-bottom: 30px;
+  font-size: 28px;
+}
+.reply-copy form {
+  display: grid;
+  gap: 24px;
+  text-align: left;
+}
+.reply-copy fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.reply-copy legend {
+  margin-bottom: 18px;
+  text-align: center;
+  width: 100%;
+}
+.reply-copy fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #b7cce0;
+  background: #ffffffb0;
+  border-radius: 14px;
+  padding: 15px;
+  min-height: 54px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.reply-copy label:has(:checked) {
+  background: #e3eff9;
+  border-color: #456f98;
+}
+.reply-copy input[type="radio"] {
+  accent-color: #456f98;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.reply-copy form section {
+  display: grid;
+  gap: 15px;
+}
+.reply-copy form section > div:has(input) {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+.reply-copy form section > div > div {
+  min-width: 0;
+  flex: 1;
+}
+.reply-copy input:not([type="radio"]) {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #b7cce0;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+.reply-copy h3 {
+  font-weight: 400;
+  font-size: 30px;
+}
+.reply-copy form section p {
+  font-size: 25px;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+.reply-copy .remove-guest {
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+}
+.reply-copy button[type="submit"] {
+  justify-self: center;
+  margin-top: 8px;
+}
+.reply-confirmation,
+.reply-error {
+  margin-top: 24px;
+  line-height: 1.6;
+}
+.reply-copy [role="alert"] {
+  color: #934437;
+  font-size: 25px;
+  line-height: 1.4;
+}
+@media (max-width: 600px) {
+  .reply-copy fieldset label {
+    padding: 12px;
+    font-size: 25px;
+    gap: 8px;
+  }
+  .recipient-name {
+    font-size: 26px;
+  }
+}

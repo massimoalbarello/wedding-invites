@@ -1,29 +1,3 @@
-MIT License
-
-Copyright (c) [year] [fullname]
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-THIRD-PARTY NOTICES
-===================
-
 The native image analyzer includes OpenCV 4.10.0 and its bundled image codecs,
 YuNet 2023mar, and SFace 2021dec INT8 weights. OpenCV and the models are fetched
 from their upstream sources at pinned versions with SHA-256 verification.
@@ -1449,38 +1423,6 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-
-Face verification test photographs
-----------------------------------
-These files are test fixtures, not invitation content. The following photographs
-retain their respective Creative Commons licenses, rather than the app MIT license.
-
-apps/web/backend/test/fixtures/faces/reference.jpg and reference-reencoded.jpg
-Steve Jobs portrait 2010
-Credit: Matthew Yohe; cropped around the face and resized to 512 × 512 for circular avatars
-Source: https://commons.wikimedia.org/wiki/File:Steve_Jobs_Headshot_2010-CROP.jpg
-License: CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
-reference-reencoded.jpg additionally resized to 460 x 460 and JPEG recompressed.
-
-apps/web/backend/test/fixtures/faces/different-person.jpg
-Tim Cook portrait 2009
-Credit: Kindly granted by Valery Marchive (LeMagIT); cropped around the face and resized to 512 × 512 for circular avatars
-Source: https://commons.wikimedia.org/wiki/File:Tim_Cook_2009.jpg
-License: CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0)
-
-apps/web/backend/test/fixtures/faces/same-person.jpg
-Steve Jobs at WWDC 2007
-Credit: Ben Stanfield; unchanged Commons file
-Source: https://commons.wikimedia.org/wiki/File:Steve_Jobs_2007.jpg
-License: CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0/)
-
-apps/web/backend/test/fixtures/faces/multiple-people.jpg
-John Lasseter and Ed Catmull at VES Awards 2010
-Credit: Jeff Heusser; unchanged Commons file
-Source: https://commons.wikimedia.org/wiki/File:VES_Awards_89.jpg
-License: CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/)
 
 musl 1.2.5 C runtime (MIT)
 --------------------------
