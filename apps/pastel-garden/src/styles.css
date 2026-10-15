@@ -231,10 +231,6 @@ h2 {
     margin-inline: auto;
     font-size: clamp(46px, 12vw, 54px);
   }
-  .eyebrow {
-    font-size: 24px;
-    letter-spacing: 0;
-  }
   .venue-section {
     padding-inline: 16%;
   }
@@ -368,11 +364,7 @@ h2 {
 @media (max-width: 600px) {
   .reply-copy fieldset label {
     padding: 12px;
-    font-size: 25px;
     gap: 8px;
-  }
-  .recipient-name {
-    font-size: 26px;
   }
 }
 
@@ -606,17 +598,17 @@ h2 {
   overflow: hidden;
   pointer-events: none;
   z-index: 20;
-  animation: celebration-lifetime 5s linear;
+  animation: celebration-lifetime 7s linear;
 }
 .petal-celebration img {
   position: absolute;
-  top: -30px;
+  top: -40px;
   left: var(--x);
-  width: 13px;
-  height: 20px;
+  width: var(--size);
+  height: var(--size);
   object-fit: contain;
   opacity: 0;
-  animation: petal-fall 4s var(--delay) ease-in both;
+  animation: petal-fall var(--duration) var(--delay) linear both;
 }
 @keyframes celebration-lifetime {
   from {
@@ -644,6 +636,48 @@ h2 {
   }
 }
 @media (max-width: 600px) {
+  :root {
+    font-size: 30px;
+  }
+  .hero h1 {
+    left: 6%;
+    width: 88%;
+    font-size: 8.2cqw;
+  }
+  .invitation-line {
+    font-size: 5.2cqw;
+  }
+  h2 {
+    font-size: clamp(44px, 10vw, 52px);
+  }
+  .eyebrow,
+  button,
+  .reply-copy fieldset label,
+  .reply-copy form section p,
+  .reply-copy [role="alert"] {
+    font-size: 28px;
+  }
+  .recipient-name {
+    font-size: 30px;
+  }
+  .reply-copy h3 {
+    font-size: 34px;
+  }
+  .reply-copy .remove-guest {
+    font-size: 26px;
+  }
+  .countdown-intro {
+    font-size: 29px;
+  }
+  .countdown-clock dt {
+    font-size: 25px;
+  }
+  .countdown-clock dd {
+    font-size: 34px;
+  }
+  .reply-section {
+    padding-inline: 12%;
+  }
   .countdown-section {
     padding-inline: 10%;
   }
@@ -667,7 +701,7 @@ h2 {
   top: 0;
   height: 100svh;
   margin-bottom: -100svh;
-  z-index: -1;
+  z-index: 1;
   pointer-events: none;
 }
 .garden-air-window {
@@ -684,49 +718,37 @@ h2 {
 .garden-petal {
   position: absolute;
   top: -40px;
-  width: 20px;
   opacity: 0;
-  animation: garden-petal-drift 28s linear infinite both;
-}
-.garden-petal-first {
-  left: 14%;
-  animation-delay: 2s;
-}
-.garden-petal-second {
-  left: 76%;
-  animation-delay: 9s;
-  width: 15px;
-}
-.garden-petal-third {
-  left: 35%;
-  animation-delay: 16s;
-  width: 17px;
-}
-.garden-petal-fourth {
-  left: 90%;
-  animation-delay: 23s;
+  animation: garden-petal-drift var(--duration) var(--delay) linear infinite
+    both;
 }
 .garden-butterfly,
 .garden-dove {
   position: absolute;
-  left: -90px;
+  left: -100px;
   opacity: 0;
 }
 .garden-butterfly {
-  top: 35%;
-  width: 42px;
-  animation: garden-butterfly-flight 38s 6s linear infinite both;
+  width: 48px;
+  animation: garden-butterfly-flight var(--duration) var(--delay) linear
+    infinite both;
 }
 .garden-butterfly img {
   animation: butterfly-flutter 850ms ease-in-out infinite alternate;
 }
 .garden-dove {
-  top: 18%;
-  width: 66px;
-  animation: garden-dove-flight 54s 24s linear infinite both;
+  width: 72px;
+  animation: garden-dove-flight var(--duration) var(--delay) linear infinite
+    both;
 }
 .garden-dove img {
   animation: dove-glide 2s ease-in-out infinite alternate;
+}
+.garden-air [data-reverse="true"] {
+  animation-direction: reverse;
+}
+.garden-air [data-reverse="true"] img {
+  scale: -1 1;
 }
 .garden-air:not(.is-in-view) *,
 .garden-air:not(.is-in-view) img {
@@ -737,16 +759,15 @@ h2 {
     opacity: 0;
     transform: translate3d(0, 0, 0) rotate(-20deg);
   }
-  3% {
-    opacity: 0.65;
+  8% {
+    opacity: 0.8;
   }
-  12% {
-    transform: translate3d(28px, 50cqh, 0) rotate(80deg);
+  45% {
+    transform: translate3d(var(--drift), 45cqh, 0) rotate(100deg);
   }
-  24% {
-    opacity: 0.5;
+  85% {
+    opacity: 0.7;
   }
-  28%,
   100% {
     opacity: 0;
     transform: translate3d(-20px, calc(100cqh + 60px), 0) rotate(190deg);
@@ -757,22 +778,21 @@ h2 {
     opacity: 0;
     transform: translate3d(0, 0, 0);
   }
-  3% {
-    opacity: 0.75;
+  8% {
+    opacity: 0.9;
   }
-  9% {
-    transform: translate3d(35cqw, -60px, 0);
+  35% {
+    transform: translate3d(35cqw, -55px, 0);
   }
-  18% {
+  65% {
     transform: translate3d(70cqw, 35px, 0);
   }
-  27% {
-    opacity: 0.65;
+  90% {
+    opacity: 0.85;
   }
-  30%,
   100% {
     opacity: 0;
-    transform: translate3d(calc(100cqw + 180px), -40px, 0);
+    transform: translate3d(calc(100cqw + 200px), -40px, 0);
   }
 }
 @keyframes garden-dove-flight {
@@ -780,19 +800,18 @@ h2 {
     opacity: 0;
     transform: translate3d(0, 0, 0);
   }
-  2% {
-    opacity: 0.75;
+  8% {
+    opacity: 0.85;
   }
-  9% {
+  50% {
     transform: translate3d(55cqw, -45px, 0);
   }
-  16% {
-    opacity: 0.7;
+  90% {
+    opacity: 0.8;
   }
-  20%,
   100% {
     opacity: 0;
-    transform: translate3d(calc(100cqw + 180px), 20px, 0);
+    transform: translate3d(calc(100cqw + 200px), 20px, 0);
   }
 }
 @keyframes butterfly-flutter {
