@@ -13,7 +13,7 @@ const context = {
   rsvp: { status: 'pending' as const, companions: [], maxAdditionalGuests: 0 },
 };
 
-const MID_STORY_SECONDS = 22;
+const MID_STORY_SECONDS = 12;
 const PLAYBACK_RECOVERY_DEADLINE_MS = 9500;
 const RECOVERY_TEST_TIMEOUT_MS = 12000;
 
