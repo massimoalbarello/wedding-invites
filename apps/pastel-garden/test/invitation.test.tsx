@@ -1,8 +1,9 @@
 import { afterEach, expect, test } from 'bun:test';
 import type { InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { content } from '../src/content';
 import { Invitation } from '../src/invitation';
 
 afterEach(cleanup);
@@ -34,6 +35,9 @@ test('opening is gated by recipient context and reveals live text without a skip
   expect((screen.getByRole('button') as HTMLButtonElement).disabled).toBe(true);
   resolveContext(context);
   const open = await screen.findByRole('button', { name: 'Open invitation' });
+  const mountedHeading = document.querySelector<HTMLHeadingElement>('.hero h1')!;
+  expect(mountedHeading).not.toBeNull();
+  expect(document.querySelector('.letter')?.hasAttribute('inert')).toBe(true);
   await userEvent.click(open);
   expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
   expect(open.textContent).toBe('');
@@ -46,12 +50,62 @@ test('opening is gated by recipient context and reveals live text without a skip
   expect(video.muted).toBe(true);
   fireEvent.ended(video);
   const heading = screen.getByRole('heading', { name: 'Massimo & Elizaveta' });
+  expect(heading).toBe(mountedHeading);
+  expect(document.querySelector('.letter')?.hasAttribute('inert')).toBe(false);
   expect(document.activeElement).toBe(heading);
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(document.querySelector('video')).toBeNull();
   expect(screen.getByRole('heading', { name: 'We’re counting the days' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Celebrate with us' })).toBeDefined();
+});
+
+test('the live artwork is decoded before the intro can reveal it', async () => {
+  const decode = HTMLImageElement.prototype.decode;
+  let decoded!: () => void;
+  HTMLImageElement.prototype.decode = () =>
+    new Promise<void>((resolve) => {
+      decoded = resolve;
+    });
+  try {
+    show();
+    await screen.findByText('A letter for Alex Rivera');
+    const open = screen.getByRole('button', { name: 'Open invitation' }) as HTMLButtonElement;
+    expect(open.disabled).toBe(true);
+    decoded();
+    await waitFor(() => expect(open.disabled).toBe(false));
+    await userEvent.click(open);
+    fireEvent.ended(document.querySelector('video')!);
+    expect(screen.getByRole('heading', { name: content.nameLabel })).toBeDefined();
+  } finally {
+    HTMLImageElement.prototype.decode = decode;
+  }
+});
+
+test('changing landing content leaves the independent intro media unchanged', async () => {
+  const previous = { ...content };
+  Object.assign(content, {
+    names: ['New', 'Names'],
+    nameLabel: 'New & Names',
+    dateLabel: '1 July 2030',
+    venue: 'Another garden',
+  });
+  try {
+    show();
+    const open = (await screen.findByRole('button', {
+      name: 'Open invitation',
+    })) as HTMLButtonElement;
+    await waitFor(() => expect(open.disabled).toBe(false));
+    expect(document.querySelector('video')?.getAttribute('src')).toBe('./media/intro.mp4');
+    expect(document.querySelector('.intro-visual')?.textContent).toBe('');
+    await userEvent.click(open);
+    fireEvent.ended(document.querySelector('video')!);
+    expect(screen.getByRole('heading', { name: 'New & Names' })).toBeDefined();
+    expect(screen.getAllByText('Another garden').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('1 July 2030').length).toBeGreaterThan(0);
+  } finally {
+    Object.assign(content, previous);
+  }
 });
 
 test('playback progress does not finish the opening before its final frame', async () => {

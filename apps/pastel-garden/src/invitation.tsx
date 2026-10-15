@@ -1,13 +1,8 @@
 import type { InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { VenueArtwork } from './artwork';
-import { content } from './content';
-import { Countdown } from './countdown';
-import { Envelope, OPENING_DURATION_MS } from './envelope';
-import { ReplySection } from './reply-section';
-
-const OPENING_FALLBACK_MARGIN_MS = 1000;
+import { useCallback, useState } from 'react';
+import { Envelope } from './envelope';
+import { Landing } from './landing';
 
 export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   const context = useQuery({
@@ -16,31 +11,8 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   });
   const [stage, setStage] = useState<'closed' | 'opening' | 'open'>('closed');
   const finishOpening = useCallback(() => setStage('open'), []);
-  const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (stage === 'open') {
-      heading.current?.focus({ preventScroll: true });
-    }
-    if (stage === 'opening') {
-      // Guarantee access if playback stalls or the motion preference changes.
-      const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const finishWithReducedMotion = () => {
-        if (media.matches) {
-          setStage('open');
-        }
-      };
-      finishWithReducedMotion();
-      media.addEventListener('change', finishWithReducedMotion);
-      const timeout = window.setTimeout(
-        () => setStage('open'),
-        OPENING_DURATION_MS + OPENING_FALLBACK_MARGIN_MS,
-      );
-      return () => {
-        window.clearTimeout(timeout);
-        media.removeEventListener('change', finishWithReducedMotion);
-      };
-    }
-  }, [stage]);
+  const [landingReady, setLandingReady] = useState(false);
+  const ready = useCallback(() => setLandingReady(true), []);
 
   if (context.error) {
     return (
@@ -55,8 +27,16 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
   }
 
   return (
-    <div className="invitation">
-      {stage !== 'open' ? (
+    <div className={stage === 'open' ? 'invitation' : 'invitation is-sealed'}>
+      {context.data && (
+        <Landing
+          runtime={runtime}
+          context={context.data}
+          active={stage === 'open'}
+          onReady={ready}
+        />
+      )}
+      {stage !== 'open' && (
         <>
           <main className="sealed-letter" aria-label="Sealed invitation">
             <div className="sr-only">
@@ -70,54 +50,17 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
                   Opening your invitation…
                 </p>
               )}
-              {context.isPending && <p role="status">Just a moment…</p>}
+              {(context.isPending || !landingReady) && <p role="status">Just a moment…</p>}
             </div>
           </main>
           <button
             className="entrance-trigger"
             type="button"
             aria-label="Open invitation"
-            disabled={!context.data || stage !== 'closed'}
-            onClick={() =>
-              setStage((current) =>
-                current === 'closed'
-                  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                    ? 'open'
-                    : 'opening'
-                  : current,
-              )
-            }
+            disabled={!context.data || !landingReady || stage !== 'closed'}
+            onClick={() => setStage('opening')}
           />
         </>
-      ) : (
-        <main className="letter">
-          <section className="hero" aria-label="Wedding invitation">
-            <div className="portrait-art">
-              <img src="./media/landing.webp" alt="" width="720" height="1280" />
-              <div className="hero-copy">
-                <h1 ref={heading} tabIndex={-1} aria-label={content.nameLabel}>
-                  <span className="first-name">{content.names[0]}</span>{' '}
-                  <span className="second-name">&amp; {content.names[1]}</span>
-                </h1>
-                <p className="wedding-date">
-                  <time dateTime={content.date}>{content.dateLabel}</time>
-                </p>
-                <p className="wedding-venue">{content.venue}</p>
-              </div>
-            </div>
-          </section>
-          <section className="venue-section" id="venue" aria-labelledby="venue-heading">
-            <div className="venue-copy">
-              <p className="eyebrow">Our wedding</p>
-              <h2 id="venue-heading">{content.venue}</h2>
-              <VenueArtwork />
-              <time dateTime={content.date}>{content.dateLabel}</time>
-              <p className="signature">{content.nameLabel}</p>
-            </div>
-          </section>
-          <Countdown />
-          {context.data && <ReplySection runtime={runtime} context={context.data} />}
-        </main>
       )}
     </div>
   );

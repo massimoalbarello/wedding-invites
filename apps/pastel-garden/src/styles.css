@@ -11,6 +11,7 @@
   box-sizing: border-box;
 }
 html {
+  scrollbar-gutter: stable;
   scroll-behavior: smooth;
 }
 body {
@@ -75,7 +76,6 @@ button:hover:not(:disabled),
   position: relative;
   box-shadow: 0 0 80px #25446112;
 }
-.sealed-letter,
 .hero {
   min-height: 100svh;
   display: grid;
@@ -83,14 +83,35 @@ button:hover:not(:disabled),
   background: linear-gradient(#f6fbfe, #d2e8f7);
   overflow: hidden;
 }
+.invitation.is-sealed {
+  height: 100svh;
+  overflow: hidden;
+}
+.sealed-letter {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.intro-visual {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#f6fbfe, #d2e8f7);
+}
 .portrait-art {
   container-type: inline-size;
   position: relative;
   width: min(100%, calc(100svh * 9 / 16));
   aspect-ratio: 9 / 16;
 }
+.intro-frame {
+  width: min(100%, calc(100svh * 9 / 16), 900px);
+  aspect-ratio: 9 / 16;
+}
 .portrait-art > img,
-.portrait-art > video {
+.intro-frame > video {
   display: block;
   width: 100%;
   height: 100%;
