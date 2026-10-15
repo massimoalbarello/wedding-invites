@@ -55,76 +55,36 @@ export function Envelope({ opening, onOpened }: { opening: boolean; onOpened: ()
   }, [opening, onOpened, waitForPlayback, clearStallTimer]);
 
   return (
-    <>
-      <div className="portrait-art">
-        <video
-          ref={video}
-          src="./media/our-story-opening.mp4"
-          poster="./media/opening-poster.webp"
-          muted={muted}
-          playsInline
-          preload="metadata"
-          aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
-          onEnded={opening ? onOpened : undefined}
-          onError={opening ? onOpened : undefined}
-          onWaiting={opening && !paused ? waitForPlayback : undefined}
-          onStalled={opening && !paused ? waitForPlayback : undefined}
-          onPlaying={() => {
+    <div className="portrait-art">
+      <video
+        ref={video}
+        src="./media/our-story-opening.mp4"
+        poster="./media/opening-poster.webp"
+        muted={muted}
+        playsInline
+        preload="metadata"
+        aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
+        onEnded={opening ? onOpened : undefined}
+        onError={opening ? onOpened : undefined}
+        onWaiting={opening && !paused ? waitForPlayback : undefined}
+        onStalled={opening && !paused ? waitForPlayback : undefined}
+        onPlaying={() => {
+          clearStallTimer();
+          setPaused(false);
+        }}
+        onPause={() => {
+          clearStallTimer();
+          setPaused(true);
+        }}
+        onTimeUpdate={(event) => {
+          if (event.currentTarget.currentTime !== lastProgress.current) {
+            lastProgress.current = event.currentTarget.currentTime;
             clearStallTimer();
-            setPaused(false);
-          }}
-          onPause={() => {
-            clearStallTimer();
-            setPaused(true);
-          }}
-          onTimeUpdate={(event) => {
-            if (event.currentTarget.currentTime !== lastProgress.current) {
-              lastProgress.current = event.currentTarget.currentTime;
-              clearStallTimer();
-            }
-          }}
-          width="720"
-          height="1280"
-        />
-      </div>
-      {opening && (
-        <fieldset className="opening-controls">
-          <legend className="sr-only">Film controls</legend>
-          <button
-            type="button"
-            aria-label={paused ? 'Play our story' : 'Pause our story'}
-            onClick={() => {
-              const player = video.current;
-              if (!player) {
-                return;
-              }
-              if (player.paused) {
-                waitForPlayback();
-                void player.play().catch((error: unknown) => {
-                  if (!playbackWasInterrupted(error)) {
-                    onOpened();
-                  }
-                });
-              } else {
-                player.pause();
-              }
-            }}
-          >
-            {paused ? 'Play' : 'Pause'}
-          </button>
-          <button
-            type="button"
-            aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
-            aria-pressed={!muted}
-            onClick={() => setMuted((current) => !current)}
-          >
-            {muted ? 'Sound off' : 'Sound on'}
-          </button>
-          <button type="button" onClick={onOpened}>
-            View invitation
-          </button>
-        </fieldset>
-      )}
-    </>
+          }
+        }}
+        width="720"
+        height="1280"
+      />
+    </div>
   );
 }

@@ -46,6 +46,7 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   expect(screen.getByRole('status').textContent).toBe('Our story is playing…');
+  expect(screen.queryByRole('button')).toBeNull();
   const video = document.querySelector('video')!;
   expect(video.loop).toBe(false);
   expect(video.controls).toBe(false);
@@ -59,6 +60,9 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(
     screen.getByRole('img', { name: /Massimo and Elizaveta together/ }).getAttribute('src'),
   ).toBe('./media/landing-couple.webp');
+  expect(document.querySelector('.hero')?.textContent).toContain('invite you to their wedding');
+  expect(document.querySelector('.hero time')).toBeNull();
+  expect(document.querySelector('.hero')?.textContent).not.toContain(content.venue);
   expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(screen.getByRole('heading', { name: 'We’re counting the days' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Celebrate with us' })).toBeDefined();
@@ -125,30 +129,6 @@ test('progress beyond the old envelope duration does not interrupt the story', a
   expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
 });
 
-test('guests can go directly to the invitation during the film', async () => {
-  show();
-  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  await userEvent.click(screen.getByRole('button', { name: 'View invitation' }));
-  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Massimo & Elizaveta' }));
-  expect(document.querySelector('video')).toBeNull();
-});
-
-test('sound and pause controls remain available during playback', async () => {
-  show();
-  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  const video = document.querySelector('video')!;
-  fireEvent.playing(video);
-  await userEvent.click(screen.getByRole('button', { name: 'Turn sound off' }));
-  expect(video.muted).toBe(true);
-  await userEvent.click(screen.getByRole('button', { name: 'Turn sound on' }));
-  expect(video.muted).toBe(false);
-  fireEvent.pause(video);
-  expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
-  fireEvent.playing(video);
-  expect(screen.getByRole('button', { name: 'Pause our story' })).toBeDefined();
-  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
-});
-
 test('audio autoplay rejection retries silently rather than losing the story', async () => {
   const play = HTMLMediaElement.prototype.play;
   let blocked = true;
@@ -162,8 +142,8 @@ test('audio autoplay rejection retries silently rather than losing the story', a
   try {
     show();
     await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-    expect(await screen.findByRole('button', { name: 'Turn sound on' })).toBeDefined();
-    expect(document.querySelector('video')?.muted).toBe(true);
+    await waitFor(() => expect(document.querySelector('video')?.muted).toBe(true));
+    expect(screen.queryByRole('button')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   } finally {
     HTMLMediaElement.prototype.play = play;
@@ -192,7 +172,7 @@ test('pausing a pending play request does not restart playback or skip the film'
         return Promise.resolve();
       }),
     );
-    expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
+    expect(document.querySelector('video')).not.toBeNull();
     expect(document.querySelector('video')?.muted).toBe(false);
     expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   } finally {
@@ -227,9 +207,9 @@ test(
     fireEvent.pause(video);
     fireEvent.waiting(video);
     await new Promise((resolve) => window.setTimeout(resolve, PLAYBACK_RECOVERY_DEADLINE_MS));
-    expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
+    expect(document.querySelector('video')).not.toBeNull();
     expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'View invitation' }));
+    fireEvent.ended(video);
     expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
   },
   RECOVERY_TEST_TIMEOUT_MS,

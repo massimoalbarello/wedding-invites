@@ -48,13 +48,9 @@ export function Landing({
           />
           <div className="hero-copy">
             <h1 ref={heading} tabIndex={-1} aria-label={content.nameLabel}>
-              <span className="first-name">{content.names[0]}</span>{' '}
-              <span className="second-name">&amp; {content.names[1]}</span>
+              {content.names[0]} &amp; {content.names[1]}
             </h1>
-            <p className="wedding-date">
-              <time dateTime={content.date}>{content.dateLabel}</time>
-            </p>
-            <p className="wedding-venue">{content.venue}</p>
+            <p className="invitation-line">invite you to their wedding</p>
           </div>
         </div>
       </section>

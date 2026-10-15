@@ -101,30 +101,6 @@ button:hover:not(:disabled),
   place-items: center;
   background: linear-gradient(#f6fbfe, #d2e8f7);
 }
-.opening-controls {
-  position: absolute;
-  z-index: 2;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  left: 12px;
-  right: 12px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-.opening-controls button {
-  min-height: 44px;
-  padding: 10px 14px;
-  border-color: #ffffff80;
-  background: #f8fbf0ed;
-  box-shadow: 0 2px 16px #19364d1c;
-  font-family: system-ui, sans-serif;
-  font-size: 12px;
-  line-height: 1.2;
-}
 .portrait-art > img,
 .portrait-art > video {
   display: block;
@@ -190,40 +166,23 @@ h1 {
 }
 .hero h1 {
   position: absolute;
-  top: 9.765625%;
-  left: 0;
-  width: 100%;
+  top: 12.5%;
+  left: 10%;
+  width: 80%;
   margin: 0;
   max-width: none;
+  font-size: 7.6cqw;
 }
 h1:focus {
   outline: none;
 }
-.wedding-date,
-.wedding-venue {
+.invitation-line {
   position: absolute;
+  top: 18.5%;
   left: 0;
   width: 100%;
-  line-height: 1;
-}
-.hero h1 span {
-  display: block;
-  line-height: 1;
-}
-.first-name {
-  font-size: 15cqw;
-}
-.second-name {
-  margin-top: 3.305556cqw;
-  font-size: 14.444444cqw;
-}
-.wedding-date {
-  top: 31.210938%;
-  font-size: 7.638889cqw;
-}
-.wedding-venue {
-  top: 37.078125%;
-  font-size: 7.777778cqw;
+  font-size: 4.2cqw;
+  line-height: 1.2;
 }
 .garden-link {
   margin-top: 16px;
