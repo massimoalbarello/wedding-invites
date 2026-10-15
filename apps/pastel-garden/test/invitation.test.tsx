@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'bun:test';
 import type { InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { content } from '../src/content';
 import { Invitation } from '../src/invitation';
@@ -12,6 +12,10 @@ const context = {
   recipient: { name: 'Alex Rivera' },
   rsvp: { status: 'pending' as const, companions: [], maxAdditionalGuests: 0 },
 };
+
+const MID_STORY_SECONDS = 22;
+const PLAYBACK_RECOVERY_DEADLINE_MS = 9500;
+const RECOVERY_TEST_TIMEOUT_MS = 12000;
 
 function show(getContext: InvitationRuntime['getContext'] = async () => context) {
   const runtime: InvitationRuntime = { getContext, saveRsvp: async () => context.rsvp };
@@ -24,7 +28,7 @@ function show(getContext: InvitationRuntime['getContext'] = async () => context)
   );
 }
 
-test('opening is gated by recipient context and reveals live text without a skip control', async () => {
+test('recipient access gates the film, whose ending reveals the live invitation', async () => {
   let resolveContext!: (value: typeof context) => void;
   show(
     () =>
@@ -39,23 +43,23 @@ test('opening is gated by recipient context and reveals live text without a skip
   expect(mountedHeading).not.toBeNull();
   expect(document.querySelector('.letter')?.hasAttribute('inert')).toBe(true);
   await userEvent.click(open);
-  expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
-  expect(open.textContent).toBe('');
-  expect((open as HTMLButtonElement).disabled).toBe(true);
-  await userEvent.click(open);
-  expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
+  expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+  expect(screen.getByRole('status').textContent).toBe('Our story is playing…');
   const video = document.querySelector('video')!;
   expect(video.loop).toBe(false);
   expect(video.controls).toBe(false);
-  expect(video.muted).toBe(true);
+  expect(video.muted).toBe(false);
   fireEvent.ended(video);
   const heading = screen.getByRole('heading', { name: 'Massimo & Elizaveta' });
   expect(heading).toBe(mountedHeading);
   expect(document.querySelector('.letter')?.hasAttribute('inert')).toBe(false);
   expect(document.activeElement).toBe(heading);
-  expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
-  expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(document.querySelector('video')).toBeNull();
+  expect(
+    screen.getByRole('img', { name: /Massimo and Elizaveta together/ }).getAttribute('src'),
+  ).toBe('./media/landing-couple.webp');
+  expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
   expect(screen.getByRole('heading', { name: 'We’re counting the days' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Celebrate with us' })).toBeDefined();
 });
@@ -96,8 +100,10 @@ test('changing landing content leaves the independent intro media unchanged', as
       name: 'Open invitation',
     })) as HTMLButtonElement;
     await waitFor(() => expect(open.disabled).toBe(false));
-    expect(document.querySelector('video')?.getAttribute('src')).toBe('./media/intro.mp4');
-    expect(document.querySelector('.intro-visual')?.textContent).toBe('');
+    expect(document.querySelector('video')?.getAttribute('src')).toBe(
+      './media/our-story-opening.mp4',
+    );
+    expect(document.querySelector('video')?.parentElement?.textContent).toBe('');
     await userEvent.click(open);
     fireEvent.ended(document.querySelector('video')!);
     expect(screen.getByRole('heading', { name: 'New & Names' })).toBeDefined();
@@ -108,14 +114,60 @@ test('changing landing content leaves the independent intro media unchanged', as
   }
 });
 
-test('playback progress does not finish the opening before its final frame', async () => {
+test('progress beyond the old envelope duration does not interrupt the story', async () => {
   show();
   await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  fireEvent.timeUpdate(document.querySelector('video')!);
+  const video = document.querySelector('video')!;
+  video.currentTime = MID_STORY_SECONDS;
+  fireEvent.timeUpdate(video);
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
-  expect(screen.getByRole('status').textContent).toBe('Opening your invitation…');
-  fireEvent.ended(document.querySelector('video')!);
+  fireEvent.ended(video);
   expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+});
+
+test('guests can go directly to the invitation during the film', async () => {
+  show();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+  await userEvent.click(screen.getByRole('button', { name: 'View invitation' }));
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Massimo & Elizaveta' }));
+  expect(document.querySelector('video')).toBeNull();
+});
+
+test('sound and pause controls remain available during playback', async () => {
+  show();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+  const video = document.querySelector('video')!;
+  fireEvent.playing(video);
+  await userEvent.click(screen.getByRole('button', { name: 'Turn sound off' }));
+  expect(video.muted).toBe(true);
+  await userEvent.click(screen.getByRole('button', { name: 'Turn sound on' }));
+  expect(video.muted).toBe(false);
+  fireEvent.pause(video);
+  expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
+  fireEvent.playing(video);
+  expect(screen.getByRole('button', { name: 'Pause our story' })).toBeDefined();
+  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+});
+
+test('audio autoplay rejection retries silently rather than losing the story', async () => {
+  const play = HTMLMediaElement.prototype.play;
+  let blocked = true;
+  HTMLMediaElement.prototype.play = () => {
+    if (blocked) {
+      blocked = false;
+      return Promise.reject(new Error('Sound needs a gesture.'));
+    }
+    return Promise.resolve();
+  };
+  try {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    expect(await screen.findByRole('button', { name: 'Turn sound on' })).toBeDefined();
+    expect(document.querySelector('video')?.muted).toBe(true);
+    expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+  } finally {
+    HTMLMediaElement.prototype.play = play;
+  }
 });
 
 test('a video failure still grants access to the live invitation', async () => {
@@ -126,7 +178,64 @@ test('a video failure still grants access to the live invitation', async () => {
   expect(document.querySelector('video')).toBeNull();
 });
 
-test('a browser playback rejection still grants access to the live invitation', async () => {
+test('pausing a pending play request does not restart playback or skip the film', async () => {
+  const play = HTMLMediaElement.prototype.play;
+  const playback = Promise.withResolvers<void>();
+  HTMLMediaElement.prototype.play = () => playback.promise;
+  try {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    fireEvent.pause(document.querySelector('video')!);
+    await Promise.resolve(
+      act(() => {
+        playback.reject(new DOMException('Playback was paused.', 'AbortError'));
+        return Promise.resolve();
+      }),
+    );
+    expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
+    expect(document.querySelector('video')?.muted).toBe(false);
+    expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+  } finally {
+    HTMLMediaElement.prototype.play = play;
+  }
+});
+
+test(
+  'a stalled film recovers to the invitation without waiting for its full duration',
+  async () => {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    fireEvent.waiting(document.querySelector('video')!);
+    const heading = await screen.findByRole(
+      'heading',
+      { name: 'Massimo & Elizaveta' },
+      { timeout: PLAYBACK_RECOVERY_DEADLINE_MS },
+    );
+    expect(document.activeElement).toBe(heading);
+    expect(document.querySelector('video')).toBeNull();
+  },
+  RECOVERY_TEST_TIMEOUT_MS,
+);
+
+test(
+  'pausing the film cancels automatic stall recovery',
+  async () => {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    const video = document.querySelector('video')!;
+    fireEvent.playing(video);
+    fireEvent.pause(video);
+    fireEvent.waiting(video);
+    await new Promise((resolve) => window.setTimeout(resolve, PLAYBACK_RECOVERY_DEADLINE_MS));
+    expect(screen.getByRole('button', { name: 'Play our story' })).toBeDefined();
+    expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'View invitation' }));
+    expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+  },
+  RECOVERY_TEST_TIMEOUT_MS,
+);
+
+test('rejection of both audible and muted playback still opens the invitation', async () => {
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = () => Promise.reject(new Error('Playback was denied.'));
   try {
@@ -140,7 +249,7 @@ test('a browser playback rejection still grants access to the live invitation', 
   }
 });
 
-test('reduced motion opens immediately without the opening stage', async () => {
+test('reduced motion opens immediately without playing the film', async () => {
   const original = window.matchMedia;
   window.matchMedia = (query) => {
     const media = original.call(window, query);
@@ -150,8 +259,9 @@ test('reduced motion opens immediately without the opening stage', async () => {
   try {
     show();
     await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-    expect(screen.queryByRole('button', { name: 'Skip opening' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'View invitation' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+    expect(document.querySelector('video')).toBeNull();
   } finally {
     window.matchMedia = original;
   }
