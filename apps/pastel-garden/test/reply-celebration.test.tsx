@@ -1,5 +1,5 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, waitFor } from '@testing-library/react';
 import confetti from 'canvas-confetti';
 import { ReplyCelebration } from '../src/reply-celebration';
 
@@ -30,7 +30,7 @@ test('the burst starts at the current reply button within the canvas and release
   expect(onEnd).not.toHaveBeenCalled();
   animation.resolve(null);
   await animation.promise;
-  expect(onEnd).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(onEnd).toHaveBeenCalledTimes(1));
   view.unmount();
   expect(launch.reset).toHaveBeenCalledTimes(1);
 });
