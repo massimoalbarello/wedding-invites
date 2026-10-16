@@ -12,6 +12,7 @@ const HTTP_BAD_REQUEST = 400;
 const PAGE_OVERFLOW_COUNT = 42;
 const BURST_FRAME_MS = 240;
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
+const NARROW_VIEWPORT = { width: 320, height: 568 };
 const DESKTOP_VIEWPORT = { width: 1440, height: 1000 };
 const fixtures = resolve('apps/web/backend/test/fixtures/faces');
 const artifacts = resolve('artifacts');
@@ -536,6 +537,17 @@ try {
   const anonymousMessage = await newcomer.page.locator('body').innerText();
   assert(!anonymousMessage.includes('Elena'));
   assert(!anonymousMessage.includes('September'));
+  await newcomer.page.setViewportSize(DESKTOP_VIEWPORT);
+  await newcomer.page.screenshot({
+    path: resolve(artifacts, 'personal-message-desktop.png'),
+    fullPage: true,
+  });
+  await newcomer.page.setViewportSize(NARROW_VIEWPORT);
+  assert.ok(
+    (await newcomer.page.locator('html').evaluate((element) => element.scrollWidth)) <=
+      NARROW_VIEWPORT.width,
+    'The private letter must fit a narrow phone screen.',
+  );
   await newcomer.page.setViewportSize(MOBILE_VIEWPORT);
   await newcomer.page.screenshot({
     path: resolve(artifacts, 'personal-message-mobile.png'),
@@ -630,14 +642,22 @@ try {
   });
   await guestBrowser.page.getByRole('button', { name: 'Capture & verify', exact: true }).click();
   await guestBrowser.page.getByRole('heading', { name: 'It’s you, Taylor Reed.' }).waitFor();
-  await waitForGuestStatus({ page, guest, status: 'Verified' });
-  await page.locator('main').screenshot({ path: resolve(artifacts, 'funnel-verified.png') });
+  await guestBrowser.page
+    .getByRole('status')
+    .filter({ hasText: 'Opening your invitation in 3' })
+    .waitFor();
   assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
   await guestBrowser.page.screenshot({
     path: resolve(artifacts, 'verification-success-mobile.png'),
     fullPage: true,
   });
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  for (const seconds of [2, 1]) {
+    await guestBrowser.page
+      .getByRole('status')
+      .filter({ hasText: `Opening your invitation in ${seconds}` })
+      .waitFor();
+    assert.equal(await guestBrowser.page.locator('iframe').count(), 0);
+  }
   console.log(`Invitation recording: ${await guestBrowser.page.video()!.path()}`);
   await invitationFrame(guestBrowser.page)
     .getByRole('button', { name: 'Tap to open', exact: true })
@@ -708,7 +728,7 @@ try {
   await checkGuestPhotoEditing({ page, origin: app.origin, guest });
   await guestBrowser.page.goto(link);
   await captureSelfie(guestBrowser.page);
-  await guestBrowser.page.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  await guestBrowser.page.getByRole('link', { name: 'Open invitation', exact: true }).click();
   await openLetter(guestBrowser.page);
   await checkGuestGrouping({ page, origin: app.origin });
   const bypass = seeded[4]!;
