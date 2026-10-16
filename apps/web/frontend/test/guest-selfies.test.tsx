@@ -31,8 +31,16 @@ const guest: Guest = {
     invitationOpenedAt: null,
   },
 };
-const newest = { id: 'b'.repeat(ID_LENGTH), createdAt: '2026-10-15T12:00:00.000Z' };
-const older = { id: 'c'.repeat(ID_LENGTH), createdAt: '2026-10-14T12:00:00.000Z' };
+const newest = {
+  id: 'b'.repeat(ID_LENGTH),
+  createdAt: '2026-10-15T12:00:00.000Z',
+  authorized: true,
+};
+const older = {
+  id: 'c'.repeat(ID_LENGTH),
+  createdAt: '2026-10-14T12:00:00.000Z',
+  authorized: false,
+};
 const clients: QueryClient[] = [];
 afterEach(() => {
   cleanup();
@@ -101,6 +109,7 @@ test('the profile shows dated guest selfies, opens originals, and loads older su
     captureUrl({ id: guest.id, captureId: newest.id }),
   );
   expect(within(gallery).getByText(new Date(newest.createdAt).toLocaleString())).toBeTruthy();
+  expect(within(gallery).getByText('Authorized', { exact: true })).toBeTruthy();
   await user.click(within(gallery).getByRole('button', { name: 'Load older selfies' }));
   await waitFor(() => expect(within(gallery).getAllByRole('img')).toHaveLength(2));
   expect(
@@ -109,6 +118,7 @@ test('the profile shows dated guest selfies, opens originals, and loads older su
       .map((img) => img.getAttribute('src')),
   ).toEqual([newest, older].map((photo) => captureUrl({ id: guest.id, captureId: photo.id })));
   expect(within(gallery).queryByRole('button', { name: 'Load older selfies' })).toBeNull();
+  expect(within(gallery).getByText('Not authorized', { exact: true })).toBeTruthy();
 });
 
 test('loading and empty selfies leave the guest profile usable', async () => {
@@ -174,4 +184,12 @@ test('an initial gallery failure recovers to the empty state', async () => {
   fail = false;
   await user.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByText(/No selfies yet/)).toBeTruthy();
+});
+
+test('selfies without a recorded outcome are labelled explicitly', async () => {
+  renderProfile(() => response({ items: [{ ...newest, authorized: null }], nextCursor: null }));
+  const gallery = await screen.findByRole('region', { name: 'Selfies' });
+  expect(await within(gallery).findByText('Result not recorded')).toBeTruthy();
+  expect(within(gallery).queryByText('Authorized', { exact: true })).toBeNull();
+  expect(within(gallery).queryByText('Not authorized', { exact: true })).toBeNull();
 });

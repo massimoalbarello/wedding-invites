@@ -19,7 +19,9 @@ export const CaptureListQuerySchema = t.Object({
   limit: t.Optional(t.Integer({ minimum: 1, maximum: MAX_PAGE_SIZE, default: DEFAULT_PAGE_SIZE })),
 });
 export const CaptureListSchema = t.Object({
-  items: t.Array(t.Object({ id: PublicIdSchema, createdAt: t.String() })),
+  items: t.Array(
+    t.Object({ id: PublicIdSchema, createdAt: t.String(), authorized: t.Nullable(t.Boolean()) }),
+  ),
   nextCursor: t.Nullable(PublicIdSchema),
 });
 const [pending, accepted, declined] = RSVP_STATUSES;

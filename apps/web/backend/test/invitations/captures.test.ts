@@ -1,4 +1,10 @@
 import { expect, test } from 'bun:test';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createSqliteDatabase } from '#backend/db/client.ts';
+import { runMigrations } from '#backend/db/migrate.ts';
+import { getMigrations } from '#backend/lib/assets.ts';
 import { OWNER_USER_ID } from '#backend/lib/auth/owner-registration.ts';
 import { FaceAnalysisError } from '#backend/lib/faces/errors.ts';
 import { opaqueId } from '#backend/lib/opaque-id.ts';
@@ -12,6 +18,8 @@ const UNAUTHORIZED = 401;
 const FORBIDDEN = 403;
 const NOT_FOUND = 404;
 const INTERNAL_ERROR = 500;
+const UNAVAILABLE = 503;
+const AUTHORIZATION_MIGRATION = '0007_capture_authorization.sql';
 const REFERENCE = 1;
 const MISMATCH = 3;
 const SELFIE = 4;
@@ -25,6 +33,7 @@ type CaptureRow = {
   image: Uint8Array;
   media_type: string;
   created_at: string;
+  authorized: number | null;
 };
 
 function photoUpload(file: File) {
@@ -33,7 +42,7 @@ function photoUpload(file: File) {
   return body;
 }
 
-test('submitted selfies are retained independently of match results and reference photos', async () => {
+test('submitted selfies retain their authorization outcome independently of reference photos', async () => {
   const f = await fixture({
     faces: {
       analyze: ({ image }) => {
@@ -87,6 +96,7 @@ test('submitted selfies are retained independently of match results and referenc
       expect(capture.owner_id).toBe(actor.userId);
       expect(capture.guest_id).toBe(storedGuest.id);
       expect(capture.media_type).toBe(attempts[index]!.mediaType);
+      expect(capture.authorized).toBe(Number(attempts[index]!.status === SUCCESS));
       expect(capture.image).toEqual(new Uint8Array(await attempts[index]!.file.arrayBuffer()));
       expect(new Date(capture.created_at).toISOString()).toBe(capture.created_at);
       expect(capture.created_at >= started && capture.created_at <= finished).toBe(true);
@@ -101,7 +111,11 @@ test('submitted selfies are retained independently of match results and referenc
         .map((capture) => [capture.created_at, capture.id])
         .sort()
         .reverse()
-        .map(([createdAt, id]) => ({ id, createdAt })),
+        .map(([createdAt, id]) => ({
+          id,
+          createdAt,
+          authorized: Boolean(captures.find((capture) => capture.id === id)!.authorized),
+        })),
       nextCursor: null,
     });
     for (const capture of captures) {
@@ -162,11 +176,14 @@ test('selfie reads are scoped to the owner and guest, paginate ties, and survive
     const prefix = `/api/admin/guests/${guest.id}/captures`;
     const first = await f.request({ path: `${prefix}?limit=2`, cookie: owner });
     expect(await first.json()).toEqual({
-      items: ids.slice(0, 2).map((id) => ({ id, createdAt })),
+      items: ids.slice(0, 2).map((id) => ({ id, createdAt, authorized: null })),
       nextCursor: ids[1],
     });
     const last = await f.request({ path: `${prefix}?limit=2&cursor=${ids[1]}`, cookie: owner });
-    expect(await last.json()).toEqual({ items: [{ id: ids[2], createdAt }], nextCursor: null });
+    expect(await last.json()).toEqual({
+      items: [{ id: ids[2], createdAt, authorized: null }],
+      nextCursor: null,
+    });
     const empty = await f.request({
       path: `/api/admin/guests/${other.id}/captures`,
       cookie: owner,
@@ -353,6 +370,193 @@ test('a failed capture write does not issue a successful authentication session'
     expect(await f.database`select id from invitation_capture`).toHaveLength(0);
     expect(await f.database`select token_hash from invitation_session`).toHaveLength(0);
     expect(await f.management.get({ actor, id: guest.id })).toEqual(guest);
+  } finally {
+    await f.close();
+  }
+});
+
+test('the authorization migration preserves existing selfies with an unknown result', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'capture-authorization-migration-'));
+  const database = await createSqliteDatabase({ dataFolder: folder });
+  try {
+    await runMigrations({
+      db: database,
+      migrations: new Map([...getMigrations()].filter(([name]) => name < AUTHORIZATION_MIGRATION)),
+    });
+    const createdAt = new Date().toISOString();
+    const image = new Uint8Array(await photo(SELFIE).arrayBuffer());
+    await database`insert into auth_user (id,name,email,emailVerified,createdAt,updatedAt)
+      values ('owner', 'Owner', 'owner@test.invalid', 1, ${createdAt}, ${createdAt})`;
+    await database`insert into invitation_guest (id,public_id,owner_id,token,name,created_at)
+      values ('guest', 'public', 'owner', 'link', 'Existing guest', ${createdAt})`;
+    await database`insert into invitation_capture (id,owner_id,guest_id,image,media_type,created_at)
+      values ('capture', 'owner', 'guest', ${image}, 'image/jpeg', ${createdAt})`;
+    await runMigrations({ db: database });
+    await runMigrations({ db: database });
+    expect(
+      await database<
+        Pick<CaptureRow, 'id' | 'image' | 'media_type' | 'created_at' | 'authorized'>[]
+      >`select id,image,media_type,created_at,authorized from invitation_capture`,
+    ).toEqual([
+      { id: 'capture', image, media_type: 'image/jpeg', created_at: createdAt, authorized: null },
+    ]);
+    await expect(
+      Promise.resolve(database`update invitation_capture set authorized = 2`),
+    ).rejects.toThrow();
+  } finally {
+    await database.close();
+    await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test('authorization results belong to the captured guest and cannot be overwritten or reused', async () => {
+  const f = await fixture();
+  try {
+    await f.admin();
+    const guest = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const other = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const stored = (await f.guests.get({ ownerId: actor.userId, publicId: guest.id }))!;
+    const storedOther = (await f.guests.get({ ownerId: actor.userId, publicId: other.id }))!;
+    const captures = new InvitationCapturesRepository(f.database);
+    const captureId = opaqueId();
+    const scope = { ownerId: actor.userId, guestId: stored.id };
+    expect(
+      await captures.save({
+        ...scope,
+        id: captureId,
+        linkToken: guest.token,
+        image: new Uint8Array(await photo(SELFIE).arrayBuffer()),
+        mediaType: 'image/jpeg',
+        createdAt: new Date().toISOString(),
+      }),
+    ).toBe(true);
+    await captures.reject({ ...scope, id: captureId, ownerId: 'outsider' });
+    await captures.reject({ ...scope, id: captureId, guestId: storedOther.id });
+    expect((await captures.list({ ...scope, limit: 1 }))[0]!.authorized).toBeNull();
+    const session = {
+      ...scope,
+      captureId,
+      linkToken: guest.token,
+      tokenHash: 'first-session',
+      expiresAt: '2030-01-01T00:00:00.000Z',
+    };
+    expect(
+      await f.guests.createSession({ ...session, guestId: storedOther.id, linkToken: other.token }),
+    ).toBe(false);
+    expect(await f.guests.createSession({ ...session, ownerId: 'outsider' })).toBe(false);
+    expect(await f.guests.createSession(session)).toBe(true);
+    await captures.reject({ ...scope, id: captureId });
+    expect((await captures.list({ ...scope, limit: 1 }))[0]!.authorized).toBe(true);
+    expect(await f.guests.createSession({ ...session, tokenHash: 'reused-capture' })).toBe(false);
+    expect(
+      await f.database<{ token_hash: string }[]>`select token_hash from invitation_session`,
+    ).toEqual([{ token_hash: session.tokenHash }]);
+  } finally {
+    await f.close();
+  }
+});
+
+test.each([
+  {
+    name: 'session storage fails',
+    trigger:
+      "create trigger fail_session before insert on invitation_session begin select raise(abort, 'Session storage unavailable'); end",
+  },
+  {
+    name: 'authorization storage fails',
+    trigger:
+      "create trigger fail_result before update of authorized on invitation_capture when new.authorized = 1 begin select raise(abort, 'Result storage unavailable'); end",
+  },
+  {
+    name: 'authorization update is ignored',
+    trigger:
+      'create trigger ignore_result before update of authorized on invitation_capture when new.authorized = 1 begin select raise(ignore); end',
+  },
+])(
+  'access and its positive authorization result roll back together when $name',
+  async ({ trigger }) => {
+    const f = await fixture();
+    try {
+      await f.admin();
+      const guest = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+      await f.database.unsafe(trigger);
+      const response = await f.request({
+        path: `/api/invitations/${guest.token}/verify`,
+        method: 'POST',
+        body: upload(SELFIE),
+      });
+      expect(response.status).toBe(INTERNAL_ERROR);
+      expect(response.headers.get('set-cookie')).toBeNull();
+      expect(await f.database`select token_hash from invitation_session`).toHaveLength(0);
+      expect(
+        await f.database<
+          { authorized: number | null }[]
+        >`select authorized from invitation_capture`,
+      ).toEqual([{ authorized: 0 }]);
+      expect(await f.management.get({ actor, id: guest.id })).toEqual(guest);
+    } finally {
+      await f.close();
+    }
+  },
+);
+
+test('incomplete analysis has no result and a rotated link cannot authorize its selfie', async () => {
+  const entered = Promise.withResolvers<void>();
+  const analysis = Promise.withResolvers<ReturnType<typeof observation>>();
+  const f = await fixture({
+    faces: {
+      analyze: ({ image }) => {
+        if (image.at(-1) === SELFIE) {
+          entered.resolve();
+          return analysis.promise;
+        }
+        return Promise.resolve(observation(REFERENCE));
+      },
+    },
+  });
+  try {
+    await f.admin();
+    const guest = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const verification = f.request({
+      path: `/api/invitations/${guest.token}/verify`,
+      method: 'POST',
+      body: upload(SELFIE),
+    });
+    await entered.promise;
+    expect((await f.management.captures({ actor, id: guest.id })).items[0]!.authorized).toBeNull();
+    await f.management.rotate({ actor, id: guest.id });
+    analysis.resolve(observation(SELFIE));
+    const response = await verification;
+    expect(response.status).toBe(NOT_FOUND);
+    expect(response.headers.get('set-cookie')).toBeNull();
+    expect((await f.management.captures({ actor, id: guest.id })).items[0]!.authorized).toBe(false);
+    expect(await f.database`select token_hash from invitation_session`).toHaveLength(0);
+  } finally {
+    analysis.resolve(observation(SELFIE));
+    await f.close();
+  }
+});
+
+test('an unavailable face analyzer does not authorize the retained selfie', async () => {
+  const f = await fixture({
+    faces: {
+      analyze: ({ image }) =>
+        image.at(-1) === SELFIE
+          ? Promise.reject(new FaceAnalysisError({ code: 'unavailable', message: 'Unavailable.' }))
+          : Promise.resolve(observation(REFERENCE)),
+    },
+  });
+  try {
+    await f.admin();
+    const guest = await f.management.create({ actor, settings, photos: [photo(REFERENCE)] });
+    const response = await f.request({
+      path: `/api/invitations/${guest.token}/verify`,
+      method: 'POST',
+      body: upload(SELFIE),
+    });
+    expect(response.status).toBe(UNAVAILABLE);
+    expect(response.headers.get('set-cookie')).toBeNull();
+    expect((await f.management.captures({ actor, id: guest.id })).items[0]!.authorized).toBe(false);
   } finally {
     await f.close();
   }

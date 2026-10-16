@@ -231,6 +231,7 @@ function GuestSelfies({ guest, ownerId }: { guest: Guest; ownerId: string }) {
                   className="aspect-square w-full rounded-lg bg-muted object-cover"
                 />
               </a>
+              <SelfieAuthorization authorized={photo.authorized} />
               <time dateTime={photo.createdAt} className="block text-muted-foreground text-xs">
                 {new Date(photo.createdAt).toLocaleString()}
               </time>
@@ -264,6 +265,25 @@ function GuestSelfies({ guest, ownerId }: { guest: Guest; ownerId: string }) {
         </Button>
       )}
     </section>
+  );
+}
+function SelfieAuthorization({ authorized }: { authorized: boolean | null }) {
+  if (authorized === null) {
+    return (
+      <span className="inline-flex rounded-full bg-muted px-2.5 py-1 font-medium text-muted-foreground text-xs">
+        Result not recorded
+      </span>
+    );
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-xs ${
+        authorized ? 'bg-primary text-primary-foreground' : 'bg-destructive/10 text-destructive'
+      }`}
+    >
+      <span aria-hidden="true">{authorized ? '✓' : '×'}</span>
+      {authorized ? 'Authorized' : 'Not authorized'}
+    </span>
   );
 }
 function GuestAccess({ guest, ownerId }: { guest: Guest; ownerId: string }) {
