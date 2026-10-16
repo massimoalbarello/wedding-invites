@@ -1,15 +1,18 @@
 import { MAX_NAME_LENGTH, type RsvpReply, type RsvpState } from '@repo/invitation-runtime/contract';
 import { useForm } from '@tanstack/react-form';
+import type { Ref } from 'react';
 
 export function RsvpForm({
   status,
   companions,
   maxGuests,
+  submitButtonRef,
   onSave,
 }: {
   status: RsvpState['status'];
   companions: { name: string }[];
   maxGuests: number;
+  submitButtonRef: Ref<HTMLButtonElement>;
   onSave: (reply: RsvpReply) => Promise<void>;
 }) {
   const form = useForm({
@@ -45,7 +48,7 @@ export function RsvpForm({
       >
         {(field) => (
           <fieldset>
-            <legend>Will you join us?</legend>
+            <legend className="sr-only">Your reply</legend>
             {[
               { value: 'accepted', label: 'Yes, I’ll be there' },
               { value: 'declined', label: 'Sorry, I can’t make it' },
@@ -83,12 +86,12 @@ export function RsvpForm({
               }}
             >
               {(field) => (
-                <section>
+                <section className="guest-details">
                   <div>
                     <h3>Who’s coming with you?</h3>
                     <p>
-                      You can bring up to {maxGuests} additional{' '}
-                      {maxGuests === 1 ? 'guest' : 'guests'}.
+                      We’re keeping our celebration close to the people who have shared our lives
+                      over the years. Please keep this in mind when choosing who to bring with you.
                     </p>
                   </div>
                   {Array.from(field.state.value.entries()).map(([index, person]) => (
@@ -96,7 +99,9 @@ export function RsvpForm({
                       {(nameField) => (
                         <div>
                           <div>
-                            <label htmlFor={`companion-${index}`}>Guest {index + 1} name</label>
+                            <label htmlFor={`companion-${index}`}>
+                              {maxGuests === 1 ? 'Guest name' : `Guest ${index + 1} name`}
+                            </label>
                             <input
                               id={`companion-${index}`}
                               value={nameField.state.value}
@@ -108,7 +113,9 @@ export function RsvpForm({
                           <button
                             className="remove-guest"
                             type="button"
-                            aria-label={`Remove guest ${index + 1}`}
+                            aria-label={
+                              maxGuests === 1 ? 'Remove guest' : `Remove guest ${index + 1}`
+                            }
                             onClick={() => field.removeValue(index)}
                           >
                             Remove
@@ -138,7 +145,7 @@ export function RsvpForm({
       </form.Subscribe>
       <form.Subscribe selector={(state) => state.isSubmitting}>
         {(pending: boolean) => (
-          <button type="submit" disabled={pending}>
+          <button ref={submitButtonRef} type="submit" disabled={pending}>
             {pending ? 'Saving your reply…' : status === 'pending' ? 'Send reply' : 'Update reply'}
           </button>
         )}

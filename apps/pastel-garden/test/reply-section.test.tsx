@@ -42,10 +42,10 @@ test('failed RSVP keeps the companion draft so the guest can retry', async () =>
   const user = userEvent.setup();
   await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
   await user.click(screen.getByRole('button', { name: '+ Add a guest' }));
-  await user.type(screen.getByLabelText('Guest 1 name'), 'Casey Rivera');
+  await user.type(screen.getByLabelText('Guest name'), 'Casey Rivera');
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   expect((await screen.findByRole('alert')).textContent).toBe('Please try again.');
-  expect((screen.getByLabelText('Guest 1 name') as HTMLInputElement).value).toBe('Casey Rivera');
+  expect((screen.getByLabelText('Guest name') as HTMLInputElement).value).toBe('Casey Rivera');
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   expect((await screen.findByRole('status')).textContent).toContain('Your reply is saved');
 });
@@ -57,4 +57,62 @@ test('a guest without an allowance can reply without companion controls', async 
   expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Send reply' }));
   expect((await screen.findByRole('status')).textContent).toContain('Your reply is saved');
+});
+
+test('guest guidance appears only with Yes and disappears again with No', async () => {
+  show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
+  const guidance = /We’re keeping our celebration close/;
+  expect(screen.queryByText(guidance)).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(screen.getByText(guidance)).toBeDefined();
+  await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
+  expect(screen.queryByText(guidance)).toBeNull();
+  expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
+});
+
+test('confetti celebrates a saved acceptance, never a draft, failure, or decline', async () => {
+  let fail = true;
+  show({
+    saveRsvp: (reply) =>
+      fail
+        ? Promise.reject(new Error('Please try again.'))
+        : Promise.resolve({ ...context.rsvp, ...reply }),
+  });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(document.querySelector('.reply-celebration')).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  await screen.findByRole('alert');
+  expect(document.querySelector('.reply-celebration')).toBeNull();
+  fail = false;
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  await screen.findByRole('status');
+  expect(document.querySelector('.reply-celebration')).not.toBeNull();
+  await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
+  await user.click(screen.getByRole('button', { name: 'Send reply' }));
+  expect((await screen.findByRole('status')).textContent).toBe('Thank you for letting us know.');
+  expect(document.querySelector('.reply-celebration')).toBeNull();
+});
+
+test('a single companion uses an unnumbered label and the allowance still limits the form', async () => {
+  show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
+  await userEvent.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(screen.queryByText(/You can bring up to/)).toBeNull();
+  await userEvent.click(screen.getByRole('button', { name: '+ Add a guest' }));
+  expect(screen.getByLabelText('Guest name')).toBeDefined();
+  expect(screen.queryByLabelText('Guest 1 name')).toBeNull();
+  expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
+});
+
+test('multiple companions keep distinct labels without showing an allowance sentence', async () => {
+  show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }), allowance: 2 });
+  await userEvent.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
+  expect(screen.queryByText(/You can bring up to/)).toBeNull();
+  await userEvent.click(screen.getByRole('button', { name: '+ Add a guest' }));
+  await userEvent.click(screen.getByRole('button', { name: '+ Add a guest' }));
+  expect(screen.getByLabelText('Guest 1 name')).toBeDefined();
+  expect(screen.getByLabelText('Guest 2 name')).toBeDefined();
+  expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
 });

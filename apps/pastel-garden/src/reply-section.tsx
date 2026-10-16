@@ -1,5 +1,7 @@
 import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runtime/contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
+import { ReplyCelebration } from './reply-celebration';
 import { RsvpForm } from './rsvp-form';
 
 export function ReplySection({
@@ -10,21 +12,32 @@ export function ReplySection({
   context: InvitationContext;
 }) {
   const client = useQueryClient();
+  const submitButton = useRef<HTMLButtonElement>(null);
+  const [celebrating, setCelebrating] = useState(false);
+  const endCelebration = useCallback(() => setCelebrating(false), []);
   const reply = useMutation({
     mutationFn: (value: Parameters<InvitationRuntime['saveRsvp']>[0]) => runtime.saveRsvp(value),
-    onSuccess: (rsvp) => client.setQueryData(['recipient-context'], { ...context, rsvp }),
+    onSuccess: (rsvp) => {
+      client.setQueryData(['recipient-context'], { ...context, rsvp });
+      setCelebrating(rsvp.status === 'accepted');
+    },
+    onMutate: endCelebration,
   });
   return (
     <section className="reply-section" id="rsvp" aria-labelledby="reply-heading">
+      {celebrating && <ReplyCelebration anchor={submitButton} onEnd={endCelebration} />}
       <div className="reply-copy">
         <p className="eyebrow">RSVP</p>
-        <h2 id="reply-heading">Celebrate with us</h2>
-        <p className="recipient-name">A personal invitation for {context.recipient.name}</p>
+        <p className="recipient-name">
+          This is a personal invitation for {context.recipient.name}.
+        </p>
+        <h2 id="reply-heading">Will you celebrate with us?</h2>
         <RsvpForm
           key={`${context.rsvp.status}:${context.rsvp.companions.join('|')}`}
           status={context.rsvp.status}
           companions={context.rsvp.companions.map((name) => ({ name }))}
           maxGuests={context.rsvp.maxAdditionalGuests}
+          submitButtonRef={submitButton}
           onSave={async (value) => {
             try {
               await reply.mutateAsync(value);

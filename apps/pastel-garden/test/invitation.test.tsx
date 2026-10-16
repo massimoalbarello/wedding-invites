@@ -42,7 +42,9 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   const mountedHeading = document.querySelector<HTMLHeadingElement>('.hero h1')!;
   expect(mountedHeading).not.toBeNull();
   expect(document.querySelector('.letter')?.hasAttribute('inert')).toBe(true);
+  await waitFor(() => expect(document.querySelector('.seal-hint')).not.toBeNull());
   await userEvent.click(open);
+  expect(screen.getByLabelText(/Music is playing/)).toBeDefined();
   expect(screen.queryByRole('button', { name: 'Open invitation' })).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   expect(screen.getByRole('status').textContent).toBe('Our story is playing…');
@@ -63,9 +65,14 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(document.querySelector('.hero')?.textContent).toContain('invite you to their wedding');
   expect(document.querySelector('.hero time')).toBeNull();
   expect(document.querySelector('.hero')?.textContent).not.toContain(content.venue);
-  expect(screen.getAllByText('29 June 2027')[0]?.getAttribute('dateTime')).toBe('2027-06-29');
-  expect(screen.getByRole('heading', { name: 'We’re counting the days' })).toBeDefined();
-  expect(screen.getByRole('heading', { name: 'Celebrate with us' })).toBeDefined();
+  expect(screen.getByText('29 June 2027').getAttribute('dateTime')).toBe('2027-06-29');
+  expect(document.querySelector('#venue time')).toBeNull();
+  expect(screen.getByRole('link', { name: /Scroll to wedding details/ }).getAttribute('href')).toBe(
+    '#venue',
+  );
+  expect(screen.getByText('This is a personal invitation for Alex Rivera.')).toBeDefined();
+  expect(screen.getByRole('heading', { name: '29 June 2027' })).toBeDefined();
+  expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });
 
 test('the live artwork is decoded before the intro can reveal it', async () => {
@@ -124,6 +131,7 @@ test('progress beyond the old envelope duration does not interrupt the story', a
   const video = document.querySelector('video')!;
   video.currentTime = MID_STORY_SECONDS;
   fireEvent.timeUpdate(video);
+  expect(screen.queryByLabelText(/Music is playing/)).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   fireEvent.ended(video);
   expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
@@ -143,7 +151,8 @@ test('audio autoplay rejection retries silently rather than losing the story', a
     show();
     await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
     await waitFor(() => expect(document.querySelector('video')?.muted).toBe(true));
-    expect(screen.queryByRole('button')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Enable music' }));
+    expect(document.querySelector('video')?.muted).toBe(false);
     expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
   } finally {
     HTMLMediaElement.prototype.play = play;
@@ -261,4 +270,38 @@ test('failed connection offers a retry before opening', async () => {
   expect(
     (screen.getByRole('button', { name: 'Open invitation' }) as HTMLButtonElement).disabled,
   ).toBe(false);
+});
+
+test('the scroll cue survives an edge touch and leaves once venue content is visible', async () => {
+  const Original = globalThis.IntersectionObserver;
+  let notify!: IntersectionObserverCallback;
+  let observer!: IntersectionObserver;
+  globalThis.IntersectionObserver = class extends Original {
+    constructor(...args: ConstructorParameters<typeof Original>) {
+      super(...args);
+      notify = args[0];
+      observer = this;
+    }
+  };
+  try {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    fireEvent.ended(document.querySelector('video')!);
+    act(() =>
+      notify(
+        [{ isIntersecting: true, intersectionRatio: 0 } as IntersectionObserverEntry],
+        observer,
+      ),
+    );
+    expect(screen.getByRole('link', { name: 'Scroll to wedding details' })).toBeDefined();
+    act(() =>
+      notify(
+        [{ isIntersecting: true, intersectionRatio: 0.1 } as IntersectionObserverEntry],
+        observer,
+      ),
+    );
+    expect(screen.queryByRole('link', { name: 'Scroll to wedding details' })).toBeNull();
+  } finally {
+    globalThis.IntersectionObserver = Original;
+  }
 });

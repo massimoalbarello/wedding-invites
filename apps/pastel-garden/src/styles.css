@@ -14,6 +14,12 @@ html {
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
 }
+html,
+body {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
 body {
   margin: 0;
 }
@@ -35,8 +41,7 @@ a {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-button,
-.garden-link {
+button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -57,8 +62,7 @@ button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
-button:hover:not(:disabled),
-.garden-link:hover {
+button:hover:not(:disabled) {
   background: #cbdff1;
 }
 :focus-visible {
@@ -77,6 +81,7 @@ button:hover:not(:disabled),
   box-shadow: 0 0 80px #25446112;
 }
 .hero {
+  position: relative;
   min-height: 100svh;
   display: grid;
   place-items: center;
@@ -184,9 +189,6 @@ h1:focus {
   font-size: 4.2cqw;
   line-height: 1.2;
 }
-.garden-link {
-  margin-top: 16px;
-}
 .venue-artwork {
   display: block;
   width: 100%;
@@ -197,7 +199,6 @@ h1:focus {
   display: grid;
   place-items: center;
   padding: 160px 14% 170px;
-  background: linear-gradient(#f9fcfe, #fffaf7);
   text-align: center;
 }
 .venue-copy {
@@ -211,15 +212,9 @@ h2 {
   margin: 20px 0;
 }
 .venue-copy .venue-artwork {
-  margin: 24px auto;
-}
-.venue-copy time {
-  font-size: 30px;
-}
-.signature {
-  margin-top: 25px;
-  font-size: 40px;
-  letter-spacing: 0;
+  width: 122%;
+  max-width: none;
+  margin: 24px -11%;
 }
 .connection-error {
   min-height: 100svh;
@@ -235,14 +230,6 @@ h2 {
     max-width: 280px;
     margin-inline: auto;
     font-size: clamp(46px, 12vw, 54px);
-  }
-  .eyebrow {
-    font-size: 24px;
-    letter-spacing: 0;
-  }
-  .garden-link {
-    font-size: 24px;
-    padding: 10px 18px;
   }
   .venue-section {
     padding-inline: 16%;
@@ -263,32 +250,22 @@ h2 {
   place-items: center;
   padding: 150px 16%;
   text-align: center;
-  background: linear-gradient(#fffaf7, #eef6fd);
+}
+.venue-copy,
+.countdown-copy,
+.reply-copy {
+  text-shadow:
+    0 1px 2px #f8fbfd,
+    0 0 14px #f8fbfdd9;
 }
 .countdown-copy,
 .reply-copy {
   width: 100%;
   max-width: 480px;
 }
-.countdown-number {
-  font-size: clamp(85px, 16vw, 140px);
-  font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: 0;
-  margin-top: 28px;
-}
-.countdown-note {
-  margin-top: 22px;
-  font-size: 24px;
-  line-height: 1.4;
-  color: #4e6981;
-}
-.reply-section {
-  background: #f8fbfe;
-}
 .recipient-name {
   line-height: 1.4;
-  margin-bottom: 30px;
+  margin-top: 24px;
   font-size: 28px;
 }
 .reply-copy form {
@@ -302,11 +279,6 @@ h2 {
   margin: 0;
   display: grid;
   gap: 12px;
-}
-.reply-copy legend {
-  margin-bottom: 18px;
-  text-align: center;
-  width: 100%;
 }
 .reply-copy fieldset label {
   display: flex;
@@ -339,6 +311,11 @@ h2 {
   display: flex;
   gap: 8px;
   align-items: end;
+}
+.countdown-clock > div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
 }
 .reply-copy form section > div > div {
   min-width: 0;
@@ -387,10 +364,449 @@ h2 {
 @media (max-width: 600px) {
   .reply-copy fieldset label {
     padding: 12px;
-    font-size: 25px;
     gap: 8px;
   }
+}
+
+/* Small cues sit over the artwork without interrupting the film. */
+.envelope-is-ready > video {
+  animation: envelope-breathe 4s ease-in-out 3;
+}
+.seal-hint {
+  position: absolute;
+  top: 52.3%;
+  left: 50%;
+  width: 14%;
+  aspect-ratio: 1;
+  border: 1px solid #789ebf;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: seal-ripple 3.6s ease-out infinite;
+}
+.sound-hint {
+  position: absolute;
+  top: 6%;
+  right: 7%;
+  color: #3b5973;
+  animation: cue-reveal 1.4s ease-out both;
+}
+.sound-icon,
+.sound-hint button {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: #f8fbfdd9;
+}
+.sound-hint svg {
+  width: 24px;
+  height: 24px;
+}
+.sound-waves {
+  transform-origin: 10px 12px;
+  animation: sound-ripple 2s ease-in-out 3;
+}
+.scroll-hint {
+  position: absolute;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f8fbfda6;
+  color: #3b5973;
+  text-decoration: none;
+  animation: cue-reveal 1.4s ease-out both;
+}
+.scroll-hint svg {
+  width: 24px;
+  height: 24px;
+  animation: scroll-nudge 2.8s ease-in-out 4;
+}
+@keyframes seal-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.5;
+  }
+  85%,
+  100% {
+    transform: translate(-50%, -50%) scale(1.55);
+    opacity: 0;
+  }
+}
+@keyframes sound-ripple {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes envelope-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes cue-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scroll-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+.garden-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, #000 4%, #000);
+}
+.garden-details::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to right,
+    transparent 12%,
+    #f4faff80 30%,
+    #f4faff80 70%,
+    transparent 88%
+  );
+  pointer-events: none;
+}
+.garden-details {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    #d2e8f7,
+    #f6fbfe 12%,
+    #fffaf7 44%,
+    #eef6fd 75%,
+    #f8fbfe
+  );
+}
+.floral-frame {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(
+    to right,
+    #000 4%,
+    #000c 12%,
+    transparent 27%,
+    transparent 73%,
+    #000c 88%,
+    #000 96%
+  );
+}
+.flower-cluster {
+  position: absolute;
+  max-width: 510px;
+}
+.flower-cluster-left {
+  left: -2%;
+}
+.flower-cluster-right {
+  right: -2%;
+  --mirror: -1;
+}
+.flower-cluster img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: translateY(var(--bloom-shift, 0px))
+    rotate(calc(var(--base-turn) + var(--bloom-turn, 0deg)))
+    scale(var(--bloom-scale, 1)) scaleX(var(--mirror, 1));
+}
+.flower-cluster-vine img {
+  mask-image: linear-gradient(transparent, #000 14%, #000 82%, transparent);
+}
+.countdown-copy {
+  max-width: 580px;
+}
+.countdown-intro {
+  margin-top: 48px;
+  font-size: clamp(25px, 4vw, 30px);
+}
+.countdown-clock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 3vw, 24px);
+  margin: 24px 0 0;
+}
+.countdown-clock dt {
+  font-size: clamp(21px, 4vw, 28px);
+}
+.countdown-clock dd {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(29px, 6vw, 52px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.wedding-day {
+  margin-top: 24px;
+}
+.reply-copy h2 {
+  margin-bottom: 36px;
+}
+.reply-copy .guest-details {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #b7cce066;
+  gap: 22px;
+}
+.reply-copy .guest-details h3 + p {
+  margin: 16px 0 20px;
+}
+.reply-celebration {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+@media (max-width: 600px) {
+  :root {
+    font-size: 30px;
+  }
+  .hero h1 {
+    left: 6%;
+    width: 88%;
+    font-size: 8.2cqw;
+  }
+  .invitation-line {
+    font-size: 5.2cqw;
+  }
+  h2 {
+    font-size: clamp(44px, 10vw, 52px);
+  }
+  .eyebrow,
+  button,
+  .reply-copy fieldset label,
+  .reply-copy form section p,
+  .reply-copy [role="alert"] {
+    font-size: 28px;
+  }
   .recipient-name {
+    font-size: 30px;
+  }
+  .reply-copy h3 {
+    font-size: 34px;
+  }
+  .reply-copy .remove-guest {
     font-size: 26px;
+  }
+  .countdown-intro {
+    font-size: 29px;
+  }
+  .countdown-clock dt {
+    font-size: 25px;
+  }
+  .countdown-clock dd {
+    font-size: 34px;
+  }
+  .reply-section {
+    padding-inline: 12%;
+  }
+  .countdown-section {
+    padding-inline: 10%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .envelope-is-ready > video,
+  .sound-waves,
+  .sound-hint,
+  .scroll-hint,
+  .scroll-hint svg {
+    animation: none;
+  }
+  .seal-hint,
+  .reply-celebration {
+    display: none;
+  }
+}
+
+.garden-air {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  margin-bottom: -100svh;
+  z-index: 1;
+  pointer-events: none;
+}
+.garden-air-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+}
+.garden-air img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.garden-petal {
+  position: absolute;
+  top: -40px;
+  opacity: 0;
+  animation: garden-petal-drift var(--duration) var(--delay) linear infinite
+    both;
+}
+.garden-butterfly,
+.garden-dove {
+  position: absolute;
+  left: -100px;
+  opacity: 0;
+}
+.garden-butterfly {
+  width: 44px;
+  animation: garden-butterfly-flight var(--duration) var(--delay) linear
+    infinite both;
+}
+.garden-wingbeat {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.garden-wingbeat img {
+  width: 400%;
+  max-width: none;
+  height: 100%;
+  animation: wingbeat 240ms steps(4) infinite;
+}
+.garden-dove {
+  width: 76px;
+  animation: garden-dove-flight var(--duration) var(--delay) linear infinite
+    both;
+}
+.garden-dove img {
+  animation-duration: 420ms;
+}
+.garden-air [data-reverse="true"] {
+  animation-direction: reverse;
+}
+.garden-air [data-reverse="true"] .garden-wingbeat {
+  scale: -1 1;
+}
+.garden-air:not(.is-in-view) *,
+.garden-air:not(.is-in-view) img {
+  animation-play-state: paused;
+}
+@keyframes garden-petal-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-20deg);
+  }
+  8% {
+    opacity: 0.8;
+  }
+  45% {
+    transform: translate3d(var(--drift), 45cqh, 0) rotate(100deg);
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-20px, calc(100cqh + 60px), 0) rotate(190deg);
+  }
+}
+@keyframes garden-butterfly-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  8% {
+    opacity: 0.9;
+  }
+  20% {
+    transform: translate3d(20cqw, -24px, 0) rotate(7deg);
+  }
+  40% {
+    transform: translate3d(42cqw, -65px, 0) rotate(-9deg);
+  }
+  60% {
+    transform: translate3d(65cqw, 12px, 0) rotate(6deg);
+  }
+  80% {
+    transform: translate3d(86cqw, -32px, 0) rotate(-5deg);
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100cqw + 200px), -40px, 0);
+  }
+}
+@keyframes garden-dove-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  8% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(55cqw, -45px, 0);
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(100cqw + 200px), 20px, 0);
+  }
+}
+@keyframes wingbeat {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .garden-air {
+    display: none;
+  }
+  .flower-cluster img {
+    transform: rotate(var(--base-turn)) scaleX(var(--mirror, 1));
   }
 }
