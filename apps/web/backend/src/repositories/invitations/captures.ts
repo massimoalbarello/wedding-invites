@@ -15,7 +15,8 @@ export interface InvitationCapturesRepositoryContract {
   save(input: CaptureInput): Promise<boolean>;
   list(
     input: GuestScope & { cursor?: string; limit: number },
-  ): Promise<{ id: string; createdAt: string }[]>;
+  ): Promise<{ id: string; createdAt: string; authorized: boolean | null }[]>;
+  reject(input: GuestScope & { id: string }): Promise<void>;
   image(
     input: GuestScope & { id: string },
   ): Promise<{ image: Uint8Array; mediaType: string } | null>;
@@ -30,7 +31,7 @@ export class InvitationCapturesRepository implements InvitationCapturesRepositor
 
   async list(input: GuestScope & { cursor?: string; limit: number }) {
     const rows = await this.sql.ListInvitationCaptures`
-      select id, created_at from invitation_capture
+      select id, created_at, authorized from invitation_capture
       where owner_id = ${input.ownerId} and guest_id = ${input.guestId}
         and (${input.cursor ?? null} is null or (created_at, id) < (
           select created_at, id from invitation_capture
@@ -39,7 +40,19 @@ export class InvitationCapturesRepository implements InvitationCapturesRepositor
       order by created_at desc, id desc
       limit ${input.limit}
     `;
-    return rows.map((row) => ({ id: row.id, createdAt: row.created_at }));
+    return rows.map((row) => ({
+      id: row.id,
+      createdAt: row.created_at,
+      authorized: row.authorized === null ? null : Boolean(row.authorized),
+    }));
+  }
+
+  async reject(input: GuestScope & { id: string }) {
+    await this.sql.RejectInvitationCapture`
+      update invitation_capture set authorized = 0
+      where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.id}
+        and authorized is null
+    `;
   }
 
   async image(input: GuestScope & { id: string }) {

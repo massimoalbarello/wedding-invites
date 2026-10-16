@@ -19,6 +19,11 @@ export interface ISaveInvitationDesignResult {
 export interface IListInvitationCapturesResult {
     id: string;
     created_at: string;
+    authorized: number | null;
+}
+
+/** Result of query `RejectInvitationCapture`. */
+export interface IRejectInvitationCaptureResult {
 }
 
 /** Result of query `InvitationCaptureImage`. */
@@ -184,6 +189,11 @@ export interface ICreateInvitationSessionResult {
     token_hash: string | null;
 }
 
+/** Result of query `AuthorizeInvitationCapture`. */
+export interface IAuthorizeInvitationCaptureResult {
+    id: string | null;
+}
+
 /** Result of query `RecordInvitationVerified`. */
 export interface IRecordInvitationVerifiedResult {
 }
@@ -220,6 +230,7 @@ export interface Queries {
     GetInvitationDesign: IGetInvitationDesignResult;
     SaveInvitationDesign: ISaveInvitationDesignResult;
     ListInvitationCaptures: IListInvitationCapturesResult;
+    RejectInvitationCapture: IRejectInvitationCaptureResult;
     InvitationCaptureImage: IInvitationCaptureImageResult;
     SaveInvitationCapture: ISaveInvitationCaptureResult;
     ListInvitationGuests: IListInvitationGuestsResult;
@@ -244,6 +255,7 @@ export interface Queries {
     RemoveInvitationReference: IRemoveInvitationReferenceResult;
     RevokeLastReferenceSessions: IRevokeLastReferenceSessionsResult;
     CreateInvitationSession: ICreateInvitationSessionResult;
+    AuthorizeInvitationCapture: IAuthorizeInvitationCaptureResult;
     RecordInvitationVerified: IRecordInvitationVerifiedResult;
     RecordInvitationActivity: IRecordInvitationActivityResult;
     FindInvitationSession: IFindInvitationSessionResult;

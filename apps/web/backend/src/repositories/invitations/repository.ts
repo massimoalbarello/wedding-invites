@@ -66,7 +66,7 @@ export interface InvitationsRepositoryContract {
       linkToken: string;
       tokenHash: string;
       expiresAt: string;
-      faceVerified: boolean;
+      captureId?: string;
     },
   ): Promise<boolean>;
   hasSession(input: GuestScope & { tokenHash: string; now: string }): Promise<boolean>;
@@ -340,7 +340,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       linkToken: string;
       tokenHash: string;
       expiresAt: string;
-      faceVerified: boolean;
+      captureId?: string;
     },
   ) {
     return this.database.begin(async (tx) => {
@@ -351,13 +351,27 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
       where g.owner_id = ${input.ownerId} and g.id = ${input.guestId} and g.token = ${input.linkToken} and g.active = 1
         and exists (
           select 1 from invitation_reference p where p.owner_id = g.owner_id and p.guest_id = g.id
-        ) = ${Number(input.faceVerified)}
+        ) = ${Number(input.captureId !== undefined)}
+        and (${input.captureId ?? null} is null or exists (
+          select 1 from invitation_capture c
+          where c.owner_id = g.owner_id and c.guest_id = g.id and c.id = ${input.captureId ?? null}
+            and c.authorized is null
+        ))
       returning token_hash
     `;
       if (rows.length === 0) {
         return false;
       }
-      if (input.faceVerified) {
+      if (input.captureId !== undefined) {
+        const captures = await sql.AuthorizeInvitationCapture`
+          update invitation_capture set authorized = 1
+          where owner_id = ${input.ownerId} and guest_id = ${input.guestId} and id = ${input.captureId}
+            and authorized is null
+          returning id
+        `;
+        if (captures.length === 0) {
+          throw new Error('Could not record selfie authorization.');
+        }
         await sql.RecordInvitationVerified`
           update invitation_guest set verified_at = coalesce(verified_at, ${new Date().toISOString()})
           where owner_id = ${input.ownerId} and id = ${input.guestId}

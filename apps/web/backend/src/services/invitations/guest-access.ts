@@ -88,7 +88,7 @@ export class GuestAccessService {
       authenticated: await this.authenticated({ guest, session: input.session }),
     };
   }
-  private async session({ guest, faceVerified }: { guest: Guest; faceVerified: boolean }) {
+  private async session({ guest, captureId }: { guest: Guest; captureId?: string }) {
     const token = opaqueId();
     const expiresAt = new Date(
       Date.now() + SESSION_MAX_AGE_SECONDS * MILLISECONDS_PER_SECOND,
@@ -99,7 +99,7 @@ export class GuestAccessService {
       linkToken: guest.token,
       tokenHash: hashSession(token),
       expiresAt,
-      faceVerified,
+      captureId,
     });
     if (!created) {
       throw new NotFoundError();
@@ -111,12 +111,12 @@ export class GuestAccessService {
     if (guest.references.length > 0) {
       throw new ForbiddenError('This invitation requires a selfie.');
     }
-    return this.session({ guest, faceVerified: false });
+    return this.session({ guest });
   }
   async verify(input: { token: string; photo: File }) {
     const guest = await this.guest(input.token);
     if (guest.references.length === 0) {
-      return this.session({ guest, faceVerified: false });
+      return this.session({ guest });
     }
     const references = await this.input.guests.references({
       ownerId: guest.ownerId,
@@ -147,8 +147,9 @@ export class GuestAccessService {
   }) {
     const { guest, references } = input;
     const { image, mediaType } = await readPhoto(input.photo);
+    const captureId = opaqueId();
     const saved = await this.input.captures.save({
-      id: opaqueId(),
+      id: captureId,
       ownerId: guest.ownerId,
       guestId: guest.id,
       linkToken: guest.token,
@@ -159,17 +160,30 @@ export class GuestAccessService {
     if (!saved) {
       throw new NotFoundError();
     }
-    const capture = await analyzePhoto({ faces: this.input.faces, ownerId: guest.ownerId, image });
-    const comparisons = references.map(({ observation }) =>
-      compareFace({ reference: observation, capture }),
-    );
-    if (comparisons.includes('duplicate')) {
-      throw new ForbiddenError('That looks like a reference photo. Please take a fresh selfie.');
+    try {
+      const capture = await analyzePhoto({
+        faces: this.input.faces,
+        ownerId: guest.ownerId,
+        image,
+      });
+      const comparisons = references.map(({ observation }) =>
+        compareFace({ reference: observation, capture }),
+      );
+      if (comparisons.includes('duplicate')) {
+        throw new ForbiddenError('That looks like a reference photo. Please take a fresh selfie.');
+      }
+      if (!comparisons.includes('match')) {
+        throw new FaceMismatchError();
+      }
+      return await this.session({ guest, captureId });
+    } catch (error) {
+      await this.input.captures.reject({
+        ownerId: guest.ownerId,
+        guestId: guest.id,
+        id: captureId,
+      });
+      throw error;
     }
-    if (!comparisons.includes('match')) {
-      throw new FaceMismatchError();
-    }
-    return this.session({ guest, faceVerified: true });
   }
   private async selectedPackage(ownerId: string) {
     const packageId = await this.input.designs.get({ ownerId });
