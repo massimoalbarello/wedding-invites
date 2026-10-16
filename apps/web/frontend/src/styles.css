@@ -5,6 +5,14 @@
 @import "@fontsource/anton/latin-400.css";
 @import "./routes/-invitation/secret-entry.css";
 @source "../../../../packages/ui/src";
+@theme {
+  --color-authorized: var(--color-emerald-50);
+  --color-authorized-foreground: var(--color-emerald-800);
+}
+.dark {
+  --color-authorized: var(--color-emerald-950);
+  --color-authorized-foreground: var(--color-emerald-200);
+}
 body {
   margin: 0;
   font-family: var(--font-sans);

@@ -278,7 +278,9 @@ function SelfieAuthorization({ authorized }: { authorized: boolean | null }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-xs ${
-        authorized ? 'bg-primary text-primary-foreground' : 'bg-destructive/10 text-destructive'
+        authorized
+          ? 'bg-authorized text-authorized-foreground'
+          : 'bg-destructive/10 text-destructive'
       }`}
     >
       <span aria-hidden="true">{authorized ? '✓' : '×'}</span>
