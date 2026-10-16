@@ -8,9 +8,39 @@ const flights = [
   { kind: 'butterfly', top: '62%', duration: 18, delay: -12, reverse: true },
   { kind: 'butterfly', top: '80%', duration: 16, delay: -8, reverse: false },
   { kind: 'butterfly', top: '43%', duration: 20, delay: -15, reverse: true },
-  { kind: 'dove', top: '10%', duration: 10, delay: -3, reverse: false },
-  { kind: 'dove', top: '16%', duration: 10, delay: -2.5, reverse: false },
-  { kind: 'dove', top: '68%', duration: 13, delay: -9, reverse: true },
+  {
+    kind: 'dove',
+    top: '14%',
+    duration: 11,
+    delay: -2,
+    reverse: false,
+    arc: '-8cqh',
+    exit: '4cqh',
+    wingbeat: '460ms',
+    wingbeatDelay: '-120ms',
+  },
+  {
+    kind: 'dove',
+    top: '43%',
+    duration: 16,
+    delay: -9,
+    reverse: true,
+    arc: '13cqh',
+    exit: '-7cqh',
+    wingbeat: '530ms',
+    wingbeatDelay: '-350ms',
+  },
+  {
+    kind: 'dove',
+    top: '76%',
+    duration: 13,
+    delay: -6,
+    reverse: false,
+    arc: '-11cqh',
+    exit: '-17cqh',
+    wingbeat: '410ms',
+    wingbeatDelay: '-240ms',
+  },
 ] as const;
 const petals = {
   count: 14,
@@ -71,6 +101,12 @@ export function GardenAir() {
                 aspectRatio: `${WINGBEAT_FRAME_WIDTH} / ${spriteHeights[flight.kind]}`,
                 '--duration': `${flight.duration}s`,
                 '--delay': `${flight.delay}s`,
+                ...(flight.kind === 'dove' && {
+                  '--flight-arc': flight.arc,
+                  '--flight-exit': flight.exit,
+                  '--wingbeat-duration': flight.wingbeat,
+                  '--wingbeat-delay': flight.wingbeatDelay,
+                }),
               } as CSSProperties
             }
           >
