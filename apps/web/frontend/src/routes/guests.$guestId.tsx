@@ -114,7 +114,7 @@ function GuestDetail() {
           </p>
         )}
         {!editing && <GuestPhotos guest={guest} />}
-        <GuestSelfies key={guest.id} guest={guest} ownerId={userId} />
+        <GuestSelfies guest={guest} ownerId={userId} />
         <GuestAccess guest={guest} ownerId={userId} />
         {guest.companions.length > 0 && (
           <section className="mt-8 border-border border-t pt-7">

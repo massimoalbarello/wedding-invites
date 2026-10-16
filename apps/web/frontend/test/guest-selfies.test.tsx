@@ -121,6 +121,23 @@ test('loading and empty selfies leave the guest profile usable', async () => {
   expect(screen.getByRole('button', { name: 'Edit guest' })).toBeTruthy();
 });
 
+test('cancelling and reopening guest editing keeps one form and preserves the selfie gallery', async () => {
+  const user = userEvent.setup();
+  renderProfile(() => response({ items: [newest], nextCursor: null }));
+  await screen.findByRole('img', { name: 'Selfie for Alex Morgan' });
+  for (const draft of ['Unsaved name', 'Another draft']) {
+    await user.click(screen.getByRole('button', { name: 'Edit guest' }));
+    expect(screen.getAllByLabelText('Upload reference photos')).toHaveLength(1);
+    const name = screen.getByRole('textbox', { name: 'Full name' }) as HTMLInputElement;
+    expect(name.value).toBe(guest.name);
+    await user.clear(name);
+    await user.type(name, draft);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByLabelText('Upload reference photos')).toBeNull();
+    expect(screen.getByRole('img', { name: 'Selfie for Alex Morgan' })).toBeTruthy();
+  }
+});
+
 test('failed selfie requests can be retried without losing loaded photos', async () => {
   const user = userEvent.setup();
   let fail = true;
