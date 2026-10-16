@@ -124,7 +124,8 @@ function CameraPreview({
   video: RefObject<HTMLVideoElement | null>;
 }) {
   return (
-    <SecretPaper className="secret-camera">
+    <SecretPaper>
+      <p className="secret-eyebrow">Identity checkpoint</p>
       <h1 className="secret-camera-heading">{captureUrl ? 'Your photo' : 'A quick selfie'}</h1>
       <div className="secret-camera-frame">
         {captureUrl ? (
@@ -134,6 +135,7 @@ function CameraPreview({
         )}
         {!captureUrl && <div className="secret-face-guide" aria-hidden="true" />}
       </div>
+      {!captureUrl && <p className="secret-camera-note">Face the camera. Your clearance awaits.</p>}
     </SecretPaper>
   );
 }

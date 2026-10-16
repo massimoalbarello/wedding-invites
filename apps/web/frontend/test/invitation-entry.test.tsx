@@ -2,6 +2,8 @@ import { afterEach, expect, mock, spyOn, test } from 'bun:test';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 import type { api } from '../src/lib/api';
 import { invitationKeys } from '../src/queries/invitations';
 import { routeTree } from '../src/routeTree.gen';
@@ -14,6 +16,7 @@ type Content = NonNullable<
 >;
 const TOKEN_LENGTH = 48;
 const OK = 200;
+const REDIRECT_OBSERVATION_MS = 3200;
 const token = 'a'.repeat(TOKEN_LENGTH);
 const content: Content = {
   name: 'Alex Morgan',
@@ -34,14 +37,21 @@ afterEach(() => {
 function renderEntry(input: {
   entry: Entry;
   session?: () => Promise<Response>;
+  verification?: () => Promise<Response>;
   entryStatus?: number;
 }) {
   let sessionRequests = 0;
+  let contentRequests = 0;
   let hasSession = input.entry.authenticated;
   spyOn(globalThis, 'fetch').mockImplementation(
     Object.assign(
       async (request: string | URL | Request) => {
         const url = String(request);
+        if (url.endsWith('/verify')) {
+          const response = await input.verification!();
+          hasSession = response.ok;
+          return response;
+        }
         if (url.endsWith('/session')) {
           sessionRequests++;
           const response = await (input.session?.() ??
@@ -50,6 +60,7 @@ function renderEntry(input: {
           return response;
         }
         if (url.endsWith('/content')) {
+          contentRequests++;
           return hasSession
             ? Response.json(content)
             : Response.json({ error: 'Please verify your identity.' }, { status: 401 });
@@ -71,8 +82,119 @@ function renderEntry(input: {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { router, queryClient, sessionRequests: () => sessionRequests };
+  return {
+    router,
+    queryClient,
+    sessionRequests: () => sessionRequests,
+    contentRequests: () => contentRequests,
+  };
 }
+
+async function captureSelfie() {
+  const stream = new MediaStream();
+  stream.getTracks = () => [];
+  const mediaDevices = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: { getUserMedia: () => Promise.resolve(stream) },
+  });
+  spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+  spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    drawImage: () => {},
+  } as unknown as CanvasRenderingContext2D);
+  spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+    callback(new Blob(['photo'], { type: 'image/jpeg' }));
+  });
+  spyOn(URL, 'createObjectURL').mockReturnValue('blob:selfie');
+  spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  try {
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Take a selfie & open' }));
+    const video = screen.getByLabelText('Live front camera preview');
+    Object.defineProperties(video, {
+      videoWidth: { value: 640 },
+      videoHeight: { value: 480 },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLButtonElement>('button', { name: 'Capture & verify' }).disabled,
+      ).toBe(false),
+    );
+    await user.click(screen.getByRole('button', { name: 'Capture & verify' }));
+    return user;
+  } finally {
+    if (mediaDevices) {
+      Object.defineProperty(navigator, 'mediaDevices', mediaDevices);
+    } else {
+      Reflect.deleteProperty(navigator, 'mediaDevices');
+    }
+  }
+}
+
+test('successful verification counts down for three seconds before opening the invitation', async () => {
+  const view = renderEntry({
+    entry: { name: content.name, faceScanRequired: true, authenticated: false },
+    verification: () => Promise.resolve(Response.json({ authenticated: true })),
+  });
+  view.queryClient.setQueryData(invitationKeys.content('another-token'), content);
+  await captureSelfie();
+  await screen.findByRole('heading', { name: `It’s you, ${content.name}.` });
+  expect(screen.getByRole('status').textContent).toContain('Opening your invitation in 3…');
+  expect(view.queryClient.getQueryData(invitationKeys.content('another-token'))).toBeUndefined();
+  for (const seconds of [2, 1]) {
+    await waitFor(
+      () => expect(screen.getByRole('status').textContent).toContain(`in ${seconds}…`),
+      { timeout: 1500 },
+    );
+    expect(view.router.state.location.pathname).toBe(`/i/${token}`);
+    expect(view.contentRequests()).toBe(0);
+  }
+  await screen.findByTitle('Invitation', {}, { timeout: 1500 });
+  expect(view.router.state.location.pathname).toBe(`/i/${token}/invitation`);
+  expect(view.contentRequests()).toBe(1);
+  expect(view.sessionRequests()).toBe(0);
+});
+
+test('a verified guest can skip the countdown and leave without a delayed redirect', async () => {
+  const view = renderEntry({
+    entry: { name: content.name, faceScanRequired: true, authenticated: false },
+    verification: () => Promise.resolve(Response.json({ authenticated: true })),
+  });
+  const user = await captureSelfie();
+  const link = await screen.findByRole('link', { name: 'Open invitation' });
+  expect(screen.getByRole('status').textContent).toContain('in 3…');
+  await user.click(link);
+  await screen.findByTitle('Invitation');
+  expect(view.router.state.location.pathname).toBe(`/i/${token}/invitation`);
+  const anotherToken = 'b'.repeat(TOKEN_LENGTH);
+  await Promise.resolve(
+    act(async () => {
+      await view.router.navigate({ to: '/i/$token', params: { token: anotherToken } });
+    }),
+  );
+  await screen.findByRole('button', { name: 'Take a selfie & open' });
+  await Promise.resolve(
+    act(async () => {
+      await Bun.sleep(REDIRECT_OBSERVATION_MS);
+    }),
+  );
+  expect(view.router.state.location.pathname).toBe(`/i/${anotherToken}`);
+  expect(screen.queryByTitle('Invitation')).toBeNull();
+});
+
+test('a recoverable verification failure offers a retry without opening invitation content', async () => {
+  const view = renderEntry({
+    entry: { name: content.name, faceScanRequired: true, authenticated: false },
+    verification: () =>
+      Promise.resolve(Response.json({ error: 'No face found.' }, { status: 400 })),
+  });
+  await captureSelfie();
+  expect((await screen.findByRole('alert')).textContent).toBe('No face found.');
+  expect(screen.getByRole('button', { name: 'Try another photo' })).toBeTruthy();
+  expect(screen.queryByRole('link', { name: 'Open invitation' })).toBeNull();
+  expect(view.router.state.location.pathname).toBe(`/i/${token}`);
+  expect(view.contentRequests()).toBe(0);
+});
 
 test.each([
   { faceScanRequired: false, authenticated: false, sessions: 1 },
