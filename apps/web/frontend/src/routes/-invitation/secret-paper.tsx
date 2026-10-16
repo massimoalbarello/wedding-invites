@@ -20,7 +20,7 @@ export function SecretStamp({ children }: { children: ReactNode }) {
 
 export function SecretSeal({ verified = false }: { verified?: boolean }) {
   return (
-    <span className="secret-seal" aria-hidden="true">
+    <span className="secret-seal" data-verified={verified} aria-hidden="true">
       <svg
         viewBox="0 0 24 24"
         fill="none"

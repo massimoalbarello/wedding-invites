@@ -85,7 +85,6 @@ export function SelfieCamera({
       ) : (
         <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />
       )}
-      {!camera.active && !captureUrl && <p className="secret-footnote">The rest is classified.</p>}
     </>
   );
 }
