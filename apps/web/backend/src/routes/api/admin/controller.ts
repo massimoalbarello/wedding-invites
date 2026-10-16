@@ -7,6 +7,9 @@ import {
   PackageSelectionSchema,
 } from '#backend/routes/api/admin/designs/model.ts';
 import {
+  CaptureListQuerySchema,
+  CaptureListSchema,
+  CaptureParamsSchema,
   CreateGuestSchema,
   EditGuestSchema,
   GuestListQuerySchema,
@@ -99,6 +102,32 @@ export function createAdminController(input: {
           params: GuestParamsSchema,
           response: apiResponse(GuestSchema),
         })
+        .get(
+          '/guests/:id/captures',
+          ({ actor, params, query }) =>
+            input.management.captures({ actor, id: params.id, ...query }),
+          {
+            params: GuestParamsSchema,
+            query: CaptureListQuerySchema,
+            response: apiResponse(CaptureListSchema),
+          },
+        )
+        .get(
+          '/guests/:id/captures/:captureId',
+          async ({ actor, params }) => {
+            const photo = await input.management.capture({ actor, ...params });
+            return new Response(
+              new Blob([new Uint8Array(photo.image)], { type: photo.mediaType }),
+              {
+                headers: {
+                  'cache-control': 'private, no-store',
+                  'x-content-type-options': 'nosniff',
+                },
+              },
+            );
+          },
+          { params: CaptureParamsSchema },
+        )
         .patch(
           '/guests/:id',
           ({ actor, params, body: { photos, removedPhotoIds, ...settings } }) =>

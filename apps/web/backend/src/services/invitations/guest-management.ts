@@ -15,6 +15,7 @@ import {
 } from '#backend/models/invitations/model.ts';
 import type { AdminRepositoryContract } from '#backend/repositories/admin/repository.ts';
 import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
+import type { InvitationCapturesRepositoryContract } from '#backend/repositories/invitations/captures.ts';
 import type {
   GuestUpdateResult,
   InvitationsRepositoryContract,
@@ -63,6 +64,7 @@ export class GuestManagementService {
       guests: InvitationsRepositoryContract;
       admin: AdminRepositoryContract;
       faces: FaceAnalyzer;
+      captures: InvitationCapturesRepositoryContract;
     },
   ) {}
   async status() {
@@ -98,6 +100,30 @@ export class GuestManagementService {
   }
   async get(input: { actor: Actor; id: string }) {
     return publicGuest(await this.find(input));
+  }
+  async captures(input: { actor: Actor; id: string; cursor?: string; limit?: number }) {
+    const guest = await this.find(input);
+    const limit = Math.min(input.limit ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+    const captures = await this.input.captures.list({
+      ownerId: guest.ownerId,
+      guestId: guest.id,
+      cursor: input.cursor,
+      limit: limit + 1,
+    });
+    const items = captures.slice(0, limit);
+    return { items, nextCursor: captures.length > limit ? items.at(-1)!.id : null };
+  }
+  async capture(input: { actor: Actor; id: string; captureId: string }) {
+    const guest = await this.find(input);
+    const photo = await this.input.captures.image({
+      ownerId: guest.ownerId,
+      guestId: guest.id,
+      id: input.captureId,
+    });
+    if (!photo) {
+      throw new NotFoundError();
+    }
+    return photo;
   }
   async create({
     actor,
@@ -268,6 +294,8 @@ export type GuestManagementServiceContract = Pick<
   | 'stats'
   | 'groups'
   | 'get'
+  | 'captures'
+  | 'capture'
   | 'create'
   | 'update'
   | 'setAccess'

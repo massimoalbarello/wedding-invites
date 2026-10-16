@@ -41,7 +41,12 @@ try {
       secret: secret.value,
     }),
     designs: new InvitationDesignService({ assets, designs }),
-    management: new GuestManagementService({ guests, admin: new AdminRepository(database), faces }),
+    management: new GuestManagementService({
+      guests,
+      admin: new AdminRepository(database),
+      faces,
+      captures: new InvitationCapturesRepository(database),
+    }),
     access: new GuestAccessService({
       guests,
       captures: new InvitationCapturesRepository(database),

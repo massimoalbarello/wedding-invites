@@ -13,6 +13,15 @@ export const PublicIdSchema = t.String({ pattern: '^[a-f0-9]{48}$' });
 export const GuestPublicIdSchema = t.String({ format: 'uuid' });
 export const GuestParamsSchema = t.Object({ id: GuestPublicIdSchema });
 export const PhotoParamsSchema = t.Object({ id: GuestPublicIdSchema, photoId: PublicIdSchema });
+export const CaptureParamsSchema = t.Object({ id: GuestPublicIdSchema, captureId: PublicIdSchema });
+export const CaptureListQuerySchema = t.Object({
+  cursor: t.Optional(PublicIdSchema),
+  limit: t.Optional(t.Integer({ minimum: 1, maximum: MAX_PAGE_SIZE, default: DEFAULT_PAGE_SIZE })),
+});
+export const CaptureListSchema = t.Object({
+  items: t.Array(t.Object({ id: PublicIdSchema, createdAt: t.String() })),
+  nextCursor: t.Nullable(PublicIdSchema),
+});
 const [pending, accepted, declined] = RSVP_STATUSES;
 export const RsvpStatusSchema = t.Union([
   t.Literal(pending),

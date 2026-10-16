@@ -15,6 +15,18 @@ export interface IGetInvitationDesignResult {
 export interface ISaveInvitationDesignResult {
 }
 
+/** Result of query `ListInvitationCaptures`. */
+export interface IListInvitationCapturesResult {
+    id: string;
+    created_at: string;
+}
+
+/** Result of query `InvitationCaptureImage`. */
+export interface IInvitationCaptureImageResult {
+    image: Uint8Array;
+    media_type: string;
+}
+
 /** Result of query `SaveInvitationCapture`. */
 export interface ISaveInvitationCaptureResult {
     id: string | null;
@@ -207,6 +219,8 @@ export interface Queries {
     FindOwner: IFindOwnerResult;
     GetInvitationDesign: IGetInvitationDesignResult;
     SaveInvitationDesign: ISaveInvitationDesignResult;
+    ListInvitationCaptures: IListInvitationCapturesResult;
+    InvitationCaptureImage: IInvitationCaptureImageResult;
     SaveInvitationCapture: ISaveInvitationCaptureResult;
     ListInvitationGuests: IListInvitationGuestsResult;
     InvitationGuestById: IInvitationGuestByIdResult;

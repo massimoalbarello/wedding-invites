@@ -1,6 +1,11 @@
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { useState } from 'react';
 import { AdminLayout } from '../components/admin-layout';
@@ -9,8 +14,10 @@ import { GuestAvatar } from '../components/guest-avatar';
 import { GuestForm } from '../components/guest-form';
 import { StatusLabel } from '../components/status-label';
 import {
+  captureUrl,
   type Guest,
   groupsOptions,
+  guestCapturesOptions,
   guestKeys,
   guestOptions,
   referenceUrl,
@@ -107,6 +114,7 @@ function GuestDetail() {
           </p>
         )}
         {!editing && <GuestPhotos guest={guest} />}
+        <GuestSelfies guest={guest} ownerId={userId} />
         <GuestAccess guest={guest} ownerId={userId} />
         {guest.companions.length > 0 && (
           <section className="mt-8 border-border border-t pt-7">
@@ -177,6 +185,83 @@ function GuestPhotos({ guest }: { guest: Guest }) {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+function GuestSelfies({ guest, ownerId }: { guest: Guest; ownerId: string }) {
+  const captures = useInfiniteQuery(guestCapturesOptions({ ownerId, id: guest.id }));
+  const photos = captures.data?.pages.flatMap((page) => page.items) ?? [];
+  return (
+    <section className="mt-9 space-y-4 border-border border-t pt-7" aria-labelledby="selfies-title">
+      <div>
+        <h2 id="selfies-title" className="font-medium">
+          Selfies
+        </h2>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Photos submitted when opening this invitation, including unsuccessful attempts. Newest
+          first.
+        </p>
+      </div>
+      {captures.isPending && (
+        <p role="status" className="text-muted-foreground text-sm">
+          Loading selfies…
+        </p>
+      )}
+      {captures.isSuccess && photos.length === 0 && (
+        <p className="rounded-xl bg-muted/60 px-5 py-7 text-center text-muted-foreground text-sm">
+          No selfies yet. Photos will appear here after this guest submits a selfie.
+        </p>
+      )}
+      {photos.length > 0 && (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {photos.map((photo) => (
+            <li key={photo.id} className="space-y-2">
+              <a
+                href={captureUrl({ id: guest.id, captureId: photo.id })}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open selfie for ${guest.name}, ${new Date(photo.createdAt).toLocaleString()}`}
+                className="block rounded-lg focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+              >
+                <img
+                  src={captureUrl({ id: guest.id, captureId: photo.id })}
+                  alt={`Selfie for ${guest.name}`}
+                  loading="lazy"
+                  className="aspect-square w-full rounded-lg bg-muted object-cover"
+                />
+              </a>
+              <time dateTime={photo.createdAt} className="block text-muted-foreground text-xs">
+                {new Date(photo.createdAt).toLocaleString()}
+              </time>
+            </li>
+          ))}
+        </ul>
+      )}
+      {captures.isError && (
+        <div className="space-y-2">
+          <p role="alert" className="text-destructive text-sm">
+            {captures.error.message}
+          </p>
+          <Button
+            variant="outline"
+            disabled={captures.isFetching}
+            onClick={() =>
+              captures.isFetchNextPageError ? captures.fetchNextPage() : captures.refetch()
+            }
+          >
+            Try again
+          </Button>
+        </div>
+      )}
+      {captures.hasNextPage && !captures.isFetchNextPageError && (
+        <Button
+          variant="outline"
+          disabled={captures.isFetching}
+          onClick={() => captures.fetchNextPage()}
+        >
+          {captures.isFetchingNextPage ? 'Loading…' : 'Load older selfies'}
+        </Button>
       )}
     </section>
   );
