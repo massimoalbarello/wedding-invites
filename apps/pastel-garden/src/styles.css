@@ -368,10 +368,13 @@ h2 {
   }
 }
 
-/* Small cues sit over the artwork without interrupting the film. */
-.envelope-is-ready > video {
-  animation: envelope-breathe 4s ease-in-out 3;
+.portrait-art > .envelope-poster {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
+
+/* Small cues sit over the artwork without interrupting the film. */
 .seal-hint {
   position: absolute;
   top: 52.3%;
@@ -452,15 +455,6 @@ h2 {
   50% {
     opacity: 1;
     transform: scale(1);
-  }
-}
-@keyframes envelope-breathe {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
   }
 }
 @keyframes cue-reveal {
@@ -648,7 +642,6 @@ h2 {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .envelope-is-ready > video,
   .sound-waves,
   .sound-hint,
   .scroll-hint,

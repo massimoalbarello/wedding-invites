@@ -75,6 +75,44 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });
 
+test('pressing the letter starts playback inside the gesture and keeps its cover until playing', async () => {
+  const play = HTMLMediaElement.prototype.play;
+  let gesture: Event | undefined;
+  let startedInGesture = false;
+  HTMLMediaElement.prototype.play = () => {
+    startedInGesture = Boolean(gesture && gesture.eventPhase !== Event.NONE);
+    return Promise.resolve();
+  };
+  try {
+    show();
+    const open = (await screen.findByRole('button', {
+      name: 'Open invitation',
+    })) as HTMLButtonElement;
+    await waitFor(() => expect(open.disabled).toBe(false));
+    const video = document.querySelector('video')!;
+    expect(video.preload).toBe('auto');
+    const cover = document.querySelector('.envelope-poster');
+    expect(cover).not.toBeNull();
+    open.addEventListener(
+      'click',
+      (event) => {
+        gesture = event;
+      },
+      { capture: true, once: true },
+    );
+    fireEvent.click(open);
+    expect(startedInGesture).toBe(true);
+    expect(document.querySelector('video')).toBe(video);
+    fireEvent.waiting(video);
+    expect(document.querySelector('.envelope-poster')).toBe(cover);
+    fireEvent.playing(video);
+    expect(document.querySelector('.envelope-poster')).toBeNull();
+    expect(document.querySelector('video')).toBe(video);
+  } finally {
+    HTMLMediaElement.prototype.play = play;
+  }
+});
+
 test('the live artwork is decoded before the intro can reveal it', async () => {
   const decode = HTMLImageElement.prototype.decode;
   let decoded!: () => void;

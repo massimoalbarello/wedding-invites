@@ -52,41 +52,25 @@ export function Invitation({ runtime }: { runtime: InvitationRuntime }) {
         />
       )}
       {stage !== 'open' && (
-        <>
-          <main
-            className="sealed-letter"
-            aria-label={stage === 'opening' ? 'Our story' : 'Sealed invitation'}
-          >
-            <div className="sr-only">
-              <p className="eyebrow">You are invited</p>
-              {context.data && <p>A letter for {context.data.recipient.name}</p>}
-            </div>
-            <Envelope
-              opening={stage === 'opening'}
-              ready={Boolean(context.data) && landingReady}
-              onOpened={finishOpening}
-            />
-            <div className="sr-only">
-              {stage === 'opening' && <p role="status">Our story is playing…</p>}
-              {(context.isPending || !landingReady) && <p role="status">Just a moment…</p>}
-            </div>
-          </main>
-          {stage === 'closed' && (
-            <button
-              className="entrance-trigger"
-              type="button"
-              aria-label="Open invitation"
-              disabled={!context.data || !landingReady}
-              onClick={() =>
-                setStage(
-                  window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                    ? 'open'
-                    : 'opening',
-                )
-              }
-            />
-          )}
-        </>
+        <main
+          className="sealed-letter"
+          aria-label={stage === 'opening' ? 'Our story' : 'Sealed invitation'}
+        >
+          <div className="sr-only">
+            <p className="eyebrow">You are invited</p>
+            {context.data && <p>A letter for {context.data.recipient.name}</p>}
+          </div>
+          <Envelope
+            opening={stage === 'opening'}
+            ready={Boolean(context.data) && landingReady}
+            onOpened={finishOpening}
+            onOpening={() => setStage('opening')}
+          />
+          <div className="sr-only">
+            {stage === 'opening' && <p role="status">Our story is playing…</p>}
+            {(context.isPending || !landingReady) && <p role="status">Just a moment…</p>}
+          </div>
+        </main>
       )}
     </div>
   );
