@@ -599,6 +599,7 @@ h2 {
   height: 100%;
   pointer-events: none;
   z-index: 20;
+  filter: drop-shadow(0 1px 1px #4d627d80);
 }
 @media (max-width: 600px) {
   :root {
@@ -716,7 +717,8 @@ h2 {
     both;
 }
 .garden-dove img {
-  animation-duration: 420ms;
+  animation-duration: var(--wingbeat-duration);
+  animation-delay: var(--wingbeat-delay);
 }
 .garden-air [data-reverse="true"] {
   animation-direction: reverse;
@@ -784,14 +786,14 @@ h2 {
     opacity: 0.85;
   }
   50% {
-    transform: translate3d(55cqw, -45px, 0);
+    transform: translate3d(55cqw, var(--flight-arc), 0);
   }
   90% {
     opacity: 0.8;
   }
   100% {
     opacity: 0;
-    transform: translate3d(calc(100cqw + 200px), 20px, 0);
+    transform: translate3d(calc(100cqw + 200px), var(--flight-exit), 0);
   }
 }
 @keyframes wingbeat {
