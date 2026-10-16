@@ -546,7 +546,7 @@ try {
   assert.ok(
     (await newcomer.page.locator('html').evaluate((element) => element.scrollWidth)) <=
       NARROW_VIEWPORT.width,
-    'The private letter must fit a narrow phone screen.',
+    'The invitation entry must fit a narrow phone screen.',
   );
   await newcomer.page.setViewportSize(MOBILE_VIEWPORT);
   await newcomer.page.screenshot({

@@ -85,9 +85,7 @@ export function SelfieCamera({
       ) : (
         <CaptureAction camera={camera} capturing={capturing} takePhoto={takePhoto} />
       )}
-      {!camera.active && !captureUrl && (
-        <p className="secret-footnote">A small secret. One familiar face.</p>
-      )}
+      {!camera.active && !captureUrl && <p className="secret-footnote">The rest is classified.</p>}
     </>
   );
 }
@@ -128,7 +126,7 @@ function CameraPreview({
 }) {
   return (
     <SecretPaper>
-      <p className="secret-stamp">The secret handshake</p>
+      <p className="secret-eyebrow">Identity checkpoint</p>
       <h1 className="secret-camera-heading">{captureUrl ? 'Your photo' : 'A quick selfie'}</h1>
       <div className="secret-camera-frame">
         {captureUrl ? (
@@ -138,9 +136,7 @@ function CameraPreview({
         )}
         {!captureUrl && <div className="secret-face-guide" aria-hidden="true" />}
       </div>
-      {!captureUrl && (
-        <p className="secret-camera-note">Just you, good light, and a little smile.</p>
-      )}
+      {!captureUrl && <p className="secret-camera-note">Face the camera. Your clearance awaits.</p>}
     </SecretPaper>
   );
 }

@@ -9,7 +9,7 @@ import {
   openInvitation,
   verifyFace,
 } from '../queries/invitations';
-import { PrivateEnvelope, SecretPaper, SecretScene, SecretStamp } from './-invitation/secret-paper';
+import { SecretPaper, SecretScene, SecretSeal, SecretStamp } from './-invitation/secret-paper';
 import { SelfDestruct } from './-invitation/self-destruct';
 import { SelfieCamera } from './-invitation/selfie-camera';
 
@@ -83,8 +83,15 @@ function VerifiedInvitation({ token, name }: { token: string; name: string }) {
   return (
     <SecretScene>
       <SecretPaper className="secret-success">
-        <SecretStamp>Identity confirmed</SecretStamp>
-        <PrivateEnvelope verified />
+        <div className="secret-topline">
+          <p className="secret-eyebrow">Identity confirmed</p>
+          <SecretSeal verified />
+        </div>
+        <SecretStamp>
+          ACCESS
+          <br />
+          GRANTED
+        </SecretStamp>
         <h1 className="secret-title" aria-live="polite">
           It’s you, {name}.
         </h1>

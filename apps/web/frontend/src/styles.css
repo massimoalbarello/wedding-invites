@@ -2,6 +2,7 @@
 @import "@repo/ui/theme.css";
 @import "@fontsource-variable/dm-sans";
 @import "@fontsource-variable/geist-mono";
+@import "@fontsource/anton/latin-400.css";
 @import "./routes/-invitation/secret-entry.css";
 @source "../../../../packages/ui/src";
 body {
