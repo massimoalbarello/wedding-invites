@@ -35,14 +35,18 @@ export function Envelope({
   opening,
   ready,
   onOpened,
+  onOpening,
 }: {
   opening: boolean;
   ready: boolean;
   onOpened: () => void;
+  onOpening: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const stallTimer = useRef<number | undefined>(undefined);
   const lastProgress = useRef(0);
+  const mounted = useRef(false);
+  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [soundHintVisible, setSoundHintVisible] = useState(true);
@@ -58,14 +62,29 @@ export function Envelope({
   }, [onOpened]);
 
   useEffect(() => {
+    mounted.current = true;
     const player = video.current;
-    if (!opening || !player) {
+    return () => {
+      mounted.current = false;
+      clearStallTimer();
+      player?.pause();
+    };
+  }, [clearStallTimer]);
+
+  const open = () => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onOpened();
       return;
     }
-    let active = true;
+    const player = video.current;
+    if (!player) {
+      return;
+    }
+    onOpening();
     waitForPlayback();
+    // Keep play in the click handler so audible playback retains the user gesture.
     void player.play().catch((error: unknown) => {
-      if (!active) {
+      if (!mounted.current) {
         return;
       }
       if (playbackWasInterrupted(error)) {
@@ -76,79 +95,95 @@ export function Envelope({
       player.muted = true;
       setMuted(true);
       void player.play().catch((retryError: unknown) => {
-        if (active && !playbackWasInterrupted(retryError)) {
+        if (mounted.current && !playbackWasInterrupted(retryError)) {
           onOpened();
         }
       });
     });
-    return () => {
-      active = false;
-      clearStallTimer();
-      player.pause();
-    };
-  }, [opening, onOpened, waitForPlayback, clearStallTimer]);
+  };
 
   return (
-    <div className={ready && !opening ? 'portrait-art envelope-is-ready' : 'portrait-art'}>
-      <video
-        ref={video}
-        src="./media/our-story-opening.mp4"
-        poster="./media/opening-poster.webp"
-        muted={muted}
-        playsInline
-        preload="metadata"
-        aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
-        onEnded={opening ? onOpened : undefined}
-        onError={opening ? onOpened : undefined}
-        onWaiting={opening && !paused ? waitForPlayback : undefined}
-        onStalled={opening && !paused ? waitForPlayback : undefined}
-        onPlaying={() => {
-          clearStallTimer();
-          setPaused(false);
-        }}
-        onPause={() => {
-          clearStallTimer();
-          setPaused(true);
-        }}
-        onTimeUpdate={(event) => {
-          if (event.currentTarget.currentTime >= SOUND_HINT_DURATION_SECONDS) {
-            setSoundHintVisible(false);
-          }
-          if (event.currentTarget.currentTime !== lastProgress.current) {
-            lastProgress.current = event.currentTarget.currentTime;
+    <>
+      <div className="portrait-art">
+        <video
+          ref={video}
+          src="./media/our-story-opening.mp4"
+          poster="./media/opening-poster.webp"
+          muted={muted}
+          playsInline
+          preload="auto"
+          aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
+          onEnded={opening ? onOpened : undefined}
+          onError={opening ? onOpened : undefined}
+          onWaiting={opening && !paused ? waitForPlayback : undefined}
+          onStalled={opening && !paused ? waitForPlayback : undefined}
+          onPlaying={() => {
             clearStallTimer();
-          }
-        }}
-        width="720"
-        height="1280"
-      />
-      {ready && !opening && <span className="seal-hint" aria-hidden="true" />}
-      {opening && (muted || soundHintVisible) && (
-        <div className="sound-hint">
-          {muted ? (
-            <button
-              type="button"
-              aria-label="Enable music"
-              onClick={() => {
-                if (video.current) {
-                  video.current.muted = false;
-                  setMuted(false);
-                }
-              }}
-            >
-              <MusicSymbol muted />
-            </button>
-          ) : (
-            <span
-              className="sound-icon"
-              role="img"
-              aria-label="Music is playing — turn up your volume"
-            >
-              <MusicSymbol muted={false} />
-            </span>
-          )}
-        </div>
+            setPlaying(true);
+            setPaused(false);
+          }}
+          onPause={() => {
+            clearStallTimer();
+            setPaused(true);
+          }}
+          onTimeUpdate={(event) => {
+            if (event.currentTarget.currentTime >= SOUND_HINT_DURATION_SECONDS) {
+              setSoundHintVisible(false);
+            }
+            if (event.currentTarget.currentTime !== lastProgress.current) {
+              lastProgress.current = event.currentTarget.currentTime;
+              clearStallTimer();
+            }
+          }}
+          width="720"
+          height="1280"
+        />
+        {!playing && (
+          <img
+            className="envelope-poster"
+            src="./media/opening-poster.webp"
+            alt=""
+            width="720"
+            height="1280"
+          />
+        )}
+        {ready && !opening && <span className="seal-hint" aria-hidden="true" />}
+        {opening && (muted || soundHintVisible) && (
+          <div className="sound-hint">
+            {muted ? (
+              <button
+                type="button"
+                aria-label="Enable music"
+                onClick={() => {
+                  if (video.current) {
+                    video.current.muted = false;
+                    setMuted(false);
+                  }
+                }}
+              >
+                <MusicSymbol muted />
+              </button>
+            ) : (
+              <span
+                className="sound-icon"
+                role="img"
+                aria-label="Music is playing — turn up your volume"
+              >
+                <MusicSymbol muted={false} />
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      {!opening && (
+        <button
+          className="entrance-trigger"
+          type="button"
+          aria-label="Open invitation"
+          disabled={!ready}
+          onClick={open}
+        />
       )}
-    </div>
+    </>
   );
 }
