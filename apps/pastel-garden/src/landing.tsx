@@ -64,7 +64,7 @@ export function Landing({
           <img
             ref={artwork}
             src="./media/landing-couple.webp"
-            alt="Massimo and Elizaveta together in the flower-lined garden at Castello di Casiglio"
+            alt={`Massimo and Elizaveta together in the flower-lined garden at ${content.venue}`}
             width="720"
             height="1280"
           />
@@ -115,8 +115,8 @@ export function Landing({
             <h2 id="venue-heading">{content.venue}</h2>
             <img
               className="venue-artwork"
-              src="./media/casiglio-venue.webp"
-              alt="The pink villa of Castello di Casiglio, with the stone castle alongside it"
+              src="./media/rizzoli-venue.webp"
+              alt="Villa Ex Magni Rizzoli, with its curved arched limonaia and entrance staircase"
               width="1536"
               height="1024"
             />

@@ -368,10 +368,19 @@ h2 {
   }
 }
 
-.portrait-art > .envelope-poster {
+.portrait-art > .envelope-poster,
+.portrait-art > .landing-still {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.portrait-art > .landing-still {
+  opacity: 0;
+  transition: opacity 240ms linear;
+}
+.portrait-art > .landing-still.is-visible {
+  opacity: 1;
 }
 
 /* Small cues sit over the artwork without interrupting the film. */
