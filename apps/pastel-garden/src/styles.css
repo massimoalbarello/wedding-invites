@@ -370,9 +370,9 @@ h2 {
 /* Small cues sit over the artwork without interrupting the film. */
 .seal-hint {
   position: absolute;
-  top: 52.3%;
+  top: 46.3%;
   left: 50%;
-  width: 14%;
+  width: 19%;
   aspect-ratio: 1;
   border: 1px solid #789ebf;
   border-radius: 50%;
