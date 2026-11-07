@@ -1,5 +1,5 @@
 :root {
-  font-family: "Dancing Script Variable", cursive;
+  font-family: "Cormorant Garamond Variable", Georgia, serif;
   font-size: 100%;
   font-weight: 500;
   line-height: 1.5;
@@ -22,7 +22,7 @@ body {
 }
 body {
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 1.75rem);
+  font-size: clamp(1.375rem, 3vw, 1.625rem);
 }
 button,
 input,
@@ -54,7 +54,7 @@ button {
   background: #dce9f6;
   color: #254461;
   font: inherit;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1.4;
   text-decoration: none;
   cursor: pointer;
@@ -71,9 +71,10 @@ button:hover:not(:disabled) {
   outline-offset: 5px;
 }
 .eyebrow {
-  font-size: 1.5rem;
-  letter-spacing: 0;
-  line-height: 1.3;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+  text-transform: uppercase;
 }
 .invitation {
   max-width: 900px;
@@ -175,12 +176,13 @@ button:hover:not(:disabled) {
   }
 }
 h1 {
-  font-weight: 500;
+  font-family: "Pinyon Script", cursive;
+  font-weight: 400;
   line-height: 1.25;
 }
 .hero h1 {
   margin: 0;
-  font-size: clamp(2rem, 8.2cqw, 3.25rem);
+  font-size: clamp(2.25rem, 8.2cqw, 3.5rem);
   text-wrap: balance;
 }
 h1:focus {
@@ -210,9 +212,10 @@ h1:focus {
   max-width: 40rem;
 }
 h2 {
-  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  font-family: "Pinyon Script", cursive;
+  font-size: clamp(3rem, 7vw, 4rem);
   line-height: 1.2;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0;
   margin: 1rem 0 1.5rem;
   text-wrap: balance;
@@ -321,10 +324,10 @@ h2 {
 }
 .reply-copy h3 {
   font-weight: 500;
-  font-size: 1.875rem;
+  font-size: 1.5rem;
 }
 .reply-copy form section p {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1.5;
   margin-top: 6px;
 }
@@ -332,7 +335,7 @@ h2 {
   padding: 10px;
   border: 0;
   background: transparent;
-  font-size: 1.375rem;
+  font-size: 1.25rem;
 }
 .reply-copy button[type="submit"] {
   justify-self: center;
@@ -345,7 +348,7 @@ h2 {
 }
 .reply-copy [role="alert"] {
   color: #934437;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1.5;
 }
 
@@ -543,7 +546,7 @@ h2 {
 }
 .countdown-intro {
   margin-top: 2rem;
-  font-size: 1.75rem;
+  font-size: 1.375rem;
   text-wrap: balance;
 }
 .countdown-clock {
@@ -553,12 +556,11 @@ h2 {
   margin: 1.5rem 0 0;
 }
 .countdown-clock dt {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
 }
 .countdown-clock dd {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   font-weight: 400;
