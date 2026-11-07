@@ -1,11 +1,4 @@
-const prohibitedColours = [
-  { name: 'Red', background: '#bd5559' },
-  { name: 'Black', background: '#33343a' },
-  { name: 'Gold', background: 'linear-gradient(135deg, #dcc78a, #ad8743)' },
-  { name: 'Silver', background: 'linear-gradient(135deg, #eceef1, #a3aab4)' },
-  { name: 'White', background: '#fff' },
-  { name: 'Neon colours', background: 'linear-gradient(135deg, #ceff39, #ff63c7)' },
-];
+const prohibitedColours = ['Red', 'Black', 'Gold', 'Silver', 'White', 'Neon'];
 
 export function DressCode() {
   return (
@@ -21,15 +14,13 @@ export function DressCode() {
           loading="lazy"
         />
         <ul className="dress-code-avoid" aria-label="Colours to avoid">
-          {prohibitedColours.map(({ name, background }) => (
-            <li key={name}>
-              <span className="colour-swatch" style={{ background }} aria-hidden="true">
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <path className="swatch-slash-outline" d="m7 7 26 26" />
-                  <path d="m7 7 26 26" />
-                </svg>
-              </span>
-              {name}
+          {prohibitedColours.map((colour) => (
+            <li key={colour}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m5.6 5.6 12.8 12.8" />
+              </svg>
+              {colour}
             </li>
           ))}
         </ul>
