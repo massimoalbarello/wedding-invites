@@ -90,8 +90,8 @@ export function RsvpForm({
                   <div>
                     <h3>Who’s coming with you?</h3>
                     <p>
-                      We’d love to celebrate with those who’ve shared in our lives. Please keep this
-                      in mind when choosing your plus-one.
+                      We’d love to keep our day close and personal, with the people who’ve been part
+                      of our story.
                     </p>
                   </div>
                   {Array.from(field.state.value.entries()).map(([index, person]) => (
