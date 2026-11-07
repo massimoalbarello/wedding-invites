@@ -200,6 +200,7 @@ h1:focus {
 }
 .venue-section,
 .countdown-section,
+.dress-code-section,
 .reply-section {
   min-height: 100svh;
   display: grid;
@@ -242,6 +243,7 @@ h2 {
 }
 .venue-copy,
 .countdown-copy,
+.dress-code-copy,
 .reply-copy {
   text-shadow:
     0 1px 2px #f8fbfd,
@@ -578,6 +580,79 @@ h2 {
 }
 .wedding-day {
   margin-top: 24px;
+}
+.dress-code-copy {
+  width: 100%;
+  max-width: 44rem;
+}
+.dress-code-copy h2 {
+  margin-top: 0;
+}
+.dress-code-intro {
+  max-width: 32rem;
+  margin: 1.5rem auto 2rem;
+  text-wrap: pretty;
+}
+.dress-code-artwork {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 45% 45% 0 0 / 12% 12% 0 0;
+  mask-image: linear-gradient(#000 88%, transparent);
+}
+.dress-code-attire {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.dress-code-attire h3 {
+  margin-bottom: 0.75rem;
+}
+.dress-code-attire p {
+  font-size: 1.375rem;
+  text-wrap: pretty;
+}
+.dress-code-avoid {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #7898b3;
+}
+.dress-code-avoid ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  list-style: none;
+  text-align: left;
+  font-size: 1.375rem;
+}
+.dress-code-avoid li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dress-code-avoid svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  stroke: #ac655f;
+  stroke-width: 1.5;
+}
+@media (min-width: 40rem) {
+  .dress-code-attire {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+  .dress-code-attire > div {
+    padding-inline: 1.5rem;
+  }
+  .dress-code-attire > div + div {
+    border-left: 1px solid #7898b3;
+  }
+  .dress-code-avoid ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .reply-copy h2 {
   margin-bottom: 36px;

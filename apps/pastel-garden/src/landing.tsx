@@ -2,6 +2,7 @@ import type { InvitationContext, InvitationRuntime } from '@repo/invitation-runt
 import { useEffect, useRef, useState } from 'react';
 import { content } from './content';
 import { Countdown } from './countdown';
+import { DressCode } from './dress-code';
 import { FloralFrame } from './floral-frame';
 import { GardenAir } from './garden-air';
 import { ReplySection } from './reply-section';
@@ -123,6 +124,7 @@ export function Landing({
           </div>
         </section>
         <Countdown />
+        <DressCode />
         <ReplySection runtime={runtime} context={context} />
       </div>
     </main>
