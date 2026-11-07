@@ -7,7 +7,7 @@ import { ReplySection } from '../src/reply-section';
 
 afterEach(cleanup);
 const context: InvitationContext = {
-  recipient: { name: 'Alex Rivera' },
+  recipient: { name: 'Alex Rivera', firstName: 'Alex' },
   rsvp: { status: 'pending', companions: [], maxAdditionalGuests: 1 },
 };
 

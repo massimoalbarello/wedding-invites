@@ -15,6 +15,8 @@ const INTERNAL_ERROR = 500;
 const guest: Guest = {
   id: crypto.randomUUID(),
   name: 'Alex Morgan',
+  firstName: 'Alex',
+  lastName: 'Morgan',
   groupName: 'Friends',
   maxGuests: 0,
   status: 'pending',
@@ -138,8 +140,8 @@ test('cancelling and reopening guest editing keeps one form and preserves the se
   for (const draft of ['Unsaved name', 'Another draft']) {
     await user.click(screen.getByRole('button', { name: 'Edit guest' }));
     expect(screen.getAllByLabelText('Upload reference photos')).toHaveLength(1);
-    const name = screen.getByRole('textbox', { name: 'Full name' }) as HTMLInputElement;
-    expect(name.value).toBe(guest.name);
+    const name = screen.getByRole('textbox', { name: 'First name' }) as HTMLInputElement;
+    expect(name.value).toBe(guest.firstName);
     await user.clear(name);
     await user.type(name, draft);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));

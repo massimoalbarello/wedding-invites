@@ -15,7 +15,8 @@ const MISMATCH = 3;
 const SELFIE = 4;
 const actor = { userId: OWNER_USER_ID };
 const defaults = {
-  name: 'Ada Lovelace',
+  firstName: 'Ada',
+  lastName: 'Lovelace',
   groupName: 'Friends',
   maxGuests: 1,
 };
@@ -54,7 +55,7 @@ test('owner auth, CSRF, private assets, and personal link sessions enforce separ
     const route = `/api/invitations/${guest.token}`;
     const entry = await f.request({ path: route });
     expect(await entry.json()).toEqual({
-      name: defaults.name,
+      name: 'Ada Lovelace',
       faceScanRequired: false,
       authenticated: false,
     });
@@ -75,7 +76,10 @@ test('owner auth, CSRF, private assets, and personal link sessions enforce separ
     const session = cookies(login);
     expect((await f.request({ path: `${route}/content`, cookie: session })).status).toBe(SUCCESS);
     expect((await f.request({ path: `${route}/content` })).status).toBe(UNAUTHORIZED);
-    const another = await f.management.create({ actor, settings: { ...defaults, name: 'Grace' } });
+    const another = await f.management.create({
+      actor,
+      settings: { ...defaults, firstName: 'Grace', lastName: '' },
+    });
     expect(
       (await f.request({ path: `/api/invitations/${another.token}/content`, cookie: session }))
         .status,
@@ -203,7 +207,7 @@ test('RSVP capacity, companion names, counts and cursor pages stay consistent', 
     const guest = await f.management.create({ actor, settings: defaults });
     await f.management.create({
       actor,
-      settings: { ...defaults, name: 'Second guest', groupName: 'Family' },
+      settings: { ...defaults, firstName: 'Second', lastName: 'guest', groupName: 'Family' },
     });
     const route = `/api/invitations/${guest.token}`;
     const session = cookies(await f.request({ path: `${route}/session`, method: 'POST' }));

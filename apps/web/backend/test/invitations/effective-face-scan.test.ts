@@ -13,7 +13,7 @@ const REFERENCE = 1;
 const ALTERNATE_REFERENCE = 2;
 const SELFIE = 4;
 const actor = { userId: OWNER_USER_ID };
-const settings = { name: 'Ada Lovelace', groupName: '', maxGuests: 0 };
+const settings = { firstName: 'Ada', lastName: 'Lovelace', groupName: '', maxGuests: 0 };
 
 test('a default guest without photos opens directly and can RSVP', async () => {
   const f = await fixture();
@@ -23,14 +23,14 @@ test('a default guest without photos opens directly and can RSVP', async () => {
       path: '/api/admin/guests',
       method: 'POST',
       cookie: owner,
-      body: { name: settings.name },
+      body: { name: [settings.firstName, settings.lastName].filter(Boolean).join(' ') },
     });
     expect(created.status).toBe(SUCCESS);
     const guest = await created.json();
     expect(guest).toMatchObject({ faceScanRequired: false, references: [] });
     const route = `/api/invitations/${guest.token}`;
     expect(await (await f.request({ path: route })).json()).toEqual({
-      name: settings.name,
+      name: [settings.firstName, settings.lastName].filter(Boolean).join(' '),
       faceScanRequired: false,
       authenticated: false,
     });
@@ -178,7 +178,7 @@ test('a failed first-photo upload leaves direct access and existing sessions unc
     const invalid = new File(['not an image'], 'bad.jpg', { type: 'image/jpeg' });
     const edit = await api.api.admin
       .guests({ id: guest.id })
-      .patch({ ...settings, name: 'Must not persist', photos: [invalid] }, options);
+      .patch({ ...settings, firstName: 'Must not persist', photos: [invalid] }, options);
     expect(edit.status).toBe(BAD_REQUEST);
     expect(
       (await api.api.admin.guests({ id: guest.id }).photos.post({ photo: invalid }, options))
@@ -197,7 +197,7 @@ test('a request cannot override photo-based verification through the read-only a
   try {
     const owner = await f.admin();
     const body = new FormData();
-    body.set('name', settings.name);
+    body.set('name', [settings.firstName, settings.lastName].filter(Boolean).join(' '));
     body.set('faceScanRequired', 'false');
     body.set('photos', photo(REFERENCE));
     const created = await f.request({

@@ -82,7 +82,7 @@ export function guestOptions({ ownerId, id }: { ownerId: string; id: string }) {
     },
   });
 }
-export type GuestSettings = Pick<Guest, 'name' | 'groupName' | 'maxGuests'>;
+export type GuestSettings = Pick<Guest, 'firstName' | 'lastName' | 'groupName' | 'maxGuests'>;
 export function guestCapturesOptions({ ownerId, id }: { ownerId: string; id: string }) {
   return infiniteQueryOptions({
     queryKey: guestKeys.captures({ ownerId, id }),

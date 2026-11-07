@@ -13,7 +13,7 @@ export const RsvpStateSchema = z.object({
   maxAdditionalGuests: z.number().int().min(0).max(MAX_ADDITIONAL_GUESTS),
 });
 export const InvitationContextSchema = z.object({
-  recipient: z.object({ name: z.string() }),
+  recipient: z.object({ name: z.string(), firstName: z.string().optional() }),
   rsvp: RsvpStateSchema,
 });
 export type InvitationContext = z.infer<typeof InvitationContextSchema>;

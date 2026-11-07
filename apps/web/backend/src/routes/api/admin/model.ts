@@ -31,28 +31,41 @@ export const RsvpStatusSchema = t.Union([
   t.Literal(declined),
 ]);
 export const CompanionSchema = t.Object({ id: PublicIdSchema, name: t.String() });
+const GuestDetailsSchema = t.Object({
+  groupName: t.Optional(t.String({ maxLength: MAX_GROUP_NAME_LENGTH, default: '' })),
+  maxGuests: t.Optional(t.Integer({ minimum: 0, maximum: MAX_COMPANIONS, default: 0 })),
+});
 export const GuestSettingsSchema = t.Object({
+  firstName: t.String({ minLength: 1, maxLength: MAX_GUEST_NAME_LENGTH }),
+  lastName: t.Optional(t.String({ maxLength: MAX_GUEST_NAME_LENGTH, default: '' })),
+  ...GuestDetailsSchema.properties,
+});
+const LegacyGuestSettingsSchema = t.Object({
   name: t.String({ minLength: 1, maxLength: MAX_GUEST_NAME_LENGTH }),
-  groupName: t.String({ maxLength: MAX_GROUP_NAME_LENGTH, default: '' }),
-  maxGuests: t.Integer({ minimum: 0, maximum: MAX_COMPANIONS, default: 0 }),
+  ...GuestDetailsSchema.properties,
 });
 const GuestPhotosSchema = t.Optional(
   t.Files({ maxSize: MAX_PHOTO_BYTES, maxItems: MAX_REFERENCE_PHOTOS }),
 );
-export const CreateGuestSchema = t.Object({
-  ...GuestSettingsSchema.properties,
-  photos: GuestPhotosSchema,
-});
-export const EditGuestSchema = t.Object({
-  ...GuestSettingsSchema.properties,
+const GuestPhotoEditsSchema = t.Object({
   photos: GuestPhotosSchema,
   removedPhotoIds: t.Optional(
     t.ArrayQuery(PublicIdSchema, { maxItems: MAX_REFERENCE_PHOTOS, uniqueItems: true }),
   ),
 });
+export const CreateGuestSchema = t.Union([
+  t.Object({ ...GuestSettingsSchema.properties, photos: GuestPhotosSchema }),
+  t.Object({ ...LegacyGuestSettingsSchema.properties, photos: GuestPhotosSchema }),
+]);
+export const EditGuestSchema = t.Union([
+  t.Object({ ...GuestSettingsSchema.properties, ...GuestPhotoEditsSchema.properties }),
+  t.Object({ ...LegacyGuestSettingsSchema.properties, ...GuestPhotoEditsSchema.properties }),
+]);
 export const GuestSchema = t.Object({
   id: GuestPublicIdSchema,
   name: t.String(),
+  firstName: t.String(),
+  lastName: t.String(),
   groupName: t.String(),
   faceScanRequired: t.Boolean(),
   maxGuests: t.Number(),

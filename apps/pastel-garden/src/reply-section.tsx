@@ -29,7 +29,8 @@ export function ReplySection({
       <div className="reply-copy">
         <p className="eyebrow">RSVP</p>
         <p className="recipient-name">
-          This is a personal invitation for {context.recipient.name}.
+          {context.recipient.firstName ?? context.recipient.name}, we’d love to share this special
+          moment with you.
         </p>
         <h2 id="reply-heading">Will you celebrate with us?</h2>
         <RsvpForm

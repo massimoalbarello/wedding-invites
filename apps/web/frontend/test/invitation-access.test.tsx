@@ -18,6 +18,7 @@ afterEach(() => {
 test('background revocation removes the private iframe from view and clears its cached context', async () => {
   const content: Invitation = {
     name: 'Alex Morgan',
+    firstName: 'Alex',
     assetUrl: 'about:blank',
     status: 'pending',
     maxGuests: 1,
@@ -92,6 +93,7 @@ test('a missing invitation package shows a neutral not-ready page without an ifr
 test('recipient viewport restrictions are removed when leaving the invitation route', async () => {
   const content: Invitation = {
     name: 'Alex Morgan',
+    firstName: 'Alex',
     assetUrl: 'about:blank',
     status: 'pending',
     maxGuests: 1,

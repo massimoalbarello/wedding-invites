@@ -25,7 +25,7 @@ const MISMATCH = 3;
 const SELFIE = 4;
 const NO_FACE = 5;
 const actor = { userId: OWNER_USER_ID };
-const settings = { name: 'Ada Lovelace', groupName: '', maxGuests: 0 };
+const settings = { firstName: 'Ada', lastName: 'Lovelace', groupName: '', maxGuests: 0 };
 type CaptureRow = {
   id: string;
   owner_id: string;

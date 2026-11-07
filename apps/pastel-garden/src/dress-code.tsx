@@ -4,7 +4,7 @@ export function DressCode() {
   return (
     <section className="dress-code-section" aria-labelledby="dress-code-heading">
       <div className="dress-code-copy">
-        <h2 id="dress-code-heading">Guest Dress Code</h2>
+        <h2 id="dress-code-heading">Dress Code</h2>
         <img
           className="dress-code-artwork"
           src="./media/rizzoli-dress-code.webp"

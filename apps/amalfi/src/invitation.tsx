@@ -422,7 +422,9 @@ function ReplySection({
       <p className="eyebrow">RSVP</p>
       <h2>Will you join us?</h2>
       <p>Kindly reply by {content.replyBy}</p>
-      <p className="recipient-name">A personal invitation for {context.recipient.name}</p>
+      <p className="recipient-name">
+        A personal invitation for {context.recipient.firstName ?? context.recipient.name}
+      </p>
       {reply.isSuccess && (
         <p className="reply-confirmation" role="status">
           {context.rsvp.status === 'accepted'

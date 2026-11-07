@@ -9,7 +9,7 @@ import { Invitation } from '../src/invitation';
 afterEach(cleanup);
 
 const context = {
-  recipient: { name: 'Alex Rivera' },
+  recipient: { name: 'Alex Rivera', firstName: 'Alex' },
   rsvp: { status: 'pending' as const, companions: [], maxAdditionalGuests: 0 },
 };
 
@@ -73,7 +73,7 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.getByRole('link', { name: /Scroll to wedding details/ }).getAttribute('href')).toBe(
     '#venue',
   );
-  expect(screen.getByText('This is a personal invitation for Alex Rivera.')).toBeDefined();
+  expect(screen.getByText('Alex, we’d love to share this special moment with you.')).toBeDefined();
   expect(screen.getByRole('heading', { name: '30 June 2027' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });

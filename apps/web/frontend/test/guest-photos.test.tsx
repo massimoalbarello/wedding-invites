@@ -7,7 +7,7 @@ import { MAX_PHOTO_BYTES, MAX_REFERENCE_PHOTOS } from '#backend/models/invitatio
 import { GuestForm } from '../src/components/guest-form';
 import type { GuestDraft } from '../src/queries/guests';
 
-const initial = { name: 'Alex Morgan', groupName: 'Friends', maxGuests: 0 };
+const initial = { firstName: 'Alex', lastName: 'Morgan', groupName: 'Friends', maxGuests: 0 };
 const references = [
   { id: 'existing-reference', src: '/api/admin/guests/alex/photos/existing-reference' },
 ];

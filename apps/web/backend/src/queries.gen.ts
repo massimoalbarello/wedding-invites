@@ -43,7 +43,7 @@ export interface IListInvitationGuestsResult {
     public_id: string;
     owner_id: string;
     token: string;
-    name: string;
+    first_name: string;
     group_name: string;
     max_guests: number;
     status: string;
@@ -53,6 +53,7 @@ export interface IListInvitationGuestsResult {
     verification_failed_at: string | null;
     verified_at: string | null;
     invitation_opened_at: string | null;
+    last_name: string;
     companions: string;
     references_json: string;
 }
@@ -63,7 +64,7 @@ export interface IInvitationGuestByIdResult {
     public_id: string;
     owner_id: string;
     token: string;
-    name: string;
+    first_name: string;
     group_name: string;
     max_guests: number;
     status: string;
@@ -73,6 +74,7 @@ export interface IInvitationGuestByIdResult {
     verification_failed_at: string | null;
     verified_at: string | null;
     invitation_opened_at: string | null;
+    last_name: string;
     companions: string;
     references_json: string;
 }
@@ -83,7 +85,7 @@ export interface IInvitationGuestByTokenResult {
     public_id: string;
     owner_id: string;
     token: string;
-    name: string;
+    first_name: string;
     group_name: string;
     max_guests: number;
     status: string;
@@ -93,6 +95,7 @@ export interface IInvitationGuestByTokenResult {
     verification_failed_at: string | null;
     verified_at: string | null;
     invitation_opened_at: string | null;
+    last_name: string;
     companions: string;
     references_json: string;
 }

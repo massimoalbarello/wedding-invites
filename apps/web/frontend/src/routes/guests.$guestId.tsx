@@ -77,7 +77,8 @@ function GuestDetail() {
           <GuestForm
             key={guest.id}
             initial={{
-              name: guest.name,
+              firstName: guest.firstName,
+              lastName: guest.lastName,
               groupName: guest.groupName,
               maxGuests: guest.maxGuests,
             }}
@@ -118,7 +119,7 @@ function GuestDetail() {
         <GuestAccess guest={guest} ownerId={userId} />
         {guest.companions.length > 0 && (
           <section className="mt-8 border-border border-t pt-7">
-            <h2 className="font-medium">Coming with {guest.name.split(' ')[0]}</h2>
+            <h2 className="font-medium">Coming with {guest.firstName}</h2>
             <ul className="mt-3 space-y-3">
               {guest.companions.map((companion) => (
                 <li key={companion.id} className="flex items-center gap-3 text-sm">

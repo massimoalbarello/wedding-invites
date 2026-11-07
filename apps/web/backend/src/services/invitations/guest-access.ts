@@ -10,6 +10,7 @@ import { opaqueId } from '#backend/lib/opaque-id.ts';
 import { compareFace } from '#backend/models/faces/comparison.ts';
 import {
   type Guest,
+  guestFullName,
   MAX_GUEST_NAME_LENGTH,
   MILLISECONDS_PER_SECOND,
   type RsvpStatus,
@@ -29,7 +30,8 @@ function hashSession(token: string) {
 function invitationContent(input: { guest: Guest; packageId: string }) {
   const { guest, packageId } = input;
   return {
-    name: guest.name,
+    name: guestFullName(guest),
+    firstName: guest.firstName,
     assetUrl: `/api/invitations/${guest.token}/assets/${packageId}/index.html`,
     status: guest.status,
     maxGuests: guest.maxGuests,
@@ -90,7 +92,7 @@ export class GuestAccessService {
       });
     }
     return {
-      name: guest.name,
+      name: guestFullName(guest),
       faceScanRequired: guest.references.length > 0,
       authenticated: await this.authenticated({ guest, session: input.session }),
     };

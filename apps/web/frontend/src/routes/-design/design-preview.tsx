@@ -6,7 +6,7 @@ import { designPreviewUrl } from '../../queries/designs';
 export function DesignPreview({ packageId }: { packageId: string }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const context = useRef<InvitationContext>({
-    recipient: { name: 'Preview guest' },
+    recipient: { name: 'Preview guest', firstName: 'Preview' },
     rsvp: { status: 'pending', companions: [], maxAdditionalGuests: 1 },
   });
   useEffect(() => {

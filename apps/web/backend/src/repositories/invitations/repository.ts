@@ -93,7 +93,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     const rows = await this.sql.ListInvitationGuests`
       /* @type id string */
       /* @type owner_id string */
-      /* @type name string */
+      /* @type first_name string */
       /* @type created_at string */
       /* @type companions string */
       /* @type references_json string */
@@ -115,7 +115,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
         )
         and (${input.status ?? null} is null or g.status = ${input.status ?? null})
         and (${input.group ?? null} is null or g.group_name = ${input.group ?? null})
-        and (${search} = '' or instr(lower(g.name), lower(${search})) > 0 or instr(lower(g.group_name), lower(${search})) > 0
+        and (${search} = '' or instr(lower(trim(g.first_name || ' ' || g.last_name)), lower(${search})) > 0 or instr(lower(g.group_name), lower(${search})) > 0
           or exists (select 1 from invitation_companion c where c.owner_id = g.owner_id and c.guest_id = g.id and instr(lower(c.name), lower(${search})) > 0))
       order by
         case when ${grouped} = 1 then g.group_name = '' else 0 end,
@@ -130,7 +130,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     const rows = await this.sql.InvitationGuestById`
       /* @type id string */
       /* @type owner_id string */
-      /* @type name string */
+      /* @type first_name string */
       /* @type created_at string */
       /* @type companions string */
       /* @type references_json string */
@@ -145,7 +145,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     const rows = await this.sql.InvitationGuestByToken`
       /* @type id string */
       /* @type owner_id string */
-      /* @type name string */
+      /* @type first_name string */
       /* @type created_at string */
       /* @type companions string */
       /* @type references_json string */
@@ -169,8 +169,8 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
     await this.database.begin(async (tx) => {
       const sql = withTypes<Queries>(tx);
       await sql.CreateInvitationGuest`
-        insert into invitation_guest (id, public_id, owner_id, token, name, group_name, max_guests, status, active, created_at)
-        values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.name}, ${guest.groupName}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
+        insert into invitation_guest (id, public_id, owner_id, token, first_name, last_name, group_name, max_guests, status, active, created_at)
+        values (${guest.id}, ${guest.publicId}, ${guest.ownerId}, ${guest.token}, ${guest.firstName}, ${guest.lastName}, ${guest.groupName}, ${guest.maxGuests}, ${guest.status}, ${Number(guest.active)}, ${guest.createdAt})
       `;
       const createdAt = new Date().toISOString();
       for (const reference of references) {
@@ -216,7 +216,7 @@ export class InvitationsRepository implements InvitationsRepositoryContract {
         await sql.RevokeChangedInvitationMode`delete from invitation_session where owner_id = ${input.ownerId} and guest_id = ${input.guestId}`;
       }
       await sql.UpdateInvitationGuest`
-        update invitation_guest set name = ${input.settings.name}, group_name = ${input.settings.groupName}, max_guests = ${input.settings.maxGuests}
+        update invitation_guest set first_name = ${input.settings.firstName}, last_name = ${input.settings.lastName}, group_name = ${input.settings.groupName}, max_guests = ${input.settings.maxGuests}
         where owner_id = ${input.ownerId} and id = ${input.guestId}
       `;
       await sql.RemoveEditedInvitationReferences`
@@ -442,7 +442,8 @@ function mapGuest(row: Queries['ListInvitationGuests']): Guest {
     publicId: row.public_id,
     ownerId: row.owner_id,
     token: row.token,
-    name: row.name,
+    firstName: row.first_name,
+    lastName: row.last_name,
     groupName: row.group_name,
     maxGuests: row.max_guests,
     status: row.status as RsvpStatus,

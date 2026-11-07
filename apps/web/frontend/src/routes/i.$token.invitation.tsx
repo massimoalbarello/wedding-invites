@@ -93,12 +93,13 @@ function Invitation() {
 
 function invitationContext(content: {
   name: string;
+  firstName: string;
   status: InvitationContext['rsvp']['status'];
   companions: { name: string }[];
   maxGuests: number;
 }): InvitationContext {
   return {
-    recipient: { name: content.name },
+    recipient: { name: content.name, firstName: content.firstName },
     rsvp: {
       status: content.status,
       companions: content.companions.map((guest) => guest.name),

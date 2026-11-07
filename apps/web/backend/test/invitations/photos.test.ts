@@ -17,7 +17,8 @@ const THIRD = 3;
 const FOURTH = 4;
 const actor = { userId: OWNER_USER_ID };
 const settings = {
-  name: 'Ada Lovelace',
+  firstName: 'Ada',
+  lastName: 'Lovelace',
   groupName: 'Friends',
   maxGuests: 1,
 };
@@ -54,7 +55,7 @@ test('Eden multipart saves photos in input order and removal promotes the next p
     const edited = await api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
-        name: 'Ada updated',
+        firstName: 'Ada updated',
         photos: [photo(FOURTH)],
         removedPhotoIds: [guest.references[0]!.id],
       },
@@ -110,7 +111,7 @@ test('a bad draft photo leaves no created guest and preserves all edited setting
     const edited = await api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
-        name: 'Must not persist',
+        firstName: 'Must not persist',
         photos: [photo(SECOND), invalidPhoto()],
         removedPhotoIds: [guest.references[0]!.id],
       },
@@ -153,7 +154,7 @@ test('draft photos retain owner, CSRF and per-guest removal boundaries', async (
     const edited = await api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
-        name: 'Must not persist',
+        firstName: 'Must not persist',
         photos: [photo(THIRD)],
         removedPhotoIds: [another.references[0]!.id],
       },
@@ -193,7 +194,7 @@ test('reference capacity is checked against retained photos and concurrent commi
     const response = api.api.admin
       .guests({ id: guest.id })
       .patch(
-        { ...settings, name: 'Must not persist', photos: [photo(SECOND)] },
+        { ...settings, firstName: 'Must not persist', photos: [photo(SECOND)] },
         { headers: { origin: ORIGIN, cookie: owner } },
       );
     await entered.promise;
@@ -241,7 +242,7 @@ test('a concurrent RSVP prevents an edit from lowering capacity or partially sav
     const response = api.api.admin.guests({ id: guest.id }).patch(
       {
         ...settings,
-        name: 'Must not persist',
+        firstName: 'Must not persist',
         maxGuests: 0,
         photos: [photo(SECOND)],
         removedPhotoIds: [guest.references[0]!.id],
