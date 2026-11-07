@@ -249,6 +249,64 @@ async function createGuestInDashboard(page: Page) {
   return link;
 }
 
+async function checkPhotoAlbum({
+  page,
+  guestPage,
+  origin,
+  guest,
+}: {
+  page: Page;
+  guestPage: Page;
+  origin: string;
+  guest: Guest;
+}) {
+  await page.goto(`${origin}/design`);
+  await page.getByRole('button', { name: 'Select design', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Design for every invitation', exact: true }).click();
+  await page.getByRole('option', { name: 'Pastel Garden', exact: true }).click();
+  await page.getByRole('button', { name: 'Save design', exact: true }).click();
+  await page.getByRole('button', { name: 'Select design', exact: true }).waitFor();
+  await guestPage.emulateMedia({ reducedMotion: 'reduce' });
+  await guestPage.goto(`${origin}/i/${guest.token}`);
+  const frame = invitationFrame(guestPage);
+  await frame.getByRole('button', { name: 'Open invitation', exact: true }).click();
+  const track = frame.getByRole('region', { name: 'Our photographs', exact: true });
+  const album = frame.getByRole('region', { name: 'A little of us', exact: true });
+  for (const viewport of [DESKTOP_VIEWPORT, MOBILE_VIEWPORT, NARROW_VIEWPORT]) {
+    await guestPage.setViewportSize(viewport);
+    await track.focus();
+    await guestPage.keyboard.press('Home');
+    await album
+      .getByRole('button', { name: 'Previous photograph' })
+      .and(frame.locator(':disabled'))
+      .waitFor();
+    await guestPage.keyboard.press('End');
+    await album
+      .getByRole('button', { name: 'Next photograph' })
+      .and(frame.locator(':disabled'))
+      .waitFor();
+    const centered = await track.evaluate((element) => {
+      const last = element.querySelector('li:last-child')!.getBoundingClientRect();
+      const region = element.getBoundingClientRect();
+      const tolerance = 1;
+      return Math.abs(last.left + last.width / 2 - region.left - region.width / 2) <= tolerance;
+    });
+    assert(
+      centered,
+      'The final photograph must settle in the centre, including its trailing space.',
+    );
+    assert.ok(
+      (await frame.locator('html').evaluate((element) => element.scrollWidth)) <= viewport.width,
+      'Swiping the album must not widen the invitation page.',
+    );
+  }
+  await album.getByRole('button', { name: 'Previous photograph' }).click();
+  await album
+    .getByRole('button', { name: 'Next photograph' })
+    .and(frame.locator(':enabled'))
+    .waitFor();
+}
+
 async function checkGuestPhotoEditing({
   page,
   origin,
@@ -788,6 +846,7 @@ try {
     bypass,
     noAllowance: seeded[5]!,
   });
+  await checkPhotoAlbum({ page, guestPage: guestBrowser.page, origin: app.origin, guest });
 
   const csrf = await page.request.post(`${app.origin}/api/admin/guests`, {
     headers: { origin: 'https://untrusted.invalid' },
@@ -811,7 +870,7 @@ try {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('heading', { name: 'Guest list', exact: true }).waitFor();
   console.log(
-    'Browser journey passed: passkeys, private invitation assets, owner-wide design selection and preview, and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, and mobile layouts.',
+    'Browser journey passed: passkeys, private invitation assets, owner-wide design selection and preview, and iframe RSVP, atomic guest photo creation and editing, group creation/joining/leaving, grouped pagination and ungrouped filtering, cancellation, avatar promotion and fallback, invitation link copying, real face matching, duplicate and wrong-face rejection, forwarding, remembered sessions, bypass, RSVP, counts, pagination, revocation, CSRF, mobile layouts, and photo album centring and keyboard navigation.',
   );
 } catch (error) {
   for (const instance of browsers) {

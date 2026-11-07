@@ -5,6 +5,7 @@ import { Countdown } from './countdown';
 import { DressCode } from './dress-code';
 import { FloralFrame } from './floral-frame';
 import { GardenAir } from './garden-air';
+import { PhotoAlbum } from './photo-album';
 import { ReplySection } from './reply-section';
 
 const VENUE_VISIBILITY_THRESHOLD = 0.05;
@@ -125,6 +126,7 @@ export function Landing({
         </section>
         <Countdown />
         <DressCode />
+        <PhotoAlbum />
         <ReplySection runtime={runtime} context={context} />
       </div>
     </main>
