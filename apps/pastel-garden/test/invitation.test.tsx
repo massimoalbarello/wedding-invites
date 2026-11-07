@@ -14,6 +14,8 @@ const context = {
 };
 
 const MID_STORY_SECONDS = 12;
+const BEFORE_LANDING_HOLD_SECONDS = 19;
+const LANDING_HOLD_START_SECONDS = 20;
 const PLAYBACK_RECOVERY_DEADLINE_MS = 9500;
 const RECOVERY_TEST_TIMEOUT_MS = 12000;
 
@@ -73,6 +75,27 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.getByText('This is a personal invitation for Alex Rivera.')).toBeDefined();
   expect(screen.getByRole('heading', { name: '29 June 2027' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
+});
+
+test('the final held second shows the live landing artwork before the film ends', async () => {
+  show();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+  const video = document.querySelector('video')!;
+  Object.defineProperty(video, 'duration', { configurable: true, value: 21 });
+  const still = document.querySelector<HTMLImageElement>('.landing-still')!;
+  expect(still.getAttribute('src')).toBe(
+    document.querySelector('.hero .portrait-art > img')!.getAttribute('src'),
+  );
+  video.currentTime = BEFORE_LANDING_HOLD_SECONDS;
+  fireEvent.timeUpdate(video);
+  expect(still.classList.contains('is-visible')).toBe(false);
+  video.currentTime = LANDING_HOLD_START_SECONDS;
+  fireEvent.timeUpdate(video);
+  expect(still.classList.contains('is-visible')).toBe(true);
+  expect(document.querySelector('video')).toBe(video);
+  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+  fireEvent.ended(video);
+  expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
 });
 
 test('pressing the letter starts playback inside the gesture and keeps its cover until playing', async () => {

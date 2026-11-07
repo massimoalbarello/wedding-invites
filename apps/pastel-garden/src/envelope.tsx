@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { content } from './content';
 
 const SOUND_HINT_DURATION_SECONDS = 6;
 const PLAYBACK_STALL_TIMEOUT_MS = 8000;
+const LANDING_HOLD_SECONDS = 1;
 
 function playbackWasInterrupted(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -50,6 +52,7 @@ export function Envelope({
   const [muted, setMuted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [soundHintVisible, setSoundHintVisible] = useState(true);
+  const [atLanding, setAtLanding] = useState(false);
   const clearStallTimer = useCallback(() => {
     window.clearTimeout(stallTimer.current);
     stallTimer.current = undefined;
@@ -112,7 +115,7 @@ export function Envelope({
           muted={muted}
           playsInline
           preload="auto"
-          aria-label="Our wedding invitation, from a spinning embrace to Castello di Casiglio"
+          aria-label={`Our wedding invitation, from a spinning embrace to ${content.venue}`}
           onEnded={opening ? onOpened : undefined}
           onError={opening ? onOpened : undefined}
           onWaiting={opening && !paused ? waitForPlayback : undefined}
@@ -127,6 +130,11 @@ export function Envelope({
             setPaused(true);
           }}
           onTimeUpdate={(event) => {
+            const player = event.currentTarget;
+            setAtLanding(
+              Number.isFinite(player.duration) &&
+                player.currentTime >= player.duration - LANDING_HOLD_SECONDS,
+            );
             if (event.currentTarget.currentTime >= SOUND_HINT_DURATION_SECONDS) {
               setSoundHintVisible(false);
             }
@@ -135,6 +143,13 @@ export function Envelope({
               clearStallTimer();
             }
           }}
+          width="720"
+          height="1280"
+        />
+        <img
+          className={atLanding ? 'landing-still is-visible' : 'landing-still'}
+          src="./media/landing-couple.webp"
+          alt=""
           width="720"
           height="1280"
         />
