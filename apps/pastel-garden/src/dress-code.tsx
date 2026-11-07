@@ -11,8 +11,8 @@ export function DressCode() {
           className="dress-code-artwork"
           src="./media/rizzoli-dress-code.webp"
           alt="Guests in pastel dresses and suits around flower-decorated cocktail tables in a garden"
-          width="1608"
-          height="892"
+          width="1672"
+          height="941"
           loading="lazy"
         />
         <div className="dress-code-attire">

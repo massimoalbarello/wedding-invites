@@ -581,6 +581,9 @@ h2 {
 .wedding-day {
   margin-top: 24px;
 }
+.dress-code-section {
+  --artwork-bleed: clamp(1.5rem, 8vw, 5rem);
+}
 .dress-code-copy {
   width: 100%;
   max-width: 44rem;
@@ -595,10 +598,10 @@ h2 {
 }
 .dress-code-artwork {
   display: block;
-  width: 100%;
+  width: calc(100% + 2 * var(--artwork-bleed));
   height: auto;
-  border-radius: 45% 45% 0 0 / 12% 12% 0 0;
-  mask-image: linear-gradient(#000 88%, transparent);
+  margin-inline: calc(-1 * var(--artwork-bleed));
+  mask-image: linear-gradient(transparent, #000 5%, #000 94%, transparent);
 }
 .dress-code-attire {
   display: grid;
