@@ -1,3 +1,4 @@
+import '@fontsource-variable/cormorant-garamond';
 import '@fontsource/pinyon-script/400.css';
 import { createInvitationClient } from '@repo/invitation-runtime/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
