@@ -35,7 +35,7 @@ test('one owner selection applies to existing guest links and preserves their in
     for (const name of ['Alex', 'Sam']) {
       const guest = await f.management.create({
         actor: { userId: OWNER_USER_ID },
-        settings: { name, groupName: '', maxGuests: 1 },
+        settings: { firstName: name, lastName: '', groupName: '', maxGuests: 1 },
       });
       const prefix = `/api/invitations/${guest.token}`;
       const session = cookies(await f.request({ path: `${prefix}/session`, method: 'POST' }));

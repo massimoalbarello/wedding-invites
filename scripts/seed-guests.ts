@@ -5,12 +5,12 @@ type Page = Awaited<ReturnType<typeof virtualPasskeyBrowser>>['page'];
 type Guest = { id: string; name: string; token: string };
 
 const EXAMPLE_GUESTS = [
-  { name: 'Alex Rivera', groupName: 'Friends', maxGuests: 1 },
-  { name: 'Sam Taylor', groupName: 'Friends', maxGuests: 0 },
-  { name: 'Jamie Chen', groupName: 'Family', maxGuests: 2 },
-  { name: 'Robin Ellis', groupName: 'Family', maxGuests: 0 },
-  { name: 'Morgan Bell', groupName: 'Friends', maxGuests: 1 },
-  { name: 'Charlie Lane', groupName: '', maxGuests: 0 },
+  { firstName: 'Alex', lastName: 'Rivera', groupName: 'Friends', maxGuests: 1 },
+  { firstName: 'Sam', lastName: 'Taylor', groupName: 'Friends', maxGuests: 0 },
+  { firstName: 'Jamie', lastName: 'Chen', groupName: 'Family', maxGuests: 2 },
+  { firstName: 'Robin', lastName: 'Ellis', groupName: 'Family', maxGuests: 0 },
+  { firstName: 'Morgan', lastName: 'Bell', groupName: 'Friends', maxGuests: 1 },
+  { firstName: 'Charlie', lastName: 'Lane', groupName: '', maxGuests: 0 },
 ];
 
 /** Disposable examples are created through the same authenticated API as the dashboard. */
@@ -21,7 +21,10 @@ export async function seedGuests({ page, origin }: { page: Page; origin: string 
       headers: { origin },
       data: draft,
     });
-    assert(response.ok(), `Could not create the example guest ${draft.name}.`);
+    assert(
+      response.ok(),
+      `Could not create the example guest ${draft.firstName} ${draft.lastName}.`,
+    );
     guests.push((await response.json()) as Guest);
   }
   const replies = [

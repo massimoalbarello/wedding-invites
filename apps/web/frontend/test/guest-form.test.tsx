@@ -10,7 +10,7 @@ test('a guest requires a name and saves their additional guest allowance', async
   const saves: GuestDraft[] = [];
   render(
     <GuestForm
-      initial={{ name: '', groupName: '', maxGuests: 0 }}
+      initial={{ firstName: '', lastName: '', groupName: '', maxGuests: 0 }}
       onCancel={() => {}}
       onSave={(value) => {
         saves.push(value);
@@ -24,16 +24,18 @@ test('a guest requires a name and saves their additional guest allowance', async
   expect(screen.queryByRole('switch')).toBeNull();
   expect(screen.queryByRole('alert')).toBeNull();
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
-  expect(screen.getByRole('alert').textContent).toContain('Enter the guest’s name');
+  expect(screen.getByRole('alert').textContent).toContain('Enter the guest’s first name');
   expect(saves).toEqual([]);
-  await user.type(screen.getByLabelText('Full name'), 'Alex Morgan');
+  await user.type(screen.getByLabelText('First name'), 'Alex');
+  await user.type(screen.getByLabelText('Surname'), 'Morgan');
   await user.clear(screen.getByLabelText('Additional guests allowed'));
   await user.type(screen.getByLabelText('Additional guests allowed'), '2');
   await user.click(screen.getByRole('button', { name: 'Save guest' }));
   await waitFor(() =>
     expect(saves).toEqual([
       {
-        name: 'Alex Morgan',
+        firstName: 'Alex',
+        lastName: 'Morgan',
         groupName: '',
         maxGuests: 2,
         photos: [],

@@ -7,6 +7,7 @@ import {
   type Guest,
   type GuestListInput,
   type GuestSettings,
+  guestFullName,
   MAX_COMPANIONS,
   MAX_GROUP_NAME_LENGTH,
   MAX_GUEST_NAME_LENGTH,
@@ -26,7 +27,9 @@ import { analyzePhoto, readPhoto } from '#backend/services/invitations/photos.ts
 export function publicGuest(guest: Guest) {
   return {
     id: guest.publicId,
-    name: guest.name,
+    name: guestFullName(guest),
+    firstName: guest.firstName,
+    lastName: guest.lastName,
     groupName: guest.groupName,
     faceScanRequired: guest.references.length > 0,
     maxGuests: guest.maxGuests,
@@ -40,9 +43,15 @@ export function publicGuest(guest: Guest) {
   };
 }
 function normalizedSettings(settings: GuestSettings): GuestSettings {
-  const name = settings.name.trim();
+  const firstName = settings.firstName.trim();
+  const lastName = settings.lastName.trim();
   const groupName = settings.groupName.trim();
-  if (!name || name.length > MAX_GUEST_NAME_LENGTH || groupName.length > MAX_GROUP_NAME_LENGTH) {
+  if (
+    !firstName ||
+    firstName.length > MAX_GUEST_NAME_LENGTH ||
+    lastName.length > MAX_GUEST_NAME_LENGTH ||
+    groupName.length > MAX_GROUP_NAME_LENGTH
+  ) {
     throw new BadRequestError('Enter a valid name and group.');
   }
   if (
@@ -53,7 +62,8 @@ function normalizedSettings(settings: GuestSettings): GuestSettings {
     throw new BadRequestError('Choose a valid guest allowance.');
   }
   return {
-    name,
+    firstName,
+    lastName,
     groupName,
     maxGuests: settings.maxGuests,
   };

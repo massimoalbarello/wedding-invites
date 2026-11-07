@@ -1,4 +1,4 @@
-import { Elysia, t } from 'elysia';
+import { Elysia, type Static, t } from 'elysia';
 import type { Auth } from '#backend/lib/auth/better-auth.ts';
 import { ForbiddenError, UnauthorizedError } from '#backend/lib/errors.ts';
 import {
@@ -92,7 +92,7 @@ export function createAdminController(input: {
         .post(
           '/guests',
           ({ actor, body: { photos, ...settings } }) =>
-            input.management.create({ actor, settings, photos }),
+            input.management.create({ actor, settings: guestSettings(settings), photos }),
           {
             body: CreateGuestSchema,
             response: apiResponse(GuestSchema),
@@ -134,7 +134,7 @@ export function createAdminController(input: {
             input.management.update({
               actor,
               id: params.id,
-              settings,
+              settings: guestSettings(settings),
               photos,
               removedPhotoIds,
             }),
@@ -201,4 +201,13 @@ export function createAdminController(input: {
           { params: PhotoParamsSchema, response: apiResponse(GuestSchema) },
         ),
     );
+}
+
+function guestSettings(input: Static<typeof CreateGuestSchema>) {
+  return {
+    firstName: 'firstName' in input ? input.firstName : input.name,
+    lastName: 'firstName' in input ? (input.lastName ?? '') : '',
+    groupName: input.groupName ?? '',
+    maxGuests: input.maxGuests ?? 0,
+  };
 }

@@ -210,7 +210,8 @@ async function createGuestInDashboard(page: Page) {
   assert.equal(await page.getByRole('switch', { name: 'Require a face scan' }).count(), 0);
   await page.getByRole('button', { name: 'Save guest', exact: true }).click();
   await page.getByRole('alert').waitFor();
-  await page.getByLabel('Full name', { exact: true }).fill('Taylor Reed');
+  await page.getByLabel('First name', { exact: true }).fill('Taylor');
+  await page.getByLabel('Surname', { exact: true }).fill('Reed');
   await page.getByRole('combobox', { name: 'Group', exact: true }).click();
   await page.getByRole('option', { name: 'Create a new group…', exact: true }).click();
   await page.getByRole('textbox', { name: 'New group name', exact: true }).fill('Friends');
@@ -237,7 +238,7 @@ async function createGuestInDashboard(page: Page) {
     0,
     'A rejected photo must not create a partial guest.',
   );
-  assert.equal(await page.getByLabel('Full name', { exact: true }).inputValue(), 'Taylor Reed');
+  assert.equal(await page.getByLabel('First name', { exact: true }).inputValue(), 'Taylor');
   await page.getByRole('button', { name: 'Remove reference photo 2', exact: true }).click();
   await page.getByRole('button', { name: 'Save guest', exact: true }).click();
   await page.getByRole('heading', { name: 'Taylor Reed', exact: true }).waitFor();
@@ -269,7 +270,7 @@ async function checkGuestPhotoEditing({
     .getByLabel('Upload reference photos', { exact: true })
     .setInputFiles(resolve(fixtures, 'different-person.jpg'));
   await page.getByRole('button', { name: 'Remove reference photo 1', exact: true }).click();
-  await page.getByLabel('Full name', { exact: true }).fill('Unsaved name');
+  await page.getByLabel('First name', { exact: true }).fill('Unsaved name');
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   assert.equal((await current()).name, guest.name);
   assert.deepEqual(
@@ -370,7 +371,8 @@ async function saveReply(page: Page) {
 async function checkGuestGrouping({ page, origin }: { page: Page; origin: string }) {
   await page.goto(origin);
   await page.getByRole('link', { name: 'Add guest' }).click();
-  await page.getByLabel('Full name', { exact: true }).fill('Riley Brooks');
+  await page.getByLabel('First name', { exact: true }).fill('Riley');
+  await page.getByLabel('Surname', { exact: true }).fill('Brooks');
   const chooseGroup = async (name: string) => {
     await page.getByRole('combobox', { name: 'Group', exact: true }).click();
     await page.getByRole('option', { name, exact: true }).click();

@@ -18,6 +18,7 @@ export const FaceVerificationErrorSchema = t.Object({
 });
 export const InvitationContentSchema = t.Object({
   name: t.String(),
+  firstName: t.String(),
   assetUrl: t.String(),
   status: RsvpStatusSchema,
   maxGuests: t.Number(),

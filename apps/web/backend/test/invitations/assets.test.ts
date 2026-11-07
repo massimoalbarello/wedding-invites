@@ -19,11 +19,11 @@ test('the invitation and all its resources require the matching active guest ses
     const owner = await f.admin();
     const guest = await f.management.create({
       actor: { userId: OWNER_USER_ID },
-      settings: { name: 'Alex', groupName: '', maxGuests: 1 },
+      settings: { firstName: 'Alex', lastName: '', groupName: '', maxGuests: 1 },
     });
     const other = await f.management.create({
       actor: { userId: OWNER_USER_ID },
-      settings: { name: 'Sam', groupName: '', maxGuests: 0 },
+      settings: { firstName: 'Sam', lastName: '', groupName: '', maxGuests: 0 },
     });
     const base = `/api/invitations/${guest.token}`;
     expect(await (await f.request({ path: base })).json()).toEqual({
@@ -40,6 +40,7 @@ test('the invitation and all its resources require the matching active guest ses
     const content = await (await f.request({ path: `${base}/content`, cookie: session })).json();
     expect(content).toEqual({
       name: 'Alex',
+      firstName: 'Alex',
       status: 'pending',
       maxGuests: 1,
       companions: [],
@@ -91,7 +92,7 @@ test('a missing package blocks content and RSVP without requiring wedding settin
     await f.admin();
     const guest = await f.management.create({
       actor: { userId: OWNER_USER_ID },
-      settings: { name: 'Alex', groupName: '', maxGuests: 0 },
+      settings: { firstName: 'Alex', lastName: '', groupName: '', maxGuests: 0 },
     });
     const base = `/api/invitations/${guest.token}`;
     const session = cookies(await f.request({ path: `${base}/session`, method: 'POST' }));

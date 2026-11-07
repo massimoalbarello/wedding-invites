@@ -8,7 +8,12 @@ const UNAUTHORIZED = 401;
 const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
 const actor = { userId: OWNER_USER_ID };
-const settings = { name: 'Private guest name', groupName: 'Friends', maxGuests: 0 };
+const settings = {
+  firstName: 'Private guest',
+  lastName: 'name',
+  groupName: 'Friends',
+  maxGuests: 0,
+};
 const frontendAssets = new Map([
   [
     '/index.html',
@@ -50,7 +55,9 @@ test('guest links serve crawler-readable previews without opening or authorizing
           expect(html).toContain(`<meta ${attribute} content="${title}">`);
         }
         expect(html).toContain('<script src="/assets/app.js"></script>');
-        expect(html).not.toContain(settings.name);
+        expect(html).not.toContain(
+          [settings.firstName, settings.lastName].filter(Boolean).join(' '),
+        );
         expect(html).not.toContain('Private invitation');
       }
       expect((await f.management.get({ actor, id: guest.id })).activity).toEqual({

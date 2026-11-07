@@ -88,7 +88,7 @@ async function submit() {
 try {
   const context = await runtime.getContext();
   document.querySelector('#greeting')!.textContent =
-    `${context.recipient.name}, we hope you can be part of this special day.`;
+    `${context.recipient.firstName ?? context.recipient.name}, we hope you can be part of this special day.`;
   document.querySelector('#allowance')!.textContent =
     `You may bring up to ${context.rsvp.maxAdditionalGuests} additional guests.`;
   applyState(context.rsvp);

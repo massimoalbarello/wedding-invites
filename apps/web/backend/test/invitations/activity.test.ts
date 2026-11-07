@@ -10,7 +10,7 @@ import { FaceAnalysisError } from '#backend/lib/faces/errors.ts';
 import { cookies, fixture, observation, photo, upload } from './fixture.ts';
 
 const actor = { userId: OWNER_USER_ID };
-const settings = { name: 'Ada Lovelace', groupName: 'Friends', maxGuests: 0 };
+const settings = { firstName: 'Ada', lastName: 'Lovelace', groupName: 'Friends', maxGuests: 0 };
 const OK = 200;
 const FORBIDDEN = 403;
 const UNAUTHORIZED = 401;
@@ -189,7 +189,7 @@ test('the activity migration preserves pre-existing guests and replies without i
     await runMigrations({
       db: database,
       migrations: new Map(
-        [...migrations].filter(([name]) => name !== '0006_invitation_activity.sql'),
+        [...migrations].filter(([name]) => name < '0006_invitation_activity.sql'),
       ),
     });
     const now = new Date().toISOString();
@@ -199,7 +199,7 @@ test('the activity migration preserves pre-existing guests and replies without i
     await runMigrations({ db: database });
     await runMigrations({ db: database });
     const rows =
-      await database`select name, status, link_opened_at, verification_failed_at, verified_at, invitation_opened_at from invitation_guest`;
+      await database`select first_name as name, status, link_opened_at, verification_failed_at, verified_at, invitation_opened_at from invitation_guest`;
     expect(rows).toEqual([
       {
         name: 'Existing guest',

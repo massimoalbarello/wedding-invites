@@ -16,10 +16,14 @@ export const MAX_PAGE_SIZE = 100;
 export const SESSION_MAX_AGE_SECONDS = 7_776_000;
 export const MILLISECONDS_PER_SECOND = 1000;
 export type GuestSettings = {
-  name: string;
+  firstName: string;
+  lastName: string;
   groupName: string;
   maxGuests: number;
 };
+export function guestFullName(guest: Pick<GuestSettings, 'firstName' | 'lastName'>): string {
+  return [guest.firstName, guest.lastName].filter(Boolean).join(' ');
+}
 export type Companion = { id: string; name: string };
 export type ReferencePhoto = { id: string; createdAt: string };
 export type InvitationActivity = {

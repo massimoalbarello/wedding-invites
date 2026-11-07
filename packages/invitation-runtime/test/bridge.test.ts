@@ -8,7 +8,7 @@ function message(input: { data: unknown; origin: string; source: Window }) {
   return Object.assign(new Event('message'), input);
 }
 const context: InvitationContext = {
-  recipient: { name: 'Alex' },
+  recipient: { name: 'Alex Morgan', firstName: 'Alex' },
   rsvp: { status: 'pending', companions: [], maxAdditionalGuests: 1 },
 };
 function fixture(runtime: InvitationRuntime) {
@@ -33,8 +33,9 @@ function fixture(runtime: InvitationRuntime) {
 }
 
 test('the two-method interface exchanges context, saved state, and application failures', async () => {
+  let recipientContext = context;
   const f = fixture({
-    getContext: () => Promise.resolve(context),
+    getContext: () => Promise.resolve(recipientContext),
     saveRsvp: (reply) =>
       reply.companions.length > context.rsvp.maxAdditionalGuests
         ? Promise.reject(new Error('This invitation does not allow that many guests.'))
@@ -42,6 +43,8 @@ test('the two-method interface exchanges context, saved state, and application f
   });
   try {
     expect(await f.client.getContext()).toEqual(context);
+    recipientContext = { ...context, recipient: { name: context.recipient.name } };
+    expect(await f.client.getContext()).toEqual(recipientContext);
     expect(await f.client.saveRsvp({ status: 'accepted', companions: ['Sam'] })).toEqual({
       status: 'accepted',
       companions: ['Sam'],

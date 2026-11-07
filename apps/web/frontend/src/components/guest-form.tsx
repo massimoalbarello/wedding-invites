@@ -75,35 +75,46 @@ export function GuestForm({
           )}
         </form.Subscribe>
       </div>
-      <form.Field
-        name="name"
-        validators={{
-          onSubmit: ({ value }) => (value.trim() ? undefined : 'Enter the guest’s name.'),
-        }}
-      >
-        {(field) => (
-          <div className="space-y-2">
-            <label htmlFor="guest-name" className="font-medium text-sm">
-              Full name
-            </label>
-            <Input
-              id="guest-name"
-              autoComplete="name"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onValueChange={field.handleChange}
-              maxLength={120}
-              aria-invalid={field.state.meta.errors.length > 0}
-              autoFocus
-            />
-            {field.state.meta.errors.map((error) => (
-              <p role="alert" className="text-destructive text-sm" key={error}>
-                {error}
-              </p>
-            ))}
-          </div>
-        )}
-      </form.Field>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {(
+          [
+            { name: 'firstName', label: 'First name', autoComplete: 'given-name' },
+            { name: 'lastName', label: 'Surname', autoComplete: 'family-name' },
+          ] as const
+        ).map(({ name, label, autoComplete }) => (
+          <form.Field
+            key={name}
+            name={name}
+            validators={{
+              onSubmit: ({ value }) =>
+                name === 'firstName' && !value.trim() ? 'Enter the guest’s first name.' : undefined,
+            }}
+          >
+            {(field) => (
+              <div className="space-y-2">
+                <label htmlFor={`guest-${name}`} className="font-medium text-sm">
+                  {label}
+                </label>
+                <Input
+                  id={`guest-${name}`}
+                  autoComplete={autoComplete}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onValueChange={field.handleChange}
+                  maxLength={120}
+                  aria-invalid={field.state.meta.errors.length > 0}
+                  autoFocus={name === 'firstName'}
+                />
+                {field.state.meta.errors.map((error) => (
+                  <p role="alert" className="text-destructive text-sm" key={error}>
+                    {error}
+                  </p>
+                ))}
+              </div>
+            )}
+          </form.Field>
+        ))}
+      </div>
       <form.Field
         name="group"
         validators={{
@@ -125,7 +136,7 @@ export function GuestForm({
       </form.Field>
       <form.Subscribe
         selector={(state) => ({
-          name: state.values.name,
+          name: [state.values.firstName, state.values.lastName].filter(Boolean).join(' '),
           photos: state.values.pendingPhotos,
           removedPhotoIds: state.values.removedPhotoIds,
           disabled: state.isSubmitting,

@@ -9,7 +9,7 @@ const BAD_REQUEST = 400;
 const UNAUTHORIZED = 401;
 const PAGE_SIZE = 2;
 const actor = { userId: OWNER_USER_ID };
-const defaults = { name: 'Guest', groupName: '', maxGuests: 1 };
+const defaults = { firstName: 'Guest', lastName: '', groupName: '', maxGuests: 1 };
 
 test('group pagination keeps exact groups together across boundaries and ungrouped guests last', async () => {
   const f = await fixture();
@@ -32,7 +32,7 @@ test('group pagination keeps exact groups together across boundaries and ungroup
       created.push(
         await f.management.create({
           actor,
-          settings: { ...defaults, name: `Guest ${index}`, groupName },
+          settings: { ...defaults, firstName: `Guest ${index}`, groupName },
         }),
       );
     }
@@ -93,17 +93,20 @@ test('group ordering composes with exact groups, explicit ungrouped, replies and
     const api = treaty(f.app, { parseDate: false });
     const family = await f.management.create({
       actor,
-      settings: { ...defaults, name: 'Ada', groupName: 'Family' },
+      settings: { ...defaults, firstName: 'Ada', groupName: 'Family' },
     });
     const sameFamily = await f.management.create({
       actor,
-      settings: { ...defaults, name: 'Grace', groupName: 'Family' },
+      settings: { ...defaults, firstName: 'Grace', groupName: 'Family' },
     });
     const differentCase = await f.management.create({
       actor,
-      settings: { ...defaults, name: 'Charles', groupName: 'family' },
+      settings: { ...defaults, firstName: 'Charles', groupName: 'family' },
     });
-    const ungrouped = await f.management.create({ actor, settings: { ...defaults, name: 'Alan' } });
+    const ungrouped = await f.management.create({
+      actor,
+      settings: { ...defaults, firstName: 'Alan' },
+    });
     const route = `/api/invitations/${family.token}`;
     const session = cookies(await f.request({ path: `${route}/session`, method: 'POST' }));
     expect(

@@ -7,7 +7,7 @@ import { ReplySection } from '../src/reply-section';
 
 afterEach(cleanup);
 const context: InvitationContext = {
-  recipient: { name: 'Alex Rivera' },
+  recipient: { name: 'Alex Rivera', firstName: 'Alex' },
   rsvp: { status: 'pending', companions: [], maxAdditionalGuests: 1 },
 };
 
@@ -61,7 +61,7 @@ test('a guest without an allowance can reply without companion controls', async 
 
 test('guest guidance appears only with Yes and disappears again with No', async () => {
   show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
-  const guidance = /We’d love to keep our day close and personal/;
+  const guidance = /We’re keeping our celebration close/;
   expect(screen.queryByText(guidance)).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
   const user = userEvent.setup();

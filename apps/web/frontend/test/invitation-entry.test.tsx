@@ -20,6 +20,7 @@ const REDIRECT_OBSERVATION_MS = 3200;
 const token = 'a'.repeat(TOKEN_LENGTH);
 const content: Content = {
   name: 'Alex Morgan',
+  firstName: 'Alex',
   assetUrl: 'about:blank',
   status: 'pending',
   maxGuests: 1,
