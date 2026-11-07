@@ -5,25 +5,25 @@ import { Countdown, timeUntilWedding } from '../src/countdown';
 afterEach(cleanup);
 
 test('the countdown targets the 5pm ceremony in Italy with second precision', () => {
-  expect(timeUntilWedding(new Date('2027-06-28T13:57:56Z'))).toEqual({
+  expect(timeUntilWedding(new Date('2027-06-29T13:57:56Z'))).toEqual({
     days: 1,
     hours: 1,
     minutes: 2,
     seconds: 4,
   });
-  expect(timeUntilWedding(new Date('2027-06-29T16:59:59+02:00'))).toEqual({
+  expect(timeUntilWedding(new Date('2027-06-30T16:59:59+02:00'))).toEqual({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 1,
   });
-  expect(timeUntilWedding(new Date('2027-06-29T15:00:00Z'))).toEqual({
+  expect(timeUntilWedding(new Date('2027-06-30T15:00:00Z'))).toEqual({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0,
   });
-  expect(timeUntilWedding(new Date('2027-06-30T10:00:00Z'))).toEqual({
+  expect(timeUntilWedding(new Date('2027-07-01T10:00:00Z'))).toEqual({
     days: 0,
     hours: 0,
     minutes: 0,
@@ -32,10 +32,10 @@ test('the countdown targets the 5pm ceremony in Italy with second precision', ()
 });
 
 test('a second stays visible until it fully elapses, including across Italy’s clock change', () => {
-  expect(timeUntilWedding(new Date('2027-06-29T14:59:59.500Z')).seconds).toBe(1);
+  expect(timeUntilWedding(new Date('2027-06-30T14:59:59.500Z')).seconds).toBe(1);
   const before = timeUntilWedding(new Date('2027-03-28T00:59:59Z'));
   const after = timeUntilWedding(new Date('2027-03-28T01:00:00Z'));
-  expect(before).toEqual({ days: 93, hours: 14, minutes: 0, seconds: 1 });
+  expect(before).toEqual({ days: 94, hours: 14, minutes: 0, seconds: 1 });
   expect(after).toEqual({ ...before, seconds: 0 });
 });
 

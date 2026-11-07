@@ -4,6 +4,7 @@ import type { Auth } from '#backend/lib/auth/better-auth.ts';
 import { elysiaErrorHandler } from '#backend/lib/errors.ts';
 import { createAdminController } from '#backend/routes/api/admin/controller.ts';
 import { createInvitationsController } from '#backend/routes/api/invitations/controller.ts';
+import { createInvitationPagesController } from '#backend/routes/invitations/controller.ts';
 import type { FrontendAssetsServiceContract } from '#backend/services/frontend-assets/service.ts';
 import type { InvitationDesignServiceContract } from '#backend/services/invitation-designs/service.ts';
 import type { GuestAccessServiceContract } from '#backend/services/invitations/guest-access.ts';
@@ -39,6 +40,7 @@ export function createApp(input: {
         .use(createAdminController(input))
         .use(createInvitationsController(input)),
     )
+    .use(createInvitationPagesController(input))
     .all('/*', ({ path, request, status }) => {
       if (request.method !== 'GET' || path === '/api' || path.startsWith('/api/')) {
         return status('Not Found', { error: 'Not Found' });

@@ -71,6 +71,13 @@ export class GuestAccessService {
     }
     return guest;
   }
+  async preview(token: string) {
+    const guest = await this.input.guests.byToken(token);
+    if (!guest) {
+      return null;
+    }
+    return guest.references.length > 0 ? 'A top secret message' : 'You are invited to my wedding';
+  }
   async entry(input: { token: string; session?: string }) {
     const guest = await this.guest(input.token);
     if (!guest.activity.linkOpenedAt) {
@@ -256,5 +263,5 @@ export class GuestAccessService {
 }
 export type GuestAccessServiceContract = Pick<
   GuestAccessService,
-  'entry' | 'bypass' | 'verify' | 'content' | 'rsvp' | 'asset'
+  'preview' | 'entry' | 'bypass' | 'verify' | 'content' | 'rsvp' | 'asset'
 >;
