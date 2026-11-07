@@ -73,7 +73,9 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.getByRole('link', { name: /Scroll to wedding details/ }).getAttribute('href')).toBe(
     '#venue',
   );
-  expect(screen.getByText('This is a personal invitation for Alex Rivera.')).toBeDefined();
+  expect(
+    screen.getByText('Alex Rivera, we’d love to share this special moment with you.'),
+  ).toBeDefined();
   expect(screen.getByRole('heading', { name: '30 June 2027' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });
