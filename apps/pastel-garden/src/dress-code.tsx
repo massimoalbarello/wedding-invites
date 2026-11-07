@@ -10,9 +10,9 @@ export function DressCode() {
         <img
           className="dress-code-artwork"
           src="./media/rizzoli-dress-code.webp"
-          alt="Wedding guests in light pastel outfits around aperitivo tables in the garden below Villa Ex Magni Rizzoli’s curved limonaia"
-          width="1536"
-          height="1024"
+          alt="Guests in pastel dresses and suits around flower-decorated cocktail tables in a garden"
+          width="1608"
+          height="892"
           loading="lazy"
         />
         <div className="dress-code-attire">
