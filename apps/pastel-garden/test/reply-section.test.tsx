@@ -61,7 +61,7 @@ test('a guest without an allowance can reply without companion controls', async 
 
 test('guest guidance appears only with Yes and disappears again with No', async () => {
   show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
-  const guidance = /To keep our day intimate/;
+  const guidance = /We’d love to celebrate with those who’ve shared in our lives/;
   expect(screen.queryByText(guidance)).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
   const user = userEvent.setup();
