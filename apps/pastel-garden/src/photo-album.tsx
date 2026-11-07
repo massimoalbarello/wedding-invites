@@ -28,8 +28,6 @@ const photographs = [
   },
 ];
 
-const displayNumber = (index: number) => String(index + 1).padStart(2, '0');
-
 export function PhotoAlbum() {
   const id = useId();
   const track = useRef<HTMLElement>(null);
@@ -72,9 +70,7 @@ export function PhotoAlbum() {
   return (
     <section className="photo-album" aria-labelledby={`${id}-heading`}>
       <header className="album-heading">
-        <p className="eyebrow">A few favourite moments</p>
         <h2 id={`${id}-heading`}>A little of us</h2>
-        <p>Before our next chapter, a few pages from this one.</p>
       </header>
       <section
         ref={track}
@@ -112,14 +108,15 @@ export function PhotoAlbum() {
                   loading="lazy"
                   decoding="async"
                 />
-                <figcaption aria-hidden="true">{displayNumber(index)}</figcaption>
               </figure>
             </li>
           ))}
         </ol>
       </section>
       <footer className="album-footer">
-        <p id={`${id}-hint`}>Swipe or use the arrows to wander through.</p>
+        <p className="sr-only" id={`${id}-hint`}>
+          Swipe or use the arrow keys to see more photographs.
+        </p>
         <div className="album-controls">
           <button
             type="button"
@@ -134,8 +131,8 @@ export function PhotoAlbum() {
           </button>
           <p className="album-position" aria-live="polite" aria-atomic="true">
             <span className="sr-only">Photograph </span>
-            {displayNumber(current)} <span aria-hidden="true">/</span>
-            <span className="sr-only"> of </span> {photographs.length.toString().padStart(2, '0')}
+            {current + 1} <span aria-hidden="true">/</span>
+            <span className="sr-only"> of </span> {photographs.length}
           </p>
           <button
             type="button"

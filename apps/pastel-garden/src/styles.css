@@ -633,27 +633,21 @@ h2 {
 .photo-album {
   position: relative;
   z-index: 2;
-  padding-block: clamp(4rem, 10svh, 6rem);
-  background: linear-gradient(
-    #f4f9fde6,
-    #f5f9fcf5 30%,
-    #f5f9fcf5 75%,
-    #f4f9fde6
-  );
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  padding-block: clamp(3rem, 10svh, 6rem);
   text-align: center;
 }
 .album-heading,
 .album-footer {
   padding-inline: clamp(1.5rem, 8vw, 5rem);
 }
-.album-heading > p:last-child {
-  max-width: 25rem;
-  margin-inline: auto;
-  font-size: 1.375rem;
-  text-wrap: balance;
-}
 .album-heading h2 {
-  margin-block: 0.75rem 1rem;
+  margin-block: 0 1.5rem;
+  text-shadow:
+    0 1px 2px #f8fbfd,
+    0 0 14px #f8fbfdd9;
 }
 .album-track {
   --photo-width: min(74cqw, 22rem);
@@ -663,7 +657,6 @@ h2 {
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
-  margin-top: 1rem;
 }
 .album-track::-webkit-scrollbar {
   display: none;
@@ -678,7 +671,7 @@ h2 {
   gap: clamp(1rem, 4vw, 2rem);
   list-style: none;
   margin: 0;
-  padding: 2rem calc((100cqw - var(--photo-width)) / 2);
+  padding: 1rem calc((100cqw - var(--photo-width)) / 2) 2.5rem;
 }
 .album-frame {
   flex: none;
@@ -686,44 +679,55 @@ h2 {
   scroll-snap-align: center;
 }
 .album-frame figure {
+  position: relative;
   margin: 0;
-  padding: 0.5rem 0.5rem 0;
-  background: #fffefa;
-  box-shadow: 0 4px 18px #25446115;
-  transform: rotate(-2deg);
+  padding: 6px;
+  border: 1px solid #89abc080;
+  outline: 1px solid #89abc045;
+  outline-offset: 5px;
+  border-radius: 50% 50% 2px 2px / 25% 25% 2px 2px;
+  background: #f8fbfd80;
 }
-.album-frame:nth-child(even) figure {
-  transform: rotate(2deg);
+.album-frame figure::before,
+.album-frame figure::after {
+  content: "";
+  position: absolute;
+  bottom: -1.25rem;
+  width: 46%;
+  aspect-ratio: 1;
+  background:
+    url("/media/garden-floral-corner.webp") center / contain no-repeat;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+.album-frame figure::before {
+  left: -1.25rem;
+  transform: rotate(-90deg);
+}
+.album-frame figure::after {
+  right: -1.25rem;
+  transform: rotate(180deg);
 }
 .album-frame img {
   display: block;
   width: 100%;
   height: auto;
-}
-.album-frame figcaption {
-  padding-block: 0.5rem;
-  color: #6c8295;
-  font-size: 0.875rem;
-  letter-spacing: 0.15em;
-  line-height: 1.5;
-}
-.album-footer > p {
-  font-size: 1.125rem;
-  font-style: italic;
+  border-radius: inherit;
 }
 .album-controls {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1.25rem;
-  margin-top: 1.25rem;
+  margin-top: 0.5rem;
 }
 .album-controls button {
   width: 48px;
   height: 48px;
   padding: 12px;
   background: transparent;
-  border-color: #7898b366;
+  border: 0;
 }
 .album-controls button:disabled {
   opacity: 0.3;
@@ -737,7 +741,6 @@ h2 {
 .album-position {
   min-width: 4rem;
   font-size: 1rem;
-  letter-spacing: 0.12em;
   font-variant-numeric: tabular-nums;
 }
 .reply-copy .guest-details {
