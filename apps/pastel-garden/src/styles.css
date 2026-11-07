@@ -154,7 +154,7 @@ button:hover:not(:disabled) {
 }
 .hero-copy {
   position: absolute;
-  inset: 9% 6% auto;
+  inset: 12% 6% auto;
   min-height: 16%;
   display: grid;
   align-content: center;
