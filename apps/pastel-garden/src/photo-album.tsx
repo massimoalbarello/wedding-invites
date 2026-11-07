@@ -2,6 +2,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 const photographs = [
   {
+    file: 'vespa',
+    alt: 'Massimo and Elizaveta laughing together on a white Vespa',
+    height: 1440,
+  },
+  {
     file: 'archway',
     alt: 'Massimo and Elizaveta beneath a stone archway, with a bouquet of blue flowers',
     height: 1449,
@@ -9,16 +14,6 @@ const photographs = [
   {
     file: 'embrace',
     alt: 'Massimo holding Elizaveta close in front of an ornate iron gate',
-    height: 1440,
-  },
-  {
-    file: 'little-details',
-    alt: 'A closer look at their rings, blue flowers and silver shoes on the white Vespa',
-    height: 1440,
-  },
-  {
-    file: 'vespa',
-    alt: 'Massimo and Elizaveta laughing together on a white Vespa',
     height: 1440,
   },
   {
