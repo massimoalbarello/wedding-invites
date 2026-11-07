@@ -10,7 +10,7 @@ export function DressCode() {
         <img
           className="dress-code-artwork"
           src="./media/rizzoli-dress-code.webp"
-          alt="Wedding guests in varied soft colours beside the twin stone arches of the amphitheatre at Villa Ex Magni Rizzoli"
+          alt="Wedding guests in varied soft colours around aperitivo tables in front of the curved limonaia at Villa Ex Magni Rizzoli"
           width="1536"
           height="1024"
           loading="lazy"
