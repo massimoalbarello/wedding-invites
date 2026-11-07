@@ -12,11 +12,6 @@ const photographs = [
     height: 1449,
   },
   {
-    file: 'embrace',
-    alt: 'Massimo holding Elizaveta close in front of an ornate iron gate',
-    height: 1440,
-  },
-  {
     file: 'just-us',
     alt: 'Elizaveta resting her hand on Massimo’s shoulder as they smile on the Vespa',
     height: 1448,
