@@ -14,8 +14,9 @@ const context = {
 };
 
 const MID_STORY_SECONDS = 12;
-const BEFORE_LANDING_HOLD_SECONDS = 19;
-const LANDING_HOLD_START_SECONDS = 20;
+const REVISED_FILM_DURATION_SECONDS = 19.066667;
+const PREVIOUS_FILM_DURATION_SECONDS = 21;
+const BEFORE_FINAL_SECOND_SECONDS = 1.1;
 const PLAYBACK_RECOVERY_DEADLINE_MS = 9500;
 const RECOVERY_TEST_TIMEOUT_MS = 12000;
 
@@ -77,26 +78,29 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });
 
-test('the final held second shows the live landing artwork before the film ends', async () => {
-  show();
-  await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
-  const video = document.querySelector('video')!;
-  Object.defineProperty(video, 'duration', { configurable: true, value: 21 });
-  const still = document.querySelector<HTMLImageElement>('.landing-still')!;
-  expect(still.getAttribute('src')).toBe(
-    document.querySelector('.hero .portrait-art > img')!.getAttribute('src'),
-  );
-  video.currentTime = BEFORE_LANDING_HOLD_SECONDS;
-  fireEvent.timeUpdate(video);
-  expect(still.classList.contains('is-visible')).toBe(false);
-  video.currentTime = LANDING_HOLD_START_SECONDS;
-  fireEvent.timeUpdate(video);
-  expect(still.classList.contains('is-visible')).toBe(true);
-  expect(document.querySelector('video')).toBe(video);
-  expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
-  fireEvent.ended(video);
-  expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
-});
+test.each([REVISED_FILM_DURATION_SECONDS, PREVIOUS_FILM_DURATION_SECONDS])(
+  'the final held second reveals the live artwork in a %s-second film',
+  async (duration) => {
+    show();
+    await userEvent.click(await screen.findByRole('button', { name: 'Open invitation' }));
+    const video = document.querySelector('video')!;
+    Object.defineProperty(video, 'duration', { configurable: true, value: duration });
+    const still = document.querySelector<HTMLImageElement>('.landing-still')!;
+    expect(still.getAttribute('src')).toBe(
+      document.querySelector('.hero .portrait-art > img')!.getAttribute('src'),
+    );
+    video.currentTime = duration - BEFORE_FINAL_SECOND_SECONDS;
+    fireEvent.timeUpdate(video);
+    expect(still.classList.contains('is-visible')).toBe(false);
+    video.currentTime = duration - 1;
+    fireEvent.timeUpdate(video);
+    expect(still.classList.contains('is-visible')).toBe(true);
+    expect(document.querySelector('video')).toBe(video);
+    expect(screen.queryByRole('heading', { name: 'Massimo & Elizaveta' })).toBeNull();
+    fireEvent.ended(video);
+    expect(screen.getByRole('heading', { name: 'Massimo & Elizaveta' })).toBeDefined();
+  },
+);
 
 test('pressing the letter starts playback inside the gesture and keeps its cover until playing', async () => {
   const play = HTMLMediaElement.prototype.play;
