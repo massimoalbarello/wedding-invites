@@ -1,4 +1,4 @@
-const startsAt = '2027-06-29T16:00:00+02:00';
+const startsAt = '2027-06-30T16:00:00+02:00';
 const replyBy = '2027-05-29T12:00:00+02:00';
 const locale = 'en-US';
 const timeZone = 'Europe/Rome';
@@ -6,7 +6,7 @@ const timeZone = 'Europe/Rome';
 export const content = {
   names: ['Elena', 'Marco'],
   startsAt,
-  endsAt: '2027-06-30T01:00:00+02:00',
+  endsAt: '2027-07-01T01:00:00+02:00',
   dateLabel: new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone }).format(
     new Date(startsAt),
   ),

@@ -67,13 +67,13 @@ test('recipient access gates the film, whose ending reveals the live invitation'
   expect(document.querySelector('.hero')?.textContent).toContain('invite you to their wedding');
   expect(document.querySelector('.hero time')).toBeNull();
   expect(document.querySelector('.hero')?.textContent).not.toContain(content.venue);
-  expect(screen.getByText('29 June 2027').getAttribute('dateTime')).toBe('2027-06-29');
+  expect(screen.getByText('30 June 2027').getAttribute('dateTime')).toBe('2027-06-30');
   expect(document.querySelector('#venue time')).toBeNull();
   expect(screen.getByRole('link', { name: /Scroll to wedding details/ }).getAttribute('href')).toBe(
     '#venue',
   );
   expect(screen.getByText('This is a personal invitation for Alex Rivera.')).toBeDefined();
-  expect(screen.getByRole('heading', { name: '29 June 2027' })).toBeDefined();
+  expect(screen.getByRole('heading', { name: '30 June 2027' })).toBeDefined();
   expect(screen.getByRole('heading', { name: 'Will you celebrate with us?' })).toBeDefined();
 });
 

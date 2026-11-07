@@ -676,7 +676,7 @@ try {
     fullPage: true,
   });
   await invitationFrame(guestBrowser.page)
-    .getByText('June 29, 2027', { exact: true })
+    .getByText('June 30, 2027', { exact: true })
     .first()
     .waitFor();
   await saveReply(guestBrowser.page);

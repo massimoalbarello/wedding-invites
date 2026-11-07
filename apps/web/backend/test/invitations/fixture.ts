@@ -19,6 +19,7 @@ import type { FaceAnalyzer } from '#backend/repositories/faces/analyzer.ts';
 import { InvitationDesignsRepository } from '#backend/repositories/invitation-designs/repository.ts';
 import { InvitationCapturesRepository } from '#backend/repositories/invitations/captures.ts';
 import { InvitationsRepository } from '#backend/repositories/invitations/repository.ts';
+import { FrontendAssetsService } from '#backend/services/frontend-assets/service.ts';
 import { InvitationDesignService } from '#backend/services/invitation-designs/service.ts';
 import { GuestAccessService } from '#backend/services/invitations/guest-access.ts';
 import { GuestManagementService } from '#backend/services/invitations/guest-management.ts';
@@ -70,6 +71,7 @@ export async function fixture(
     faces?: FaceAnalyzer;
     assets?: Map<string, Blob>;
     packages?: Map<string, Map<string, Blob>>;
+    frontendAssets?: Map<string, Blob>;
   } = {},
 ) {
   const folder = await mkdtemp(join(tmpdir(), 'wedding-api-test-'));
@@ -119,7 +121,7 @@ export async function fixture(
       designs: designRepository,
     }),
     origin: ORIGIN,
-    frontend: { routes: () => new Map(), fallback: () => null },
+    frontend: new FrontendAssetsService({ list: () => input.frontendAssets ?? new Map() }),
   });
   async function admin(userId = OWNER_USER_ID) {
     const token = `session-${userId}`;
