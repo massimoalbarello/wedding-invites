@@ -1,8 +1,8 @@
 :root {
-  font-family: "Pinyon Script", cursive;
-  font-size: 26px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-family: "Dancing Script Variable", cursive;
+  font-size: 100%;
+  font-weight: 500;
+  line-height: 1.5;
   color: #254461;
   background: #f4f8fc;
   font-synthesis: none;
@@ -18,10 +18,11 @@ html,
 body {
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
 }
 body {
   margin: 0;
+  font-size: clamp(1.5rem, 3vw, 1.75rem);
 }
 button,
 input,
@@ -53,8 +54,8 @@ button {
   background: #dce9f6;
   color: #254461;
   font: inherit;
-  font-size: 25px;
-  line-height: 1.2;
+  font-size: 1.5rem;
+  line-height: 1.4;
   text-decoration: none;
   cursor: pointer;
 }
@@ -70,7 +71,7 @@ button:hover:not(:disabled) {
   outline-offset: 5px;
 }
 .eyebrow {
-  font-size: 28px;
+  font-size: 1.5rem;
   letter-spacing: 0;
   line-height: 1.3;
 }
@@ -93,6 +94,9 @@ button:hover:not(:disabled) {
   position: relative;
   width: min(100%, calc(100svh * 9 / 16), 900px);
   aspect-ratio: 9 / 16;
+}
+.hero .portrait-art {
+  width: min(100%, max(24rem, calc(100svh * 9 / 16)));
 }
 .invitation.is-sealed {
   height: 100svh;
@@ -149,7 +153,12 @@ button:hover:not(:disabled) {
 }
 .hero-copy {
   position: absolute;
-  inset: 0;
+  inset: 9% 6% auto;
+  min-height: 16%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.5rem;
   text-align: center;
 }
 .letter.is-active .hero-copy {
@@ -166,55 +175,50 @@ button:hover:not(:disabled) {
   }
 }
 h1 {
-  font-weight: 400;
-  line-height: 1.2;
+  font-weight: 500;
+  line-height: 1.25;
 }
 .hero h1 {
-  position: absolute;
-  top: 12.5%;
-  left: 10%;
-  width: 80%;
   margin: 0;
-  max-width: none;
-  font-size: 7.6cqw;
+  font-size: clamp(2rem, 8.2cqw, 3.25rem);
+  text-wrap: balance;
 }
 h1:focus {
   outline: none;
 }
 .invitation-line {
-  position: absolute;
-  top: 18.5%;
-  left: 0;
-  width: 100%;
-  font-size: 4.2cqw;
-  line-height: 1.2;
+  font-size: clamp(1.375rem, 5.6cqw, 1.75rem);
+  line-height: 1.4;
+  text-wrap: balance;
 }
 .venue-artwork {
   display: block;
   width: 100%;
   height: auto;
 }
-.venue-section {
+.venue-section,
+.countdown-section,
+.reply-section {
   min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: 160px 14% 170px;
+  padding: clamp(3rem, 10svh, 6rem) clamp(1.5rem, 8vw, 5rem);
   text-align: center;
 }
 .venue-copy {
   width: 100%;
+  max-width: 40rem;
 }
 h2 {
-  font-size: clamp(40px, 6vw, 56px);
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
   line-height: 1.2;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0;
-  margin: 20px 0;
+  margin: 1rem 0 1.5rem;
+  text-wrap: balance;
 }
 .venue-copy .venue-artwork {
-  width: 122%;
-  max-width: none;
-  margin: 24px -11%;
+  margin-top: 1.5rem;
 }
 .connection-error {
   min-height: 100svh;
@@ -225,16 +229,6 @@ h2 {
   gap: 24px;
   text-align: center;
 }
-@media (max-width: 600px) {
-  h1 {
-    max-width: 280px;
-    margin-inline: auto;
-    font-size: clamp(46px, 12vw, 54px);
-  }
-  .venue-section {
-    padding-inline: 16%;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -242,14 +236,6 @@ h2 {
   .letter.is-active .hero-copy {
     animation: none;
   }
-}
-.countdown-section,
-.reply-section {
-  min-height: 100svh;
-  display: grid;
-  place-items: center;
-  padding: 150px 16%;
-  text-align: center;
 }
 .venue-copy,
 .countdown-copy,
@@ -261,12 +247,12 @@ h2 {
 .countdown-copy,
 .reply-copy {
   width: 100%;
-  max-width: 480px;
+  max-width: 30rem;
+  overflow-wrap: anywhere;
 }
 .recipient-name {
-  line-height: 1.4;
-  margin-top: 24px;
-  font-size: 28px;
+  margin-top: 1.5rem;
+  text-wrap: pretty;
 }
 .reply-copy form {
   display: grid;
@@ -288,7 +274,7 @@ h2 {
   background: #ffffffb0;
   border-radius: 14px;
   padding: 15px;
-  min-height: 54px;
+  min-height: 60px;
   line-height: 1.5;
   cursor: pointer;
 }
@@ -309,6 +295,7 @@ h2 {
 }
 .reply-copy form section > div:has(input) {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: end;
 }
@@ -319,7 +306,7 @@ h2 {
 }
 .reply-copy form section > div > div {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 10rem;
 }
 .reply-copy input:not([type="radio"]) {
   width: 100%;
@@ -333,19 +320,19 @@ h2 {
   margin-top: 8px;
 }
 .reply-copy h3 {
-  font-weight: 400;
-  font-size: 30px;
+  font-weight: 500;
+  font-size: 1.875rem;
 }
 .reply-copy form section p {
-  font-size: 25px;
-  line-height: 1.4;
+  font-size: 1.5rem;
+  line-height: 1.5;
   margin-top: 6px;
 }
 .reply-copy .remove-guest {
   padding: 10px;
   border: 0;
   background: transparent;
-  font-size: 24px;
+  font-size: 1.375rem;
 }
 .reply-copy button[type="submit"] {
   justify-self: center;
@@ -358,14 +345,8 @@ h2 {
 }
 .reply-copy [role="alert"] {
   color: #934437;
-  font-size: 25px;
-  line-height: 1.4;
-}
-@media (max-width: 600px) {
-  .reply-copy fieldset label {
-    padding: 12px;
-    gap: 8px;
-  }
+  font-size: 1.5rem;
+  line-height: 1.5;
 }
 
 .portrait-art > .envelope-poster,
@@ -557,28 +538,41 @@ h2 {
   mask-image: linear-gradient(transparent, #000 14%, #000 82%, transparent);
 }
 .countdown-copy {
-  max-width: 580px;
+  max-width: 36rem;
+  container-type: inline-size;
 }
 .countdown-intro {
-  margin-top: 48px;
-  font-size: clamp(25px, 4vw, 30px);
+  margin-top: 2rem;
+  font-size: 1.75rem;
+  text-wrap: balance;
 }
 .countdown-clock {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(8px, 3vw, 24px);
-  margin: 24px 0 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 1rem;
+  margin: 1.5rem 0 0;
 }
 .countdown-clock dt {
-  font-size: clamp(21px, 4vw, 28px);
+  font-size: 1.5rem;
 }
 .countdown-clock dd {
   margin: 0;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(29px, 6vw, 52px);
+  font-size: clamp(2rem, 6vw, 3rem);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.25;
+}
+@container (min-width: 16rem) {
+  .countdown-clock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 24rem) {
+  .countdown-clock {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .wedding-day {
   margin-top: 24px;
@@ -603,53 +597,6 @@ h2 {
   pointer-events: none;
   z-index: 20;
   filter: drop-shadow(0 1px 1px #4d627d80);
-}
-@media (max-width: 600px) {
-  :root {
-    font-size: 30px;
-  }
-  .hero h1 {
-    left: 6%;
-    width: 88%;
-    font-size: 8.2cqw;
-  }
-  .invitation-line {
-    font-size: 5.2cqw;
-  }
-  h2 {
-    font-size: clamp(44px, 10vw, 52px);
-  }
-  .eyebrow,
-  button,
-  .reply-copy fieldset label,
-  .reply-copy form section p,
-  .reply-copy [role="alert"] {
-    font-size: 28px;
-  }
-  .recipient-name {
-    font-size: 30px;
-  }
-  .reply-copy h3 {
-    font-size: 34px;
-  }
-  .reply-copy .remove-guest {
-    font-size: 26px;
-  }
-  .countdown-intro {
-    font-size: 29px;
-  }
-  .countdown-clock dt {
-    font-size: 25px;
-  }
-  .countdown-clock dd {
-    font-size: 34px;
-  }
-  .reply-section {
-    padding-inline: 12%;
-  }
-  .countdown-section {
-    padding-inline: 10%;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .sound-waves,
