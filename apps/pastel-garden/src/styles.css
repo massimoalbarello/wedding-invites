@@ -759,9 +759,6 @@ h2 {
   border-top: 1px solid #b7cce066;
   gap: 22px;
 }
-.reply-copy .guest-details h3 + p {
-  margin: 16px 0 20px;
-}
 .reply-celebration {
   position: fixed;
   inset: 0;

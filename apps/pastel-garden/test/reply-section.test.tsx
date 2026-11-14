@@ -59,16 +59,15 @@ test('a guest without an allowance can reply without companion controls', async 
   expect((await screen.findByRole('status')).textContent).toContain('Your reply is saved');
 });
 
-test('guest guidance appears only with Yes and disappears again with No', async () => {
+test('companion controls appear only with Yes and disappear again with No', async () => {
   show({ saveRsvp: (reply) => Promise.resolve({ ...context.rsvp, ...reply }) });
-  const guidance = /We’re keeping our celebration close/;
-  expect(screen.queryByText(guidance)).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
   const user = userEvent.setup();
   await user.click(screen.getByRole('radio', { name: 'Yes, I’ll be there' }));
-  expect(screen.getByText(guidance)).toBeDefined();
+  expect(screen.getByRole('heading', { name: 'Who’s coming with you?' })).toBeDefined();
+  expect(screen.getByRole('button', { name: '+ Add a guest' })).toBeDefined();
   await user.click(screen.getByRole('radio', { name: 'Sorry, I can’t make it' }));
-  expect(screen.queryByText(guidance)).toBeNull();
+  expect(screen.queryByRole('heading', { name: 'Who’s coming with you?' })).toBeNull();
   expect(screen.queryByRole('button', { name: '+ Add a guest' })).toBeNull();
 });
 
