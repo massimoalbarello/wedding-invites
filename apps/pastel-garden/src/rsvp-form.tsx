@@ -87,13 +87,7 @@ export function RsvpForm({
             >
               {(field) => (
                 <section className="guest-details">
-                  <div>
-                    <h3>Who’s coming with you?</h3>
-                    <p>
-                      We’re keeping our celebration close to the people who have shared our lives
-                      over the years. Please keep this in mind when choosing who to bring with you.
-                    </p>
-                  </div>
+                  <h3>Who’s coming with you?</h3>
                   {Array.from(field.state.value.entries()).map(([index, person]) => (
                     <form.Field key={person.id} name={`companions[${index}].name`}>
                       {(nameField) => (
